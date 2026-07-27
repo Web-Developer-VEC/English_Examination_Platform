@@ -1,0 +1,23 @@
+[
+    {
+        "name": "STUDENT 1",
+        "registerno": null,
+        "admission_no": "1",
+        "email": "",
+        "phone": "9000000001",
+        "password": "1",
+        "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
+        "year": 2,
+        "batch": "2023-2027"
+    },
+    {
+        "name": "STUDENT 2",
+        "registerno": null,
+        "admission_no": "2",
+        "email": "",
+        "phone": "9000000002",
+        "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
+        "year": 2,
+        "batch": "2023-2027"
+    }
+]
