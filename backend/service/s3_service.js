@@ -1,5 +1,5 @@
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
-const s3Client = require("../config/s3");
+const {s3} = require("../config/s3");
 
 /**
  * Upload a file to AWS S3
@@ -15,21 +15,21 @@ const uploadToS3 = async (file, folder) => {
 
     try {
 
-        const key = `english_exam_platform/${folder}/${Date.now()}-${file.filename}`;
+        const key = `english_exam_platform/${folder}/${file.filename}`;
 
         const command = new PutObjectCommand({
-            Bucket: process.env.S3_BUCKET,
+            Bucket: process.env.AWS_BUCKET_NAME,
             Key: key,
             Body: file.buffer,
             ContentType: file.mimeType
         });
 
-        await s3Client.send(command);
+        await s3.send(command);
 
         return {
             success: true,
             key,
-            url: `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+            url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
         };
 
     } catch (error) {
