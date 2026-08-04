@@ -10,7 +10,7 @@ export default function LoginForm({ role }) {
 
                     ? "Student Login"
 
-                    : "Professor Login"
+                    : "Admin Login"
 
                 }
 
@@ -19,7 +19,7 @@ export default function LoginForm({ role }) {
             <div className="mb-4">
                 <label className="block mb-2 font-medium">
                     {role === "student"
-                        ? "University Register Number"
+                        ? "User Name"
                         : "Email Address"}
                 </label>
 
@@ -27,7 +27,7 @@ export default function LoginForm({ role }) {
                     type={role === "student" ? "text" : "email"}
                     placeholder={
                         role === "student"
-                            ? "Enter your register number"
+                            ? "Enter your User Name"
                             : "Enter your email"
                     }
                     className="w-full border rounded-lg px-4 py-3"
