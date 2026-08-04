@@ -8,6 +8,7 @@
         "password": "1",
         "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
         "year": 2,
+        "section":"A",
         "batch": "2023-2027"
     },
     {
@@ -18,6 +19,7 @@
         "phone": "9000000002",
         "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
         "year": 2,
+        "section":"B",
         "batch": "2023-2027"
     }
 ]
