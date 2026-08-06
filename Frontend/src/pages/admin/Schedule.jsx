@@ -1,4 +1,4 @@
-export default function Questions() {
+export default function Schedule() {
     return (
         <div>
             Questions
