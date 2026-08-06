@@ -97,6 +97,70 @@ const studentsUpload = async (req, res) => {
     }
 };
 
+const updateStudent = async (req, res) => {
+    try {
+
+        if (!req.uploadedData) {
+            return res.status(400).json({
+                success: false,
+                message: "Upload failed. Please upload the student Excel file."
+            });
+        }
+
+        const parsedStudents = parseStudentExcel(
+            req.files.student_data.buffer
+        );
+
+        const db = getDB();
+
+        let updatedCount = 0;
+        const notFound = [];
+
+        for (const student of parsedStudents) {
+console.log(student);
+
+            const result = await db.collection("students").updateOne(
+                {
+                    admissionNo: student.admissionNo
+                },
+                {
+                    $set: {
+                        ...student,                      // Update all Excel fields
+                        username: student.registerNo,    // Username = Register Number
+                        updatedAt: new Date()
+                    }
+                }
+            );
+
+            if (result.matchedCount > 0) {
+                updatedCount++;
+            } else {
+                notFound.push(student.admissionNo);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Student records updated successfully.",
+            updatedStudents: updatedCount,
+            notFound
+        });
+
+    } catch (error) {
+
+        console.error("Student Update Error:", error);
+
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error"
+        });
+
+    }
+};
+
+
+
 module.exports = {
-    studentsUpload
+    studentsUpload,
+    updateStudent
 };
