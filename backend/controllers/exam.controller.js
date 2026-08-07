@@ -17,7 +17,7 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
-         const exam = await db.collection("tests").findOne({
+         const exam = await db.collection("schedule").findOne({
           testcode: {
             $regex: new RegExp(`^${testcode.trim()}$`, "i")
          }
@@ -149,9 +149,7 @@ const submitExam = async (req, res) => {
 
         const {
             testId,
-            admissionNo,
-            answers,
-            startedAt
+            admissionNo
         } = req.body;
 
         if (
@@ -182,7 +180,7 @@ const submitExam = async (req, res) => {
         // ----------------------------
         // Test
         // ----------------------------
-        const test = await db.collection("tests").findOne({
+        const test = await db.collection("schedule").findOne({
             _id: new ObjectId(testId)
         });
 

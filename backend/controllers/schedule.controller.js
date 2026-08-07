@@ -4,7 +4,6 @@ const { getDB } = require("../config/db");
 const scheduleExam = async (req, res) => {
     try {
         const {
-            testcode,
             category,
             questionSetId,
             department,
@@ -41,7 +40,7 @@ const scheduleExam = async (req, res) => {
         // ==========================
         const allowedCategories = [
             "university",
-            "cie",
+            "normal",
             "retest"
         ];
 
@@ -132,7 +131,7 @@ const scheduleExam = async (req, res) => {
         // ==========================
         // Duplicate Schedule Check
         // ==========================
-        const existingExam = await db.collection("tests").findOne({
+        const existingExam = await db.collection("schedule").findOne({
             category: category.toLowerCase(),
             "eligibility.department": department,
             "eligibility.batch": batch,
@@ -152,8 +151,6 @@ const scheduleExam = async (req, res) => {
         // Create Exam
         // ==========================
         const exam = {
-
-            testcode: testcode.trim(),
 
             category: category.toLowerCase(),
 
@@ -190,7 +187,7 @@ const scheduleExam = async (req, res) => {
 
         };
 
-        const result = await db.collection("tests").insertOne(exam);
+        const result = await db.collection("schedule").insertOne(exam);
 
         return res.status(201).json({
             success: true,
