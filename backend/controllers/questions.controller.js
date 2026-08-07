@@ -13,14 +13,14 @@ const questionsupload = async (req, res) => {
             });
         }
 
-        const { title } = req.body;
+        const { testcode } = req.body;
         const { audio, questions } = req.uploadedData;
 
-        // Validate title
-        if (!title || !title.trim()) {
+        // Validate testcode
+        if (!testcode || !testcode.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "Title is required."
+                message: "testcode is required."
             });
         }
 
@@ -32,7 +32,7 @@ const questionsupload = async (req, res) => {
         // Build MongoDB document
         const document = {
 
-            title: title.trim(),
+            testcode: testcode.trim(),
 
             audioUrl: audio.url,
 

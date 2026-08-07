@@ -4,7 +4,7 @@ const { getDB } = require("../config/db");
 const scheduleExam = async (req, res) => {
     try {
         const {
-            title,
+            testcode,
             category,
             questionSetId,
             department,
@@ -20,7 +20,7 @@ const scheduleExam = async (req, res) => {
         // Required Fields Validation
         // ==========================
         if (
-            !title ||
+            !testcode ||
             !category ||
             !questionSetId ||
             !department ||
@@ -153,7 +153,7 @@ const scheduleExam = async (req, res) => {
         // ==========================
         const exam = {
 
-            title: title.trim(),
+            testcode: testcode.trim(),
 
             category: category.toLowerCase(),
 
