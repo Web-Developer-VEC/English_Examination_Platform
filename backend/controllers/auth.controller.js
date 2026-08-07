@@ -5,6 +5,18 @@ const { getDB } = require("../config/db"); // Change according to your project
 // REGISTER
 const register = async (req, res) => {
     try {
+        const {
+            name,
+            email,
+            password,
+            role,
+            phone,
+            year,
+            dob,
+            section,
+            batch,
+            admission_no
+        } = req.body;
 
         const { username, password, role } = req.body;
 
@@ -54,7 +66,7 @@ const register = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
@@ -133,12 +145,13 @@ const login = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
 
     }
+
 };
 
 module.exports = {
