@@ -1,7 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 
-import Home from "../pages/Home";
 import Register from "../components/auth/Register";
+import AdminLogin from "../components/admin/AdminLogin";
+import StudentLogin from "../components/student/StudentLogin";
 
 import StudentLayout from "../layouts/StudentLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -21,8 +22,9 @@ export default function AppRoutes() {
     <Routes>
 
       {/* Authentication */}
-      <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/adminlogin" element={<AdminLogin />} />
+      <Route path="/" element={<StudentLogin />} />
 
       {/* Student */}
       <Route path="/student" element={<StudentLayout />}>

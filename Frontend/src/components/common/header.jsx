@@ -1,39 +1,37 @@
-import logo from "../../assets/logo/college-logo.png";
+import React from "react";
+import { BookOpenCheck } from "lucide-react";
+import "./Header.css";
+import collegeLogo from "../../assets/logo/college-logo.png";
 
-export default function Header() {
+const Header = ({ portalTitle = "English Examination Portal" }) => {
     return (
-        <header className="relative bg-[#ffffff] shadow-lg overflow-hidden">
-
-            {/* Black Slanted Shape */}
-            <div className="absolute left-0 top-0 h-full w-24 bg-[#FDCC03] clip-left"></div>
-            <div className="absolute right-0 top-0 h-full w-20 bg-[#FDCC03] clip-right"></div>
-
-            <div className="relative z-10 max-w-7xl mx-auto flex items-center justify-center gap-6 px-6 py-4">
-
-                <img
-                    src={logo}
-                    alt="College Logo"
-                    className="w-16 h-16 object-contain bg-white rounded-full p-1"
-                />
-
-                <div className="text-center">
-
-                    <h1 className="text-3xl font-bold text-[#000000] uppercase">
-                        Velammal Engineering College, Chennai
-                    </h1>
-
-                    <h2 className="text-lg font-semibold text-black">
-                        Department of English
-                    </h2>
-
-                    <p className="text-gray-800">
-                        English Audio Examination Platform
-                    </p>
-
+        <header className="vec-header">
+            <div className="vec-header__brand">
+                <div className="vec-header__logo">
+                    <div className="vec-header__logo">
+                        <img
+                            src={collegeLogo}
+                            alt="Velammal Engineering College Logo"
+                            className="vec-logo-image"
+                        />
+                    </div>
                 </div>
-
+                <div className="vec-header__text">
+                    <h1 className="vec-header__college">VELAMMAL</h1>
+                    <p className="vec-header__department">ENGINEERING COLLEGE</p>
+                    <p className="vec-header__tagline">The Wheel of Knowledge rolls on!</p>
+                    <p className="vec-header__autonomy">(An Autonomous Institution)</p>
+                </div>
             </div>
 
+            <div className="vec-header__portal">
+                <BookOpenCheck className="vec-header__portal-icon" size={30} strokeWidth={2} />
+                <h2 className="vec-header__portal-title">{portalTitle}</h2>
+            </div>
+
+            <span className="vec-header__underline" aria-hidden="true" />
         </header>
     );
-}
+};
+
+export default Header;

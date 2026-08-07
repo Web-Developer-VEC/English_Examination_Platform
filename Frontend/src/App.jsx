@@ -1,17 +1,12 @@
 import Header from "./components/common/Header";
 import AppRoutes from "./routes/AppRoutes";
 
-import backgroundImage from "./assets/images/college-bg.jpg";
-
 function App() {
     return (
         <div
-            className="min-h-screen bg-cover bg-center bg-fixed"
-            style={{
-                backgroundImage: `url(${backgroundImage})`,
-            }}
+            className="min-h-screen bg-white"
         >
-            <div className="min-h-screen bg-black/40 flex flex-col">
+            <div className="min-h-screen bg-white/40 flex flex-col">
 
                 <Header />
 
