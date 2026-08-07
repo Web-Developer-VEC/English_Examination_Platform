@@ -2,38 +2,32 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { shuffleQuestions, shuffleOptions, remainingPlays, isAudioLocked, answeredCount, isAllQuestionsAnswered, getProgress } from "../../utils/helpers";
 import tick from "../../assets/images/tick.png";
+import { formatTime, saveTestState, getTestState, clearTestState } from "../../utils/helpers";
+import Audiofile from "../../assets/audio/sample.mp3";
 
 export default function AudioTest() {
 
     const navigate = useNavigate();
-
     const [isPlaying, setIsPlaying] = useState(false);
-
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
     const audioRef = useRef(null);
-
     const [questions, setQuestions] = useState([]);
-
     const [answers, setAnswers] = useState({});
-
     const [playCount, setPlayCount] = useState(0);
-
-    const [violations, setViolations] = useState(0);
-
     const [submitted, setSubmitted] = useState(false);
-
-    const [showWarning, setShowWarning] = useState(false);
-
+    const [isRestored, setIsRestored] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
-
+    const [countdown, setCountdown] = useState(5);
+    const [violations, setViolations] = useState(0);
+    const [showWarning, setShowWarning] = useState(false);
+    const [warningMessage, setWarningMessage] = useState("");
     const MAX_PLAYS = 2;
-
-    const MAX_VIOLATIONS = 2;
-
+    const remainingTime = Math.max(duration - currentTime, 0);
     const dummyData = {
 
-        audioUrl: "/audio/test.mp3",
+        audioUrl: Audiofile,
 
         questions: [
 
@@ -81,6 +75,39 @@ export default function AudioTest() {
 
     };
 
+    const handleViolation = (type) => {
+        const count = violations + 1;
+        setViolations(count);
+        setWarningMessage(type);
+        setShowWarning(true);
+        /*
+            Backend
+            POST /student/violation
+            {
+                type,
+                count,
+                testId,
+                studentId
+            }
+        */
+        console.log("Violation Payload:", {
+            type,
+            count
+        });
+        setTimeout(() => {
+            setShowWarning(false);
+        }, 3000);
+        if (count >= 3) {
+            clearTestState();
+            /*
+                Backend
+                status : TERMINATED
+                reason : type
+            */
+            navigate("/");
+        }
+    };
+
     const handlePlay = () => {
         if (isPlaying || isAudioLocked(playCount, MAX_PLAYS)) return;
         setIsPlaying(true);
@@ -110,24 +137,133 @@ export default function AudioTest() {
         const timer = setInterval(() => {
             seconds--;
             setCountdown(seconds);
-            if (seconds === 0) { clearInterval(timer); navigate("/") }
+            if (seconds === 0) { clearInterval(timer); clearTestState(); navigate("/") }
         }, 1000);
     }
-    const [countdown, setCountdown] = useState(5);
+
+    const terminateTest = () => {
+        clearTestState();
+        /*
+            Backend
+            status:"TERMINATED"
+            reason:"Multiple Violations"
+        */
+        navigate("/");
+    }
+
 
     useEffect(() => {
-
+        const saved = getTestState();
+        if (saved) {
+            setQuestions(saved.questions);
+            setAnswers(saved.answers);
+            setPlayCount(saved.playCount);
+            setCurrentTime(saved.currentTime);
+            setIsRestored(true);
+            return;
+        }
         const shuffledQuestions = shuffleQuestions(dummyData.questions);
-
         const finalQuestions = shuffledQuestions.map(shuffleOptions);
-
         setQuestions(finalQuestions);
-
     }, []);
+    useEffect(() => {
+        if (questions.length === 0) return;
+        saveTestState({
+            questions,
+            answers,
+            playCount,
+            currentTime
+        });
+    }, [questions, answers, playCount]);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!audioRef.current) return;
+            saveTestState({
+                questions,
+                answers,
+                playCount,
+                currentTime: audioRef.current.currentTime
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [questions, answers, playCount]);
+
+    useEffect(() => {
+        // Tab Change / Minimize
+        const visibilityHandler = () => {
+            if (document.hidden) {
+                handleViolation("Tab switched or window minimized");
+            }
+        };
+        // Right Click
+        const contextMenuHandler = (e) => {
+            e.preventDefault();
+            handleViolation("Right click detected");
+        };
+        // Keyboard Shortcuts
+        const keyHandler = (e) => {
+            const key = e.key.toLowerCase();
+            if (
+                key === "f12" ||
+                (e.ctrlKey && key === "r") ||
+                (e.ctrlKey && key === "u") ||
+                (e.ctrlKey && e.shiftKey && key === "i") ||
+                (e.ctrlKey && e.shiftKey && key === "j")
+            ) {
+                e.preventDefault();
+                handleViolation("Restricted keyboard shortcut");
+            }
+        };
+        // Register Listeners
+        document.addEventListener(
+            "visibilitychange",
+            visibilityHandler
+        );
+        document.addEventListener(
+            "contextmenu",
+            contextMenuHandler
+        );
+        window.addEventListener(
+            "keydown",
+            keyHandler
+        );
+        // Cleanup
+        return () => {
+            document.removeEventListener(
+                "visibilitychange",
+                visibilityHandler
+            );
+            document.removeEventListener(
+                "contextmenu",
+                contextMenuHandler
+            );
+            window.removeEventListener(
+                "keydown",
+                keyHandler
+            );
+        };
+    }, [violations]);
 
     return (
         <>
-            {/* {showSuccess && <SuccessPopup />} */}
+            {
+                showWarning && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-2xl p-8 w-[420px] text-center">
+                            <h2 className="text-2xl font-bold text-red-600">
+                                Examination Warning
+                            </h2>
+                            <p className="mt-4">
+                                {warningMessage}
+                            </p>
+                            <p className="mt-3 font-semibold">
+                                Remaining Chances :
+                                {Math.max(3 - violations, 0)}
+                            </p>
+                        </div>
+                    </div>
+                )
+            }
             {
                 showSuccess && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -137,7 +273,7 @@ export default function AudioTest() {
                             <div className="flex flex-col items-center text-center space-y-4">
 
                                 {/* Success Icon */}
-                                <img src={tick} alt="Success" className="w-20 h-20 object-contain animate-bounce"/>
+                                <img src={tick} alt="Success" className="w-20 h-20 object-contain animate-bounce" />
 
                                 {/* Heading */}
                                 <h2 className="text-2xl font-bold text-[#800000]">
@@ -187,24 +323,25 @@ export default function AudioTest() {
                 <audio
                     ref={audioRef}
                     src={dummyData.audioUrl}
+                    preload="metadata"
+                    onLoadedMetadata={() => {
+                        setDuration(audioRef.current.duration);
+                        if (isRestored) {
+                            audioRef.current.currentTime = currentTime;
+                        }
+                    }}
+                    onTimeUpdate={() => {
+                        setCurrentTime(audioRef.current.currentTime);
+                    }}
                     onEnded={handleAudioEnd}
                 />
+                <p>Remaining : {formatTime(remainingTime)}</p>
                 <button
                     onClick={handlePlay}
                     disabled={isPlaying || isAudioLocked(playCount, MAX_PLAYS)}
                     className="bg-[#800000] text-white px-6 py-3 rounded-lg disabled:bg-gray-400"
                 >
-                    {
-                        playCount >= 2
-                            ?
-                            "Audio Locked"
-                            :
-                            playCount === 0
-                                ?
-                                "Play Audio"
-                                :
-                                "Replay Audio"
-                    }
+                    {isAudioLocked(playCount, MAX_PLAYS) ? "Audio Locked" : playCount === 0 ? "Play Audio" : "Replay Audio"}
                 </button>
                 <p className="mt-3">
                     Remaining Plays :
@@ -262,6 +399,7 @@ export default function AudioTest() {
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting || !isAllQuestionsAnswered(answers, questions)}
+                    className="bg-[#800000] text-white px-6 py-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:translate-y-[-2px] "
                 >
                     {isSubmitting ? "Submitting..." : "Submit Test"}
                 </button>
