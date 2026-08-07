@@ -28,7 +28,7 @@ export default function RoleSelector({ role, setRole }) {
 
                 className={`flex-1 py-3 font-medium transition
 
-                ${role==="professor"
+                ${role==="admin"
 
                     ?"bg-[#FDCC03]"
 
@@ -36,11 +36,11 @@ export default function RoleSelector({ role, setRole }) {
 
                 }`}
 
-                onClick={()=>setRole("professor")}
+                onClick={()=>setRole("admin")}
 
             >
 
-                Professor
+                Admin
 
             </button>
 
