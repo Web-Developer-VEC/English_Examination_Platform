@@ -1,18 +1,20 @@
 import { Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home";
+import Register from "../components/auth/Register";
 
 import StudentLayout from "../layouts/StudentLayout";
-import ProfessorLayout from "../layouts/ProfessorLayout";
+import AdminLayout from "../layouts/AdminLayout";
 
 import StartTest from "../pages/student/StartTest";
 import AudioTest from "../pages/student/AudioTest";
 
-import Dashboard from "../pages/professor/Dashboard";
-import Professors from "../pages/professor/Professors";
-import CreateTest from "../pages/professor/CreateTest";
-import Questions from "../pages/professor/Questions";
-import Results from "../pages/professor/Results";
+import Dashboard from "../pages/admin/Dashboard";
+import Admins from "../pages/admin/Admins";
+import CreateTest from "../pages/admin/CreateTest";
+import Schedule from "../pages/admin/Schedule";
+import Results from "../pages/admin/Results";
+import Students from "../pages/admin/Students";
 
 export default function AppRoutes() {
   return (
@@ -20,6 +22,7 @@ export default function AppRoutes() {
 
       {/* Authentication */}
       <Route path="/" element={<Home />} />
+      <Route path="/register" element={<Register />} />
 
       {/* Student */}
       <Route path="/student" element={<StudentLayout />}>
@@ -27,13 +30,14 @@ export default function AppRoutes() {
         <Route path="audio" element={<AudioTest />} />
       </Route>
 
-      {/* Professor */}
-      <Route path="/professor" element={<ProfessorLayout />}>
+      {/* admin */}
+      <Route path="/admin" element={<AdminLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="professors" element={<Professors />} />
+        <Route path="admins" element={<Admins />} />
         <Route path="create-test" element={<CreateTest />} />
-        <Route path="questions" element={<Questions />} />
+        <Route path="schedule" element={<Schedule />} />
         <Route path="results" element={<Results />} />
+        <Route path="students" element={<Students />} />
       </Route>
 
     </Routes>
