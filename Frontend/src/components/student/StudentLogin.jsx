@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
+import Register from "../auth/Register"
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { Navigate, useNavigate } from "react-router-dom";
@@ -14,18 +15,17 @@ const StudentLogin = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    // Wire this up to your auth endpoint.
-    console.log(`${role} login submitted:`, formData);
+    console.log("Student login submitted:", formData);
+    navigate("/student/start-test");
   };
 
-  return (
-  <>
-  <div className="flex pt-20 justify-center">
-    <div className="login-card">
+  return (<>
+    <div className="flex pt-20 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
+
         <User className="login-heading__icon" size={22} />
+
         <h2>Student Login</h2>
       </div>
 
@@ -73,7 +73,7 @@ const StudentLogin = () => {
           </div>
         </div>
 
-        <button type="submit" className="login-submit" onClick={()=>navigate("/student/start-test")}>
+        <button type="submit" className="login-submit">
           <LogIn size={18} />
           Login
         </button>
@@ -89,9 +89,9 @@ const StudentLogin = () => {
         </div>
       </form>
     </div>
-  </div>
-  <Footer />
-</>
+    </div>
+    <Footer />
+  </>
   );
 };
 
