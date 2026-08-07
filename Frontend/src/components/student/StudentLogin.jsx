@@ -1,7 +1,7 @@
-import React, { useState} from "react";
-import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
-import Register from "../auth/Register"
+import React, { useState } from "react";
+import { User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import "../auth/LoginForm.css";
+import Footer from "../common/footer.jsx"
 import { Navigate, useNavigate } from "react-router-dom";
 
 const StudentLogin = () => {
@@ -13,24 +13,19 @@ const StudentLogin = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleSwitch = (nextRole) => {
-    setRole(nextRole);
-    setFormData({ identifier: "", password: "" });
-    setShowPassword(false);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     // Wire this up to your auth endpoint.
     console.log(`${role} login submitted:`, formData);
   };
 
-  return (<div className="flex pt-20 justify-center"><div className="login-card">
+  return (
+  <>
+  <div className="flex pt-20 justify-center">
+    <div className="login-card">
       {/* Heading */}
       <div className="login-heading">
-        
-          <User className="login-heading__icon" size={22} />
-        
+        <User className="login-heading__icon" size={22} />
         <h2>Student Login</h2>
       </div>
 
@@ -78,23 +73,25 @@ const StudentLogin = () => {
           </div>
         </div>
 
-        <button type="submit" className="login-submit" onClick={() => navigate("/student/start-test")}>
-          <LogIn size={18}/>
+        <button type="submit" className="login-submit" onClick={()=>navigate("/student/start-test")}>
+          <LogIn size={18} />
           Login
         </button>
 
         <div className="login-footer">
-            <>
-              <p className="login-footer__link">Forgot your password?</p>
-              <p className="login-footer__link">Contact your mentor</p>
-              <button type="button" className="login-signup" onClick={()=>navigate("/register")} >
-                New Student? Sign Up
-              </button>
-            </>
+          <>
+            <p className="login-footer__link">Forgot your password?</p>
+            <p className="login-footer__link">Contact your mentor</p>
+            <button type="button" className="login-signup" onClick={() => navigate("/register")} >
+              New Student? Sign Up
+            </button>
+          </>
         </div>
       </form>
-    </div></div>
-    
+    </div>
+  </div>
+  <Footer />
+</>
   );
 };
 

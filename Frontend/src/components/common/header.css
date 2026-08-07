@@ -1,0 +1,142 @@
+.vec-header {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 18px 40px;
+  background: #fff;
+  font-family: "Inter", sans-serif;
+  min-height: 90px;
+  box-sizing: border-box;
+}
+
+.vec-header__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+}
+
+.vec-header__logo {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vec-logo-image {
+  width: 70px;
+  height: auto;
+  object-fit: contain;
+}
+
+.vec-header__college {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: #4B1E1E;
+  line-height: 1;
+  text-align: center;
+}
+
+.vec-header__department {
+  margin: 2px 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: #222;
+  text-align: center;
+  font-family: 'Times New Roman', ui-sans-serif, system-ui;
+}
+
+.vec-header__tagline {
+  margin: 2px 0;
+  font-size: 11px;
+  font-style: italic;
+  color: #5c5c5c;
+  text-align: center;
+}
+
+.vec-header__autonomy {
+  margin: 0;
+  font-size: 10px;
+  font-style: italic;
+  color: #666;
+  text-align: center;
+}
+
+.vec-header__portal {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vec-header__portal-icon {
+  color: #800;
+}
+
+.vec-header__portal-title {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #800;
+  text-align: center;
+}
+
+.vec-header__underline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    #f5b301,
+    #ffd873,
+    #f5b301
+  );
+}
+.vec-header__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.vec-header__college,
+.vec-header__department,
+.vec-header__tagline,
+.vec-header__autonomy {
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .vec-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 18px;
+    padding: 20px;
+  }
+
+  .vec-header__brand {
+    flex-direction: column;
+  }
+
+  .vec-header__portal-title {
+    font-size: 24px;
+  }
+
+  .vec-header__logo {
+    width: 60px;
+    height: 60px;
+  }
+}
