@@ -1,0 +1,42 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap");
+
+:root {
+  --vec-orange: #c2410c;
+  --vec-orange-light: #f0a93b;
+  --vec-yellow: #f5b301;
+  --vec-yellow-dark: #e0a100;
+  --vec-maroon: #7a1f2b;
+  --vec-border: #d1d5db;
+  --vec-card-shadow: 0 20px 45px rgba(31, 41, 55, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.vec-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f4f7 55%, #e9edf2 100%);
+}
+
+.vec-page__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.vec-page__footer {
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  padding: 18px 0 26px;
+  font-family: "Inter", sans-serif;
+}

@@ -152,9 +152,9 @@
 }
 
 .login-submit:hover {
-  background: var(--vec-yellow-dark, #e0a100);
+  background: var(--vec-yellow-dark, #800);
   transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(245, 179, 1, 0.35);
+  color:white;
 }
 
 .login-submit:active {

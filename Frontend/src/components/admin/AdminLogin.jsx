@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import "../auth/LoginForm.css";
+import Footer from "../common/footer.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
@@ -19,6 +20,8 @@ const AdminLogin = () => {
     };
 
     return (
+    <>
+    <div className="flex pt-20 justify-center">
         <div className="flex justify-center pt-10">
             <div className="login-card">
 
@@ -86,6 +89,10 @@ const AdminLogin = () => {
                 </form>
             </div>
         </div>
+    </div>
+    <Footer/>
+    </>
+    
     );
 };
 export default AdminLogin;
