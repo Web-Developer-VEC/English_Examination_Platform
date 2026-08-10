@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home";
-import Register from "../pages/student/Register";
+import Register from "../components/auth/Register";
 
 import StudentLayout from "../layouts/StudentLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -12,7 +12,7 @@ import AudioTest from "../pages/student/AudioTest";
 import Dashboard from "../pages/admin/Dashboard";
 import Admins from "../pages/admin/Admins";
 import CreateTest from "../pages/admin/CreateTest";
-import Questions from "../pages/admin/Questions";
+import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/Results";
 import Students from "../pages/admin/Students";
 
@@ -35,7 +35,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="admins" element={<Admins />} />
         <Route path="create-test" element={<CreateTest />} />
-        <Route path="questions" element={<Questions />} />
+        <Route path="schedule" element={<Schedule />} />
         <Route path="results" element={<Results />} />
         <Route path="students" element={<Students />} />
       </Route>
