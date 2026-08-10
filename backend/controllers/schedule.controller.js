@@ -19,7 +19,7 @@ const scheduleExam = async (req, res) => {
         // Required Fields Validation
         // ==========================
         if (
-            !testcode ||
+           
             !category ||
             !questionSetId ||
             !department ||

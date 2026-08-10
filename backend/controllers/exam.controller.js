@@ -152,14 +152,13 @@ const submitExam = async (req, res) => {
             admissionNo
         } = req.body;
 
-        if (
-            !testId ||
-            !admissionNo ||
-            !Array.isArray(answers)
-        ) {
+        // ----------------------------
+        // Validation
+        // ----------------------------
+        if (!testId || !admissionNo) {
             return res.status(400).json({
                 success: false,
-                message: "testId, admissionNo and answers are required."
+                message: "testId and admissionNo are required."
             });
         }
 
@@ -178,7 +177,7 @@ const submitExam = async (req, res) => {
         }
 
         // ----------------------------
-        // Test
+        // Scheduled Test
         // ----------------------------
         const test = await db.collection("schedule").findOne({
             _id: new ObjectId(testId)
@@ -187,12 +186,12 @@ const submitExam = async (req, res) => {
         if (!test) {
             return res.status(404).json({
                 success: false,
-                message: "Test not found."
+                message: "Scheduled Test not found."
             });
         }
 
         // ----------------------------
-        // Exam Started?
+        // Exam Attempt
         // ----------------------------
         const examAttempt = await db.collection("exam").findOne({
             testId: new ObjectId(testId),
@@ -206,9 +205,6 @@ const submitExam = async (req, res) => {
             });
         }
 
-        // ----------------------------
-        // Already Submitted?
-        // ----------------------------
         if (examAttempt.status === false) {
             return res.status(403).json({
                 success: false,
@@ -226,61 +222,77 @@ const submitExam = async (req, res) => {
         if (!questionSet) {
             return res.status(404).json({
                 success: false,
-                message: "Question Set not found."
+                message: "Question set not found."
             });
         }
 
         // ----------------------------
-        // Calculate Marks
+        // Read Saved Answers
         // ----------------------------
-       let obtainedMarks = 0;
-let correctAnswers = 0;
-let wrongAnswers = 0;
+        const answers = examAttempt.answers || [];
 
-const evaluatedAnswers = [];
+        let obtainedMarks = 0;
+        let correctAnswers = 0;
+        let wrongAnswers = 0;
 
-for (const studentAnswer of answers) {
-
-    const question = questionSet.questions.find(
-        q => Number(q.questionNo) === Number(studentAnswer.questionNo)
-    );
-
-    if (!question) {
-        continue;
-    }
-
-    const isCorrect =
-        String(question.answer).trim().toUpperCase() ===
-        String(studentAnswer.studentAnswer).trim().toUpperCase();
-
-    if (isCorrect) {
-        obtainedMarks++;
-        correctAnswers++;
-    } else {
-        wrongAnswers++;
-    }
-
-    evaluatedAnswers.push({
-        questionNo: question.questionNo,
-        question: question.question,
-        studentAnswer: studentAnswer.studentAnswer,
-        correctAnswer: question.answer,
-        marks: isCorrect ? 1 : 0
-    });
-}
-
-const totalQuestions = questionSet.questions.length;
-const totalMarks = totalQuestions;
-
-const percentage =
-    totalMarks === 0
-        ? 0
-        : Number(((obtainedMarks / totalMarks) * 100).toFixed(2));
-
-const result = percentage >= 50 ? "Pass" : "Fail";
+        const evaluatedAnswers = [];
 
         // ----------------------------
-        // Update Existing Exam Document
+        // Evaluate Answers
+        // ----------------------------
+        for (const question of questionSet.questions) {
+
+            const submitted = answers.find(
+                a => Number(a.questionNo) === Number(question.questionNo)
+            );
+
+            const studentAnswer = submitted
+                ? String(submitted.studentAnswer).trim().toUpperCase()
+                : "";
+
+            const correctAnswer = String(question.answer)
+                .trim()
+                .toUpperCase();
+
+            const isCorrect = studentAnswer === correctAnswer;
+
+            if (isCorrect) {
+                obtainedMarks++;
+                correctAnswers++;
+            } else {
+                wrongAnswers++;
+            }
+
+            evaluatedAnswers.push({
+                questionNo: question.questionNo,
+                question: question.question,
+                options: question.options,
+                studentAnswer,
+                correctAnswer,
+                marks: isCorrect ? 1 : 0
+            });
+        }
+
+        // ----------------------------
+        // Result
+        // ----------------------------
+        const totalQuestions = questionSet.questions.length;
+        const totalMarks = totalQuestions;
+
+        const percentage =
+            totalMarks === 0
+                ? 0
+                : Number(
+                    ((obtainedMarks / totalMarks) * 100).toFixed(2)
+                );
+
+        const result =
+            percentage >= 50
+                ? "Pass"
+                : "Fail";
+
+        // ----------------------------
+        // Update Exam
         // ----------------------------
         await db.collection("exam").updateOne(
             {
@@ -288,40 +300,28 @@ const result = percentage >= 50 ? "Pass" : "Fail";
             },
             {
                 $set: {
-
                     answers: evaluatedAnswers,
-
                     totalQuestions,
-
                     correctAnswers,
-
                     wrongAnswers,
-
                     obtainedMarks,
-
                     totalMarks,
-
                     percentage,
-
                     result,
-
                     malpractice: {
                         status: false,
                         reason: ""
                     },
-
                     status: false,
-
-                    startedAt:
-                        startedAt || examAttempt.startedAt,
-
                     submittedAt: new Date(),
-
                     updatedAt: new Date()
                 }
             }
         );
 
+        // ----------------------------
+        // Response
+        // ----------------------------
         const updatedExam = await db.collection("exam").findOne({
             _id: examAttempt._id
         });
@@ -343,8 +343,132 @@ const result = percentage >= 50 ? "Pass" : "Fail";
 
     }
 };
+const syncExam = async (req, res) => {
+    try {
+
+        const db = getDB();
+
+        const {
+            testId,
+            admissionNo,
+            questionNo,
+            studentAnswer
+        } = req.body;
+
+        // ----------------------------
+        // Validation
+        // ----------------------------
+        if (
+            !testId ||
+            !admissionNo ||
+            questionNo == null ||
+            !studentAnswer
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "testId, admissionNo, questionNo and studentAnswer are required."
+            });
+        }
+
+        // ----------------------------
+        // Find Exam Attempt
+        // ----------------------------
+        const examAttempt = await db.collection("exam").findOne({
+            testId: new ObjectId(testId),
+            admissionNo
+        });
+
+        if (!examAttempt) {
+            return res.status(404).json({
+                success: false,
+                message: "Exam not started."
+            });
+        }
+
+        // ----------------------------
+        // Already Submitted?
+        // ----------------------------
+        if (examAttempt.status === false) {
+            return res.status(403).json({
+                success: false,
+                message: "Exam has already been submitted."
+            });
+        }
+
+        // ----------------------------
+        // Find Existing Answer
+        // ----------------------------
+        const existingIndex = examAttempt.answers.findIndex(
+            answer => Number(answer.questionNo) === Number(questionNo)
+        );
+
+        if (existingIndex >= 0) {
+
+            // Update existing answer
+            await db.collection("exam").updateOne(
+                {
+                    _id: examAttempt._id,
+                    "answers.questionNo": Number(questionNo)
+                },
+                {
+                    $set: {
+                        "answers.$.studentAnswer": String(studentAnswer).trim().toUpperCase(),
+                        updatedAt: new Date()
+                    }
+                }
+            );
+
+        } else {
+
+            // Insert new answer
+            await db.collection("exam").updateOne(
+                {
+                    _id: examAttempt._id
+                },
+                {
+                    $push: {
+                        answers: {
+                            questionNo: Number(questionNo),
+                            studentAnswer: String(studentAnswer).trim().toUpperCase()
+                        }
+                    },
+                    $set: {
+                        updatedAt: new Date()
+                    }
+                }
+            );
+
+        }
+
+        // ----------------------------
+        // Return Updated Answers
+        // ----------------------------
+        const updatedExam = await db.collection("exam").findOne({
+            _id: examAttempt._id
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Answer synchronized successfully.",
+            answers: updatedExam.answers
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+
 
 module.exports = {
     startExam,
-    submitExam
+    submitExam,
+    syncExam 
+
 };
