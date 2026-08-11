@@ -2,6 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const {connectDB} = require("./config/db");
 const indexRoutes = require("./routes/index.routes");
+const startExamCron = require("./middleware/cron_middleware");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -12,6 +13,7 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 // Health Check
 app.get("/", (req, res) => {
@@ -45,4 +47,5 @@ app.use((err, req, res, next) => {
 // Start Server
 app.listen(port, () => {
     console.log(`🚀 Server running on http://localhost:${port}`);
+     startExamCron();
 });
