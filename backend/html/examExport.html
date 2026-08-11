@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 15mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            color: #222;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header h2 {
+            margin: 8px 0;
+            font-size: 18px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .filter-item {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #eeeeee;
+            font-weight: bold;
+        }
+
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        td.name {
+            text-align: left;
+        }
+
+        .summary {
+            margin-top: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+
+        <img
+            class="logo"
+            src="{{LOGO}}"
+            alt="College Logo"
+        >
+
+        <h1>Velammal Engineering College</h1>
+        <h2>English Department</h2>
+        <h2>Examination Report</h2>
+
+    </div>
+
+
+    <div class="filters">
+
+        <div>
+            <span class="filter-item">Batch:</span>
+            {{BATCH}}
+        </div>
+
+        <div>
+            <span class="filter-item">Department:</span>
+            {{DEPARTMENT}}
+        </div>
+
+        <div>
+            <span class="filter-item">Section:</span>
+            {{SECTION}}
+        </div>
+
+    </div>
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>S.No</th>
+                <th>Admission No</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Batch</th>
+                <th>Section</th>
+                <th>Marks</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {{ROWS}}
+
+        </tbody>
+
+    </table>
+
+
+    <div class="summary">
+
+        <strong>Total Students:</strong>
+        {{TOTAL_STUDENTS}}
+
+    </div>
+
+</body>
+
+</html>
