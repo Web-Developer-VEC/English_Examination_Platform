@@ -1,0 +1,31 @@
+{
+  "_id": {
+    "$oid": "6a743c253d537530f65d33c3"
+  },
+  "category": "cie",
+  "questionSetId": {
+    "$oid": "6a71b2639b2d61c53c26e506"
+  },
+  "eligibility": {
+    "department": "AI&DS",
+    "batch": "2024-2028",
+    "section": "A",
+    "admissionNo": []
+  },
+  "duration": 60,
+  "startTime": {
+    "$date": "2026-08-04T09:00:00.000Z"
+  },
+  "endTime": {
+    "$date": "2026-08-10T10:00:00.000Z"
+  },
+  "status": "Scheduled",
+  "createdBy": "staff01",
+  "createdAt": {
+    "$date": "2026-08-06T07:47:49.089Z"
+  },
+  "updatedAt": {
+    "$date": "2026-08-06T07:47:49.089Z"
+  },
+  "testcode": "HJKLN2"
+}
