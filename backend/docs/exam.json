@@ -1,0 +1,56 @@
+
+{
+  "testId": {
+    "$oid": "6a743c253d537530f65d33c3"
+  },
+  "questionSetId": {
+    "$oid": "6a71b2639b2d61c53c26e506"
+  },
+  "title": null,
+  "category": "cie",
+  "admissionNo": "24VEC_586",
+  "registerNo": "13546788888",
+  "studentName": "Priyansharn",
+  "department": "AI$DS",
+  "batch": "2024-2028",
+  "year": 3,
+  "section": "A",
+  "answers": [
+    {
+      "questionNo": 1,
+      "question": "What is a synonym for \"nimble\"?",
+      "studentAnswer": "C",
+      "correctAnswer": "C",
+      "marks": 1
+    },
+    {
+      "questionNo": 2,
+      "question": "What is a synonym for \"chaotic\"?",
+      "studentAnswer": "D",
+      "correctAnswer": "D",
+      "marks": 1
+    }
+  ],
+  "totalQuestions": 2,
+  "obtainedMarks": 2,
+  "totalMarks": 2,
+  "percentage": 100,
+  "result": "Pass",
+  "malpractice": {
+    "status": false,
+    "reason": ""
+  },
+  "status": false,
+  "startedAt": "2026-08-06T10:00:00.000Z",
+  "submittedAt": {
+    "$date": "2026-08-06T10:10:25.567Z"
+  },
+  "createdAt": {
+    "$date": "2026-08-06T10:09:51.300Z"
+  },
+  "updatedAt": {
+    "$date": "2026-08-06T10:10:25.567Z"
+  },
+  "correctAnswers": 2,
+  "wrongAnswers": 0
+}
