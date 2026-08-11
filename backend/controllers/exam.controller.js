@@ -149,7 +149,7 @@ const submitExam = async (req, res) => {
 
         const {
             testId,
-            admissionNo
+            admissionNo,
         } = req.body;
 
         // ----------------------------
