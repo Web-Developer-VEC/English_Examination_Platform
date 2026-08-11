@@ -5,13 +5,26 @@ const { getDB } = require("../config/db"); // Change according to your project
 // REGISTER
 const register = async (req, res) => {
     try {
+        const {
+            username,
+            email,
+            password,
+            role,
+            phone,
+            year,
+            dob,
+            section,
+            batch,
+            name,
+            admissionNo
+        } = req.body;
 
-        const { username, password, role } = req.body;
+        
 
         if (!username || !password || !role) {
             return res.status(400).json({
                 success: false,
-                message: "Username, password and role are required"
+                message: "Name, password and role are required"
             });
         }
 
@@ -28,25 +41,39 @@ const register = async (req, res) => {
             ? db.collection("students")
             : db.collection("staff");
 
-        // Check if username already exists
-        const existingUser = await collection.findOne({ username });
+        // Check if admission number already exists
+        const existingUser = await collection.findOne({ admissionNo: admissionNo });
 
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "Username already exists"
+                message: "Admission number already exists"
             });
         }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
+     if(role=="student"){
+        await collection.insertOne({
+            username:admissionNo,
+            password: dob,
+            dob,
+            name,
+            registerNo:null,
+            admissionNo,
+            email,
+            phone,
+            department,
+            year,
+            section,
+            batch
+        });}
+    if(role=="staff"){
         await collection.insertOne({
             username,
             password: hashedPassword,
-            role
         });
-
+    }
         res.status(201).json({
             success: true,
             message: "User registered successfully"
@@ -54,7 +81,7 @@ const register = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
@@ -133,12 +160,13 @@ const login = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
 
     }
+
 };
 
 module.exports = {
