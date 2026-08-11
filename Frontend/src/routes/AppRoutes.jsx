@@ -16,6 +16,7 @@ import CreateTest from "../pages/admin/CreateTest";
 import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/Results";
 import Students from "../pages/admin/Students";
+import Sidebar from "../components/admin/Sidebar";
 
 export default function AppRoutes() {
   return (
@@ -39,6 +40,7 @@ export default function AppRoutes() {
         <Route path="create-test" element={<CreateTest />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="results" element={<Results />} />
+        <Route path="Sidebar" element={<Sidebar />} />
         <Route path="students" element={<Students />} />
       </Route>
 
