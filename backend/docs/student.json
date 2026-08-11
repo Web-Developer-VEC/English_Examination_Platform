@@ -1,25 +1,23 @@
-[
-    {
-        "name": "STUDENT 1",
-        "registerno": null,
-        "admission_no": "1",
-        "email": "",
-        "phone": "9000000001",
-        "password": "1",
-        "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
-        "year": 2,
-        "section":"A",
-        "batch": "2023-2027"
-    },
-    {
-        "name": "STUDENT 2",
-        "registerno": null,
-        "admission_no": "2",
-        "email": "",
-        "phone": "9000000002",
-        "department": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
-        "year": 2,
-        "section":"B",
-        "batch": "2023-2027"
-    }
-]
+{
+  "_id": {
+    "$oid": "6a702e59dfe20f8bb5de8bda"
+  },
+  "name": "Priyansharn",
+  "registerNo": "13546788888",
+  "admissionNo": "24VEC_586",
+  "email": "priyan678@gmail.com",
+  "phone": "7809876543",
+  "department": "AI$DS",
+  "year": 3,
+  "section": "A",
+  "batch": "2024-2028",
+  "dob": "20-07-2007",
+  "username": "13546788888",
+  "password": "20-07-2007",
+  "createdAt": {
+    "$date": "2026-08-03T05:59:53.217Z"
+  },
+  "updatedAt": {
+    "$date": "2026-08-03T07:00:39.831Z"
+  }
+}
