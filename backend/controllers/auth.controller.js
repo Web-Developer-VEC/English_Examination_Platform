@@ -6,7 +6,7 @@ const { getDB } = require("../config/db"); // Change according to your project
 const register = async (req, res) => {
     try {
         const {
-            name,
+            username,
             email,
             password,
             role,
@@ -15,15 +15,16 @@ const register = async (req, res) => {
             dob,
             section,
             batch,
-            admission_no
+            name,
+            admissionNo
         } = req.body;
 
-        const { username, password, role } = req.body;
+        
 
         if (!username || !password || !role) {
             return res.status(400).json({
                 success: false,
-                message: "Username, password and role are required"
+                message: "Name, password and role are required"
             });
         }
 
@@ -40,25 +41,39 @@ const register = async (req, res) => {
             ? db.collection("students")
             : db.collection("staff");
 
-        // Check if username already exists
-        const existingUser = await collection.findOne({ username });
+        // Check if admission number already exists
+        const existingUser = await collection.findOne({ admissionNo: admissionNo });
 
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "Username already exists"
+                message: "Admission number already exists"
             });
         }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
+     if(role=="student"){
+        await collection.insertOne({
+            username:admissionNo,
+            password: dob,
+            dob,
+            name,
+            registerNo:null,
+            admissionNo,
+            email,
+            phone,
+            department,
+            year,
+            section,
+            batch
+        });}
+    if(role=="staff"){
         await collection.insertOne({
             username,
             password: hashedPassword,
-            role
         });
-
+    }
         res.status(201).json({
             success: true,
             message: "User registered successfully"
