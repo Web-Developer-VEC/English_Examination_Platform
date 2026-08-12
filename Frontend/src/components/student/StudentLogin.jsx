@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
+import Register from "../auth/Register"
+import {toast, ToastContainer} from "react-toastify";
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
+import { loginUser } from "../../services/authService.js";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const StudentLogin = () => {
@@ -12,20 +15,41 @@ const StudentLogin = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Wire this up to your auth endpoint.
-    console.log(`${role} login submitted:`, formData);
+
+    try {
+      const data = await loginUser(
+        formData.identifier,
+        formData.password,
+        "student"
+      );
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      navigate("/student/start-test");
+
+    } catch (error) {
+
+      console.error("Login error:", error);
+
+      if (error.response) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Unable to connect to server");
+      }
+    }
   };
 
-  return (
-  <>
-  <div className="flex pt-20 justify-center">
-    <div className="login-card">
+  return (<>
+    <div className="flex pt-20 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
+        <ToastContainer position="bottom-right" autoClose={3000} />
+
         <User className="login-heading__icon" size={22} />
+
         <h2>Student Login</h2>
       </div>
 
@@ -73,7 +97,7 @@ const StudentLogin = () => {
           </div>
         </div>
 
-        <button type="submit" className="login-submit" onClick={()=>navigate("/student/start-test")}>
+        <button type="submit" className="login-submit">
           <LogIn size={18} />
           Login
         </button>
@@ -89,9 +113,9 @@ const StudentLogin = () => {
         </div>
       </form>
     </div>
-  </div>
-  <Footer />
-</>
+    </div>
+    <Footer />
+  </>
   );
 };
 
