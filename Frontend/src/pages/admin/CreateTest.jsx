@@ -14,18 +14,18 @@ import {
 export default function CreateTest() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
-  const [title, setTitle] = useState("");
+  const [questionCode, setQuestionCode] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
   useEffect(() => {
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
 
-  return () => {
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-  };
-}, []);
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   useEffect(() => {
     if (showInstructions) {
@@ -54,9 +54,101 @@ export default function CreateTest() {
 
     setAudioFile(file);
   };
+  const handleSubmit = async () => {
+    // Check Question Code
+    if (!questionCode.trim()) {
+      alert("Please enter a Question Code.");
+      return;
+    }
+
+    // Check Audio
+    if (!audioFile) {
+      alert("Please upload an MP3 audio file.");
+      return;
+    }
+
+    // Check Excel
+    if (!questionFile) {
+      alert("Please upload the questions Excel file.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+
+      formData.append("questionCode", questionCode.trim());
+      formData.append("audio", audioFile);
+      formData.append("questions", questionFile);
+      console.log("========== CREATE TEST PAYLOAD ==========");
+console.log("Question Code:", questionCode.trim());
+
+console.log("Audio File:", {
+  name: audioFile?.name,
+  type: audioFile?.type,
+  size: audioFile?.size,
+});
+
+console.log("Question File:", {
+  name: questionFile?.name,
+  type: questionFile?.type,
+  size: questionFile?.size,
+});
+
+console.log("FormData:");
+
+for (const [key, value] of formData.entries()) {
+  if (value instanceof File) {
+    console.log(key, {
+      name: value.name,
+      type: value.type,
+      size: value.size,
+    });
+  } else {
+    console.log(key, value);
+  }
+}
+
+console.log("========================================");
+
+      const token = localStorage.getItem("token");
+
+const response = await fetch(
+    "http://localhost:5000/api/staff/questions/questionsupload",
+    {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+    }
+);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create test.");
+      }
+
+      console.log("Success:", data);
+
+      alert("Questions uploaded successfully.");
+
+      // Clear form
+      setQuestionCode("");
+      setAudioFile(null);
+      setQuestionFile(null);
+
+      document.getElementById("audio-upload").value = "";
+      document.getElementById("excel-upload").value = "";
+    } catch (error) {
+      console.error("Create Test Error:", error);
+
+      alert(error.message || "Something went wrong while creating the test.");
+    }
+  };
 
   return (
-     <div className="w-full h-[calc(100dvh-140px)] bg-white px-6 flex items-center justify-center overflow-hidden">
+    <div className="w-full h-[calc(100dvh-140px)] bg-white px-6 flex items-center justify-center overflow-hidden">
       {/* Main Card */}
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-5">
         {/* Create English Test - INSIDE THE SAME BOX */}
@@ -84,14 +176,14 @@ export default function CreateTest() {
         {/* Title */}
         <label className="flex items-center gap-2 font-semibold text-lg text-[#800000] mb-2">
           <FileText size={20} />
-          Test Code
+          Question Code
         </label>
 
         <input
           type="text"
-          placeholder="Enter test title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter question code"
+          value={questionCode}
+          onChange={(e) => setQuestionCode(e.target.value)}
           className="w-full border border-gray-400 rounded-lg px-3 py-2.5 mb-4 outline-none focus:border-[#D4AF37]"
         />
 
@@ -151,7 +243,11 @@ export default function CreateTest() {
 
         {/* Button */}
         <div className="flex justify-center mt-4">
-          <button className="flex items-center gap-2 bg-[#FDCC03] hover:bg-[#5e0000] text-white px-7 py-2.5 rounded-full text-sm shadow-md transition">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="flex items-center gap-2 bg-[#FDCC03] hover:bg-[#5e0000] text-white px-7 py-2.5 rounded-full text-sm shadow-md transition"
+          >
             <Send size={18} />
             Create Test
           </button>
@@ -196,7 +292,7 @@ export default function CreateTest() {
         >
           <div className="bg-white w-[650px] max-h-[85vh] rounded-2xl shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-4 px-8 py-5 border-b flex-shrink-0">
+           <div className="flex items-center gap-4 px-8 py-5 border-b flex-shrink-0">
               <div className="w-11 h-11 rounded-full bg-[#800000] text-white flex items-center justify-center text-lg font-bold">
                 !
               </div>

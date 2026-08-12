@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import Register from "../auth/Register"
-import {toast, ToastContainer} from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
@@ -25,8 +25,12 @@ const StudentLogin = () => {
         "student"
       );
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      sessionStorage.setItem("token", data.token);
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
 
       navigate("/student/start-test");
 
