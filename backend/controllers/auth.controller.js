@@ -16,6 +16,7 @@ const register = async (req, res) => {
             section,
             batch,
             name,
+            department,
             admissionNo
         } = req.body;
 
@@ -66,7 +67,10 @@ const register = async (req, res) => {
             department,
             year,
             section,
-            batch
+            batch,
+            createdAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
         });}
     if(role=="staff"){
         await collection.insertOne({

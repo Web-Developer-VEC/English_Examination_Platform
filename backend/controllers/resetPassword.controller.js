@@ -33,7 +33,9 @@ const resetPassword = async (req, res) => {
             {
                 $set: {
                     password: hashedPassword,
-                    updatedAt: new Date()
+                    updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                 }
             }
         );

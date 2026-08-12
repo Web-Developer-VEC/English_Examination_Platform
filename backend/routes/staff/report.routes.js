@@ -6,9 +6,10 @@ const {
 
 const router = express.Router();
 
-
+const staffAuth = require("../../middleware/roleby.access.middleware");
 router.get(
     "/exam-report",
+    staffAuth,
     generateExamReport
 );
 

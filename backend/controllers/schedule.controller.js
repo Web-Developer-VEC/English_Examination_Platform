@@ -91,8 +91,12 @@ const scheduleExam = async (req, res) => {
         // ==========================
         // Date Validation
         // ==========================
-        const start = new Date(startTime);
-        const end = new Date(endTime);
+        const start = new Date(startTime).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+});
+        const end = new Date(endTime).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+});
 
         if (end <= start) {
             return res.status(400).json({
@@ -181,9 +185,13 @@ const scheduleExam = async (req, res) => {
 
             createdBy: req.user.username,
 
-            createdAt: new Date(),
+            createdAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
 
-            updatedAt: new Date()
+            updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
 
         };
 
