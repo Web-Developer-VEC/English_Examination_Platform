@@ -132,7 +132,7 @@ export default function AudioTest() {
         console.log(answers);
         setSubmitted(true);
         setShowSuccess(true);
-        let seconds = 10;
+        let seconds = 7;
         setCountdown(seconds);
         const timer = setInterval(() => {
             seconds--;
@@ -339,7 +339,7 @@ export default function AudioTest() {
                 <button
                     onClick={handlePlay}
                     disabled={isPlaying || isAudioLocked(playCount, MAX_PLAYS)}
-                    className="bg-[#800000] text-white px-6 py-3 rounded-lg disabled:bg-gray-400"
+                    className="bg-yellow-300 text-black px-6 py-3 hover:bg-[#800000] hover:text-white rounded-lg disabled:bg-gray-400"
                 >
                     {isAudioLocked(playCount, MAX_PLAYS) ? "Audio Locked" : playCount === 0 ? "Play Audio" : "Replay Audio"}
                 </button>
@@ -399,7 +399,7 @@ export default function AudioTest() {
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting || !isAllQuestionsAnswered(answers, questions)}
-                    className="bg-[#800000] text-white px-6 py-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:translate-y-[-2px] "
+                    className="bg-[#800000] text-black bg-yellow-300 enabled:hover:bg-[#800000] enabled:hover:text-white px-6 py-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? "Submitting..." : "Submit Test"}
                 </button>

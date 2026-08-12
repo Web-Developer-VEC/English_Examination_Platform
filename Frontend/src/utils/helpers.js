@@ -47,7 +47,7 @@ export function isAllQuestionsAnswered(answers, questions) {
 
 // Countdown Helpers
 
-export function getProgress(countdown, total = 10) {
+export function getProgress(countdown, total = 7) {
     return (countdown / total) * 100;
 }
 

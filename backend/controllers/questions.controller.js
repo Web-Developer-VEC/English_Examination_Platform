@@ -10,11 +10,11 @@ const questionsupload = async (req, res) => {
         const { testcode } = req.body;
         const { audio } = req.uploadedData;
 
-        // Validate testcode
-        if (!testcode || !testcode.trim()) {
+        // Validate questionCode
+        if (!questionCode || !questionCode.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "testcode is required."
+                message: "questionCode is required."
             });
         }
 
@@ -26,7 +26,7 @@ const questionsupload = async (req, res) => {
         // Build MongoDB document
         const document = {
 
-            testcode: testcode.trim(),
+            questionCode: questionCode.trim(),
 
             audioUrl: audio.url,
 

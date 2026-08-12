@@ -47,13 +47,13 @@ const questions_upload_Middleware = (req, res, next) => {
 
         try {
 
-            const { testcode } = req.body;
+            const { questionCode } = req.body;
             const { audio, questions } = req.files;
 
-            if (!testcode) {
+            if (!questionCode) {
                 return res.status(400).json({
                     success: false,
-                    message: "testcode is required"
+                    message: "questionCode is required"
                 });
             }
 
@@ -74,7 +74,7 @@ const questions_upload_Middleware = (req, res, next) => {
             // Upload audio to S3
             const uploadedAudio = await uploadToS3(
                 audio,
-                `questions/${testcode}`
+                `questions/${questionCode}`
             );
 
         
