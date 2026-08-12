@@ -1,3 +1,4 @@
+const cors = require("cors");
 const express = require("express");
 require("dotenv").config();
 const {connectDB} = require("./config/db");
@@ -6,6 +7,11 @@ const startExamCron = require("./middleware/cron_middleware");
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+app.use(cors({
+    origin: "http://localhost:5173"
+}));
+app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
