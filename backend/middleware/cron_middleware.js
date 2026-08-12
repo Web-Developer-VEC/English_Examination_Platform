@@ -19,8 +19,6 @@ const startExamCron = () => {
             console.error("[CRON ERROR]", error);
         }
 
-    }, {
-        timezone: "Asia/Kolkata"
     });
 
     console.log("[CRON] Exam scheduler started.");

@@ -25,11 +25,19 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
-         const exam = await db.collection("schedule").findOne({
-          testcode: {
-            $regex: new RegExp(`^${testcode.trim()}$`, "i")
-         }
-         });
+
+        // =====================================================
+        // FIND SCHEDULED EXAM
+        // =====================================================
+
+        const exam = await db.collection("schedule").findOne({
+            testcode: {
+                $regex: new RegExp(
+                    `^${testcode.trim()}$`,
+                    "i"
+                )
+            }
+        });
 
         if (!exam) {
             return res.status(404).json({

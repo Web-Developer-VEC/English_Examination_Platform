@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
-
+const {toIST} = require("../helper/ist_converter");
 const scheduleExam = async (req, res) => {
     try {
         const {
@@ -179,7 +179,7 @@ const scheduleExam = async (req, res) => {
 
             status: "Scheduled",
 
-            createdBy: req.user.username,
+            createdBy: req.user?.username,
 
             createdAt: new Date(),
 
