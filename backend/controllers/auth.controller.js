@@ -42,12 +42,12 @@ const register = async (req, res) => {
             : db.collection("staff");
 
         // Check if admission number already exists
-        const existingUser = await collection.findOne({ admissionNo: admissionNo });
+        const existingUser = await collection.findOne({ username: username });
 
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "Admission number already exists"
+                message: "User already exists"
             });
         }
 
