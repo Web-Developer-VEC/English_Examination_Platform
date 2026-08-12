@@ -407,8 +407,8 @@ export default function InstructionsPage() {
                                 text-black
                                 
 
-                                enabled:hover:bg-yellow-400
-                                enabled:hover:text-red-900
+                                enabled:hover:bg-[#800000]
+                                enabled:hover:text-white
 
                                 enabled:hover:shadow-lg
                                 enabled:hover:-translate-y-0.5
