@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { getDB } = require("../config/db"); // Change according to your project
+const { getDB } = require("../config/db");
 
 // REGISTER
 const register = async (req, res) => {
@@ -14,13 +14,14 @@ const register = async (req, res) => {
             year,
             dob,
             section,
+            department,
             batch,
             name,
             department,
             admissionNo
         } = req.body;
 
-        
+
 
         if (!username || !password || !role) {
             return res.status(400).json({
@@ -67,10 +68,7 @@ const register = async (req, res) => {
             department,
             year,
             section,
-            batch,
-            createdAt: new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata"
-}),
+            batch
         });}
     if(role=="staff"){
         await collection.insertOne({
@@ -100,7 +98,6 @@ const login = async (req, res) => {
     try {
 
         const { username, password, role } = req.body;
-
         if (!username || !password || !role) {
             return res.status(400).json({
                 success: false,
@@ -122,7 +119,6 @@ const login = async (req, res) => {
             : db.collection("staff");
 
         const user = await collection.findOne({ username });
-
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -130,9 +126,37 @@ const login = async (req, res) => {
             });
         }
 
+        if (role == "student") {
+            if (password === user.password && user.password == user.dob) {
+                // Generate JWT
+                const token = jwt.sign(
+                    {
+                        id: user._id,
+                        username: user.username,
+                        role: user.role
+                    },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "1d" }
+                );
+
+                res.status(200).json({
+                    success: true,
+                    message: "Login successful",
+                    token,
+                    resetPass: true,
+                    user: {
+                        id: user._id,
+                        username: user.username,
+                        admissionNo: user.admissionNo,
+                        role: user.role
+                    }
+                });
+
+            }
+        }
+
         // Compare hashed password
         const isMatch = await bcrypt.compare(password, user.password);
-
         if (!isMatch) {
             return res.status(401).json({
                 success: false,

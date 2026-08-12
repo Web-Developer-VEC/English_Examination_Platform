@@ -5,16 +5,10 @@ const questionsupload = async (req, res) => {
 
     try {
 
-        // Validate middleware execution
-        if (!req.uploadedData) {
-            return res.status(400).json({
-                success: false,
-                message: "Upload failed. Please upload both audio and Excel files."
-            });
-        }
+   
 
-        const { questionCode } = req.body;
-        const { audio, questions } = req.uploadedData;
+        const { testcode } = req.body;
+        const { audio } = req.uploadedData;
 
         // Validate questionCode
         if (!questionCode || !questionCode.trim()) {
@@ -35,8 +29,6 @@ const questionsupload = async (req, res) => {
             questionCode: questionCode.trim(),
 
             audioUrl: audio.url,
-
-            questionsUrl: questions.url,
 
             questions: parsedQuestions,
 
