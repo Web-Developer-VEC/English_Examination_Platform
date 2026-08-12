@@ -77,16 +77,11 @@ const questions_upload_Middleware = (req, res, next) => {
                 `questions/${testcode}`
             );
 
-            // Upload questions file to S3
-            const uploadedQuestions = await uploadToS3(
-                questions,
-                `questions/${testcode}`
-            );
+        
 
             req.uploadedData = {
                 testcode,
-                audio: uploadedAudio,
-                questions: uploadedQuestions
+                audio: uploadedAudio
             };
 
             next();
