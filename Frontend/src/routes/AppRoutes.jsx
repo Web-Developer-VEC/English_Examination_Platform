@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Register from "../components/auth/Register";
 import AdminLogin from "../components/admin/AdminLogin";
@@ -35,12 +35,13 @@ export default function AppRoutes() {
 
       {/* admin */}
       <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="admins" element={<Admins />} />
         <Route path="create-test" element={<CreateTest />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="results" element={<Results />} />
-        <Route path="Sidebar" element={<Sidebar />} />
+        {/* <Route path="Sidebar" element={<Sidebar />} /> */}
         <Route path="students" element={<Students />} />
       </Route>
 
