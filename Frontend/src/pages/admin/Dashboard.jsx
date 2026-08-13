@@ -150,6 +150,31 @@ export default function AdminDashboard() {
         });
     }, [tests, search, department, status, selectedDate]);
 
+    const handleDownload = (test) => {
+        const content = `
+Test Code: ${test.testCode}
+Department: ${test.department}
+Section: ${test.section}
+Students: ${test.students}
+Date: ${test.date}
+Time: ${test.time}
+Status: ${test.status}
+`;
+
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${test.testCode}.txt`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="w-full min-h-screen bg-gray-100">
 
@@ -377,7 +402,7 @@ export default function AdminDashboard() {
 
                     {/* TABLE HEADER */}
 
-                    <div className="hidden lg:grid grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
+                    <div className="hidden lg:grid grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr_0.9fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
 
                         <TableHeading>
                             Department
@@ -411,6 +436,10 @@ export default function AdminDashboard() {
                             Actions
                         </TableHeading>
 
+                        <TableHeading>
+                            Download
+                        </TableHeading>
+
 
                     </div>
 
@@ -438,7 +467,7 @@ export default function AdminDashboard() {
                                 key={test.id}
                                 className="
                 grid
-                lg:grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr]
+                lg:grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr_0.9fr]
                 items-center
                 px-6
                 gap-4
@@ -447,23 +476,24 @@ export default function AdminDashboard() {
                 border-gray-100
                 hover:bg-yellow-50/40
                 transition
-                "
+            "
                             >
+
                                 {/* DEPARTMENT */}
 
                                 <div className="flex items-center gap-4">
 
                                     <div
                                         className="
-                    w-12
-                    h-12
-                    rounded-xl
-                    bg-yellow-50
-                    text-black
-                    font-bold
-                    flex
-                    items-center
-                    justify-center
+                        w-12
+                        h-12
+                        rounded-xl
+                        bg-yellow-50
+                        text-black
+                        font-bold
+                        flex
+                        items-center
+                        justify-center
                     "
                                     >
                                         {test.department
@@ -476,56 +506,49 @@ export default function AdminDashboard() {
                                     <div>
 
                                         <h3 className="font-semibold text-gray-900">
-
                                             {test.department}
-
                                         </h3>
 
                                         <p className="text-sm text-gray-400">
-
                                             Department
-
                                         </p>
 
                                     </div>
 
                                 </div>
 
+
                                 {/* SECTION */}
 
                                 <div className="flex items-center justify-center">
 
                                     <span className="font-semibold">
-
                                         {test.section}
-
                                     </span>
 
                                 </div>
 
+
                                 {/* STUDENTS */}
 
                                 <div className="flex items-center justify-center">
-
                                     {test.students}
-
                                 </div>
+
 
                                 {/* DATE */}
 
                                 <div className="flex items-center justify-center text-gray-600">
-
                                     {test.date}
-
                                 </div>
+
 
                                 {/* TIME */}
 
                                 <div className="flex items-center justify-center text-gray-600">
-
                                     {test.time}
-
                                 </div>
+
 
                                 {/* TEST CODE */}
 
@@ -533,18 +556,19 @@ export default function AdminDashboard() {
 
                                     <span
                                         className="
-                    px-3
-                    py-1
-                    rounded-full
-                    bg-gray-100
-                    text-sm
-                    font-semibold
+                        px-3
+                        py-1
+                        rounded-full
+                        bg-gray-100
+                        text-sm
+                        font-semibold
                     "
                                     >
                                         {test.testCode}
                                     </span>
 
                                 </div>
+
 
                                 {/* STATUS */}
 
@@ -557,7 +581,6 @@ export default function AdminDashboard() {
                                 </div>
 
 
-
                                 {/* ACTIONS */}
 
                                 <div className="flex items-center justify-center">
@@ -567,18 +590,18 @@ export default function AdminDashboard() {
                                         <button
                                             type="button"
                                             className="
-                px-4
-                py-2
-                text-xs
-                font-semibold
-                text-red-600
-                bg-red-50
-                border
-                border-red-100
-                rounded-lg
-                hover:bg-red-100
-                transition
-            "
+                            px-4
+                            py-2
+                            text-xs
+                            font-semibold
+                            text-red-600
+                            bg-red-50
+                            border
+                            border-red-100
+                            rounded-lg
+                            hover:bg-red-100
+                            transition
+                        "
                                         >
                                             Cancel
                                         </button>
@@ -587,6 +610,51 @@ export default function AdminDashboard() {
 
                                 </div>
 
+
+                                {/* DOWNLOAD */}
+
+                                <div className="flex items-center justify-center">
+
+                                    {test.status === "Completed" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDownload(test)}
+                                            title="Download Test"
+                                            className="
+                flex
+                items-center
+                justify-center
+                w-9
+                h-9
+                rounded-lg
+                bg-[#FDCC03]
+                border
+                border-[#FDCC03]
+                text-black
+                hover:bg-red-700
+                hover:border-red-500
+                hover:text-white
+                transition
+            "
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-5 h-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                </div>
 
                             </div>
 
@@ -693,8 +761,8 @@ function TableHeading({ children, align = "center" }) {
         <div className="py-4 flex items-center">
             <p
                 className={`text-xs font-bold uppercase tracking-wider text-gray-400 ${align === "left"
-                        ? "text-left"
-                        : "text-center w-full"
+                    ? "text-left"
+                    : "text-center w-full"
                     }`}
             >
                 {children}

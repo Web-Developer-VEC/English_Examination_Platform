@@ -16,7 +16,9 @@ import CreateTest from "../pages/admin/CreateTest";
 import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/Results";
 import Students from "../pages/admin/Students";
+import FacultyList from "../pages/admin/FacultyList";
 import Sidebar from "../components/admin/Sidebar";
+import StudentDataUpload from "../pages/admin/StudentDataUpload";
 
 export default function AppRoutes() {
   return (
@@ -43,6 +45,8 @@ export default function AppRoutes() {
         <Route path="results" element={<Results />} />
         {/* <Route path="Sidebar" element={<Sidebar />} /> */}
         <Route path="students" element={<Students />} />
+        <Route path="faculty" element={<FacultyList/>}/>
+        <Route path="student-data" element={<StudentDataUpload/>}/>
       </Route>
 
     </Routes>
