@@ -55,27 +55,29 @@ const register = async (req, res) => {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-     if(role=="student"){
-        await collection.insertOne({
-            username:admissionNo,
-            password: dob,
-            dob,
-            name,
-            registerNo:null,
-            admissionNo,
-            email,
-            phone,
-            department,
-            year,
-            section,
-            batch
-        });}
-    if(role=="staff"){
-        await collection.insertOne({
-            username,
-            password: hashedPassword,
-        });
-    }
+
+        if (role == "student") {
+            await collection.insertOne({
+                username: admissionNo,
+                password: dob,
+                dob,
+                name,
+                registerNo: null,
+                admissionNo,
+                email,
+                phone,
+                department,
+                year,
+                section,
+                batch
+            });
+        }
+        if (role == "staff") {
+            await collection.insertOne({
+                username,
+                password: hashedPassword,
+            });
+        }
         res.status(201).json({
             success: true,
             message: "User registered successfully"

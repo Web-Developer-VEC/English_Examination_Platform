@@ -786,9 +786,7 @@ const syncExam = async (req, res) => {
                 },
                 {
                     $set: {
-                        "answers.$.studentAnswer":
-                            normalizedStudentAnswer,
-
+                        "answers.$.studentAnswer": String(studentAnswer).trim().toUpperCase(),
                         updatedAt: new Date()
                     }
                 }
