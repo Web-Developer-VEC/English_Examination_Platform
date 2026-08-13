@@ -25,19 +25,16 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
+         const exam = await db.collection("schedule").findOne({
+          testcode: {
+            $regex: new RegExp(`^${testcode.trim()}$`, "i")
+         }
+         });
 
         // =====================================================
         // FIND SCHEDULED EXAM
         // =====================================================
 
-        const exam = await db.collection("schedule").findOne({
-            testcode: {
-                $regex: new RegExp(
-                    `^${testcode.trim()}$`,
-                    "i"
-                )
-            }
-        });
 
         if (!exam) {
             return res.status(404).json({
@@ -531,8 +528,12 @@ const submitExam = async (req, res) => {
                         reason: ""
                     },
                     status: false,
-                    submittedAt: new Date(),
-                    updatedAt: new Date()
+                    submittedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
+                    updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                 }
             }
         );
@@ -573,10 +574,9 @@ const syncExam = async (req, res) => {
             studentAnswer
         } = req.body;
 
-        // =====================================================
-        // 1. VALIDATION
-        // =====================================================
-
+        // ----------------------------
+        // Validation
+        // ----------------------------
         if (
             !testId ||
             !admissionNo ||
@@ -592,7 +592,7 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 2. VALIDATE OBJECT ID
+        // 2. VALIDATE TEST ID
         // =====================================================
 
         if (!ObjectId.isValid(testId)) {
@@ -607,7 +607,7 @@ const syncExam = async (req, res) => {
         // =====================================================
 
         const student = await db.collection("students").findOne({
-            admissionNo: admissionNo
+            admissionNo
         });
 
         if (!student) {
@@ -633,22 +633,28 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 5. FIND QUESTION SET
+        // 5. CHECK QUESTION SET
         // =====================================================
 
         if (!test.questionSetId) {
             return res.status(404).json({
                 success: false,
-                message: "Question set is not assigned to this test."
+                message:
+                    "Question set is not assigned to this test."
             });
         }
 
         if (!ObjectId.isValid(test.questionSetId)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid questionSetId in scheduled test."
+                message:
+                    "Invalid questionSetId in scheduled test."
             });
         }
+
+        // =====================================================
+        // 6. FIND QUESTION SET
+        // =====================================================
 
         const questionSet = await db.collection("questions").findOne({
             _id: new ObjectId(test.questionSetId)
@@ -662,7 +668,7 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 6. CHECK QUESTION EXISTS
+        // 7. CHECK QUESTIONS
         // =====================================================
 
         if (
@@ -671,41 +677,83 @@ const syncExam = async (req, res) => {
         ) {
             return res.status(404).json({
                 success: false,
-                message: "No questions found in this question set."
+                message:
+                    "No questions found in this question set."
             });
         }
 
+        // =====================================================
+        // 8. FIND QUESTION BY QUESTION NO
+        // =====================================================
+
         const question = questionSet.questions.find(
             q =>
-                Number(q.questionNo) === Number(questionNo)
+                Number(q.questionNo) ===
+                Number(questionNo)
         );
 
         if (!question) {
             return res.status(404).json({
                 success: false,
-                message: `Question ${questionNo} does not exist.`
+                message:
+                    `Question ${questionNo} does not exist.`
             });
         }
 
         // =====================================================
-        // 7. VALIDATE STUDENT ANSWER
+        // 9. NORMALIZE STUDENT ANSWER
         // =====================================================
 
-        const normalizedStudentAnswer = String(studentAnswer)
-            .trim()
-            .toUpperCase();
+        const normalizedStudentAnswer =
+            String(studentAnswer).trim();
 
-        // Optional but recommended:
-        // Make sure the submitted option actually exists
-        // in this question's options.
+        // =====================================================
+        // 10. VALIDATE ANSWER AGAINST OPTION VALUES
+        //
+        // Example:
+        //
+        // options:
+        // {
+        //     A: "Slow",
+        //     B: "Clumsy",
+        //     C: "Quick",
+        //     D: "Unsteady"
+        // }
+        //
+        // Student can send:
+        //
+        // "Quick"
+        //
+        // NOT:
+        //
+        // "C"
+        // =====================================================
 
         if (
-            question.options &&
-            !Object.prototype.hasOwnProperty.call(
-                question.options,
-                normalizedStudentAnswer
-            )
+            !question.options ||
+            typeof question.options !== "object"
         ) {
+            return res.status(500).json({
+                success: false,
+                message:
+                    `Options are missing for question ${questionNo}.`
+            });
+        }
+
+        const optionValues = Object.values(
+            question.options
+        ).map(option =>
+            String(option).trim()
+        );
+
+        const answerExistsInOptions =
+            optionValues.some(
+                option =>
+                    option.toLowerCase() ===
+                    normalizedStudentAnswer.toLowerCase()
+            );
+
+        if (!answerExistsInOptions) {
             return res.status(400).json({
                 success: false,
                 message:
@@ -714,7 +762,7 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 8. FIND EXAM ATTEMPT
+        // 11. FIND EXAM ATTEMPT
         // =====================================================
 
         const examAttempt = await db.collection("exam").findOne({
@@ -725,12 +773,13 @@ const syncExam = async (req, res) => {
         if (!examAttempt) {
             return res.status(400).json({
                 success: false,
-                message: "Please start the exam first."
+                message:
+                    "Please start the exam first."
             });
         }
 
         // =====================================================
-        // 9. CHECK WHETHER EXAM IS ALREADY SUBMITTED
+        // 12. CHECK SUBMITTED
         // =====================================================
 
         if (examAttempt.status === false) {
@@ -741,10 +790,11 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 10. ENSURE ANSWERS ARRAY EXISTS
+        // 13. ENSURE ANSWERS ARRAY
         // =====================================================
 
         if (!Array.isArray(examAttempt.answers)) {
+
             await db.collection("exam").updateOne(
                 {
                     _id: examAttempt._id
@@ -761,16 +811,18 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 11. CHECK IF ANSWER ALREADY EXISTS
+        // 14. CHECK EXISTING ANSWER
         // =====================================================
 
-        const existingAnswer = examAttempt.answers.find(
-            answer =>
-                Number(answer.questionNo) === Number(questionNo)
-        );
+        const existingAnswer =
+            examAttempt.answers.find(
+                answer =>
+                    Number(answer.questionNo) ===
+                    Number(questionNo)
+            );
 
         // =====================================================
-        // 12. UPDATE EXISTING ANSWER
+        // 15. UPDATE EXISTING ANSWER
         // =====================================================
 
         if (existingAnswer) {
@@ -782,9 +834,7 @@ const syncExam = async (req, res) => {
                 },
                 {
                     $set: {
-                        "answers.$.studentAnswer":
-                            normalizedStudentAnswer,
-
+                        "answers.$.studentAnswer": String(studentAnswer).trim().toUpperCase(),
                         updatedAt: new Date()
                     }
                 }
@@ -793,7 +843,7 @@ const syncExam = async (req, res) => {
         }
 
         // =====================================================
-        // 13. INSERT NEW ANSWER
+        // 16. INSERT NEW ANSWER
         // =====================================================
 
         else {
@@ -805,48 +855,64 @@ const syncExam = async (req, res) => {
                 {
                     $push: {
                         answers: {
-                            questionNo: Number(questionNo),
-                            studentAnswer: normalizedStudentAnswer
+                            questionNo:
+                                Number(questionNo),
+
+                            studentAnswer:
+                                normalizedStudentAnswer
                         }
                     },
-
                     $set: {
-                        updatedAt: new Date()
+                        updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                     }
                 }
             );
         }
 
         // =====================================================
-        // 14. GET UPDATED EXAM
+        // 17. GET UPDATED EXAM
         // =====================================================
 
-        const updatedExam = await db.collection("exam").findOne({
-            _id: examAttempt._id
-        });
-
-        // =====================================================
-        // 15. RESPONSE
-        // =====================================================
+        const updatedExam =
+            await db.collection("exam").findOne({
+                _id: examAttempt._id
+            });
 
         return res.status(200).json({
             success: true,
+
             message: existingAnswer
                 ? "Answer updated successfully."
                 : "Answer synchronized successfully.",
 
             data: {
-                testId: updatedExam.testId,
-                admissionNo: updatedExam.admissionNo,
-                questionNo: Number(questionNo),
-                studentAnswer: normalizedStudentAnswer,
-                totalAnswered: updatedExam.answers.length
+
+                testId:
+                    updatedExam.testId,
+
+                admissionNo:
+                    updatedExam.admissionNo,
+
+                questionNo:
+                    Number(questionNo),
+
+                studentAnswer:
+                    normalizedStudentAnswer,
+
+                totalAnswered:
+                    updatedExam.answers.length
             }
+
         });
 
     } catch (error) {
 
-        console.error("SYNC EXAM ERROR:", error);
+        console.error(
+            "SYNC EXAM ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
