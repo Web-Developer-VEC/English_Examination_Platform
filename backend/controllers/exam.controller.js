@@ -25,16 +25,16 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
-         const exam = await db.collection("schedule").findOne({
-          testcode: {
-            $regex: new RegExp(`^${testcode.trim()}$`, "i")
-         }
-         });
+
+        const exam = await db.collection("schedule").findOne({
+            testcode: {
+                $regex: new RegExp(`^${testcode.trim()}$`, "i")
+            }
+        });
 
         // =====================================================
         // FIND SCHEDULED EXAM
         // =====================================================
-
 
         if (!exam) {
             return res.status(404).json({
@@ -93,8 +93,8 @@ const startExam = async (req, res) => {
         // =====================================================
 
         if (
-            exam.department &&
-            exam.department !== student.department
+            exam.eligibility?.department &&
+            exam.eligibility.department !== student.department
         ) {
             return res.status(403).json({
                 success: false,
@@ -103,8 +103,8 @@ const startExam = async (req, res) => {
         }
 
         if (
-            exam.batch &&
-            exam.batch !== student.batch
+            exam.eligibility?.batch &&
+            exam.eligibility.batch !== student.batch
         ) {
             return res.status(403).json({
                 success: false,
@@ -113,8 +113,8 @@ const startExam = async (req, res) => {
         }
 
         if (
-            exam.section &&
-            exam.section !== student.section
+            exam.eligibility?.section &&
+            exam.eligibility.section !== student.section
         ) {
             return res.status(403).json({
                 success: false,
@@ -166,6 +166,12 @@ const startExam = async (req, res) => {
         }
 
         // =====================================================
+        // GET CIE
+        // =====================================================
+
+        const cie = questionSet.cie || null;
+
+        // =====================================================
         // REMOVE CORRECT ANSWERS
         // =====================================================
 
@@ -186,7 +192,6 @@ const startExam = async (req, res) => {
 
         // =====================================================
         // ALREADY SUBMITTED
-        // status = false
         // =====================================================
 
         if (
@@ -202,7 +207,6 @@ const startExam = async (req, res) => {
 
         // =====================================================
         // EXAM ALREADY STARTED
-        // status = true
         // =====================================================
 
         if (
@@ -221,6 +225,12 @@ const startExam = async (req, res) => {
                 testId: exam._id,
 
                 questionSetId: exam.questionSetId,
+
+                title: exam.title || null,
+
+                category: exam.category || null,
+
+                cie: alreadyAttempted.cie || cie,
 
                 duration: exam.duration,
 
@@ -249,6 +259,9 @@ const startExam = async (req, res) => {
 
             category: exam.category || null,
 
+            // CIE I / II / III
+            cie: cie,
+
             admissionNo: student.admissionNo,
 
             registerNo: student.registerNo,
@@ -263,8 +276,6 @@ const startExam = async (req, res) => {
 
             section: student.section,
 
-            // Student answers will be inserted
-            // by syncExam
             answers: [],
 
             totalQuestions: questions.length,
@@ -282,8 +293,8 @@ const startExam = async (req, res) => {
                 reason: ""
             },
 
-            // true = exam is currently active
-            // false = exam is submitted
+            // true = exam active
+            // false = exam submitted
             status: true,
 
             startedAt: startedAt,
@@ -323,6 +334,9 @@ const startExam = async (req, res) => {
 
             category: exam.category || null,
 
+            // CIE I / II / III
+            cie: cie,
+
             duration: exam.duration,
 
             startedAt: startedAt,
@@ -350,9 +364,7 @@ const startExam = async (req, res) => {
 };
 
 
-module.exports = {
-    startExam
-};
+
 
 // =========================
 // SUBMIT EXAM

@@ -4,7 +4,6 @@ const router = express.Router();
 const staffAuth = require("../../middleware/roleby.access.middleware");
 const {getScheduleData,getScheduledExams} = require("../../controllers/getscheduleexam.controller");
 const {scheduleExam} = require("../../controllers/schedule.controller");
-const {uploadHTMLToS3}=require("../../controllers/upload")
 router.get(
     "/getscheduledata",
     staffAuth,
@@ -19,5 +18,5 @@ router.post(
     staffAuth,
     scheduleExam
 );
-router.post("/upload",uploadHTMLToS3)
+
 module.exports = router;
