@@ -7,23 +7,21 @@ const scheduleExam = async (req, res) => {
 
         const {
             category,
+            cie,
             questionSetId,
             department,
             batch,
-            section,
-            admissionNo,
-
-            // NEW
             academicYear,
             semester,
-
+            section,
+            admissionNo,
             duration,
             startTime,
             endTime
         } = req.body;
 
         // =====================================================
-        // REQUIRED FIELDS VALIDATION
+        // REQUIRED FIELD VALIDATION
         // =====================================================
 
         if (
@@ -31,9 +29,9 @@ const scheduleExam = async (req, res) => {
             !questionSetId ||
             !department ||
             !batch ||
-            !section ||
             !academicYear ||
-            semester == null ||
+            !semester ||
+            !section ||
             !duration ||
             !startTime ||
             !endTime
@@ -41,7 +39,7 @@ const scheduleExam = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Category, questionSetId, department, batch, section, academicYear, semester, duration, startTime and endTime are required."
+                    "category, questionSetId, department, batch, academicYear, semester, section, duration, startTime and endTime are required."
             });
         }
 
@@ -59,10 +57,62 @@ const scheduleExam = async (req, res) => {
             String(category).trim().toLowerCase();
 
         if (!allowedCategories.includes(normalizedCategory)) {
+
             return res.status(400).json({
                 success: false,
                 message:
                     "Category must be university, normal or retest."
+            });
+        }
+
+        // =====================================================
+        // CIE VALIDATION
+        //
+        // CIE is a SEPARATE variable.
+        //
+        // Allowed:
+        // I
+        // II
+        // III
+        // =====================================================
+
+        const allowedCIE = [
+            "I",
+            "II",
+            "III"
+        ];
+
+        let normalizedCIE = null;
+
+        if (cie !== undefined && cie !== null && cie !== "") {
+
+            normalizedCIE =
+                String(cie)
+                    .trim()
+                    .toUpperCase();
+
+            if (!allowedCIE.includes(normalizedCIE)) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "CIE must be I, II or III."
+                });
+            }
+        }
+
+        // =====================================================
+        // CIE REQUIRED FOR NORMAL CATEGORY
+        // =====================================================
+
+        if (
+            normalizedCategory === "normal" &&
+            !normalizedCIE
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "CIE is required for normal examination."
             });
         }
 
@@ -78,9 +128,12 @@ const scheduleExam = async (req, res) => {
         ];
 
         const normalizedSection =
-            String(section).trim().toUpperCase();
+            String(section)
+                .trim()
+                .toUpperCase();
 
         if (!allowedSections.includes(normalizedSection)) {
+
             return res.status(400).json({
                 success: false,
                 message:
@@ -89,57 +142,12 @@ const scheduleExam = async (req, res) => {
         }
 
         // =====================================================
-        // ACADEMIC YEAR VALIDATION
-        // =====================================================
-
-        const normalizedAcademicYear =
-            String(academicYear).trim();
-
-        if (!normalizedAcademicYear) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Academic year is required."
-            });
-        }
-
-        // Example:
-        // 2024-2028
-        // 2025-2029
-
-        if (!/^\d{4}-\d{4}$/.test(normalizedAcademicYear)) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Academic year must be in format YYYY-YYYY. Example: 2024-2028."
-            });
-        }
-
-        // =====================================================
-        // SEMESTER VALIDATION
-        // =====================================================
-
-        const normalizedSemester =
-            Number(semester);
-
-        if (
-            !Number.isInteger(normalizedSemester) ||
-            normalizedSemester < 1 ||
-            normalizedSemester > 8
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Semester must be an integer between 1 and 8."
-            });
-        }
-
-        // =====================================================
         // ADMISSION NUMBER VALIDATION
         // =====================================================
 
         if (
-            admissionNo &&
+            admissionNo !== undefined &&
+            admissionNo !== null &&
             !Array.isArray(admissionNo)
         ) {
             return res.status(400).json({
@@ -149,11 +157,13 @@ const scheduleExam = async (req, res) => {
             });
         }
 
-        // Retest requires specific students
+        // =====================================================
+        // RETEST REQUIRES ADMISSION NUMBERS
+        // =====================================================
+
         if (
             normalizedCategory === "retest" &&
-            (!admissionNo ||
-                admissionNo.length === 0)
+            (!admissionNo || admissionNo.length === 0)
         ) {
             return res.status(400).json({
                 success: false,
@@ -163,20 +173,39 @@ const scheduleExam = async (req, res) => {
         }
 
         // =====================================================
-        // DURATION VALIDATION
+        // SEMESTER VALIDATION
         // =====================================================
 
-        const examDuration =
-            Number(duration);
+        const semesterNumber =
+            Number(semester);
 
         if (
-            !Number.isInteger(examDuration) ||
-            examDuration <= 0
+            !Number.isInteger(semesterNumber) ||
+            semesterNumber < 1 ||
+            semesterNumber > 8
         ) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Duration must be a positive number."
+                    "Semester must be a number between 1 and 8."
+            });
+        }
+
+        // =====================================================
+        // DURATION VALIDATION
+        // =====================================================
+
+        const durationNumber =
+            Number(duration);
+
+        if (
+            !Number.isInteger(durationNumber) ||
+            durationNumber <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Duration must be a positive number in minutes."
             });
         }
 
@@ -187,18 +216,26 @@ const scheduleExam = async (req, res) => {
         const start = new Date(startTime);
         const end = new Date(endTime);
 
-        if (
-            Number.isNaN(start.getTime()) ||
-            Number.isNaN(end.getTime())
-        ) {
+        if (isNaN(start.getTime())) {
+
             return res.status(400).json({
                 success: false,
                 message:
-                    "Invalid startTime or endTime."
+                    "Invalid startTime."
+            });
+        }
+
+        if (isNaN(end.getTime())) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid endTime."
             });
         }
 
         if (end <= start) {
+
             return res.status(400).json({
                 success: false,
                 message:
@@ -217,6 +254,7 @@ const scheduleExam = async (req, res) => {
         // =====================================================
 
         if (!ObjectId.isValid(questionSetId)) {
+
             return res.status(400).json({
                 success: false,
                 message:
@@ -233,6 +271,7 @@ const scheduleExam = async (req, res) => {
             });
 
         if (!questionSet) {
+
             return res.status(404).json({
                 success: false,
                 message:
@@ -241,54 +280,49 @@ const scheduleExam = async (req, res) => {
         }
 
         // =====================================================
-        // QUESTION VALIDATION
-        // =====================================================
-
-        if (
-            !Array.isArray(questionSet.questions) ||
-            questionSet.questions.length === 0
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Question set does not contain any questions."
-            });
-        }
-
-        // =====================================================
         // DUPLICATE SCHEDULE CHECK
         // =====================================================
 
+        const duplicateQuery = {
+            category: normalizedCategory,
+
+            "eligibility.department":
+                department,
+
+            "eligibility.batch":
+                batch,
+
+            "eligibility.academicYear":
+                academicYear,
+
+            "eligibility.semester":
+                semesterNumber,
+
+            "eligibility.section":
+                normalizedSection,
+
+            startTime: {
+                $lte: end
+            },
+
+            endTime: {
+                $gte: start
+            }
+        };
+
+        // CIE is checked separately if supplied
+        if (normalizedCIE) {
+            duplicateQuery.cie =
+                normalizedCIE;
+        }
+
         const existingExam =
-            await db.collection("schedule").findOne({
-
-                category: normalizedCategory,
-
-                "eligibility.department":
-                    department,
-
-                "eligibility.batch":
-                    batch,
-
-                "eligibility.section":
-                    normalizedSection,
-
-                academicYear:
-                    normalizedAcademicYear,
-
-                semester:
-                    normalizedSemester,
-
-                startTime: {
-                    $lte: end
-                },
-
-                endTime: {
-                    $gte: start
-                }
-            });
+            await db.collection("schedule").findOne(
+                duplicateQuery
+            );
 
         if (existingExam) {
+
             return res.status(409).json({
                 success: false,
                 message:
@@ -300,32 +334,26 @@ const scheduleExam = async (req, res) => {
         // CREATE EXAM
         // =====================================================
 
-        const now = new Date();
-
         const exam = {
 
-            // =================================================
-            // EXAM INFORMATION
-            // =================================================
+            // -------------------------------------------------
+            // BASIC INFORMATION
+            // -------------------------------------------------
 
             category:
                 normalizedCategory,
 
+            // CIE is a separate field
+            // I / II / III
+            cie:
+                normalizedCIE,
+
             questionSetId:
                 questionObjectId,
 
-            academicYear:
-                normalizedAcademicYear,
-
-            semester:
-                normalizedSemester,
-
-            duration:
-                examDuration,
-
-            // =================================================
+            // -------------------------------------------------
             // ELIGIBILITY
-            // =================================================
+            // -------------------------------------------------
 
             eligibility: {
 
@@ -335,6 +363,12 @@ const scheduleExam = async (req, res) => {
                 batch:
                     String(batch).trim(),
 
+                academicYear:
+                    String(academicYear).trim(),
+
+                semester:
+                    semesterNumber,
+
                 section:
                     normalizedSection,
 
@@ -342,50 +376,51 @@ const scheduleExam = async (req, res) => {
                     Array.isArray(admissionNo)
                         ? admissionNo
                         : []
+
             },
 
-            // =================================================
-            // SCHEDULE
-            // =================================================
+            // -------------------------------------------------
+            // EXAM TIMING
+            // -------------------------------------------------
 
+            duration:
+                durationNumber,
+
+            // MongoDB stores Date in UTC.
+            // The input can be IST/ISO and JavaScript
+            // converts it correctly to UTC internally.
             startTime:
                 start,
 
             endTime:
                 end,
 
-            // =================================================
+            // -------------------------------------------------
             // STATUS
-            // =================================================
+            // -------------------------------------------------
 
             status:
                 "Scheduled",
 
-            // =================================================
-            // TEST CODE
-            //
-            // Generated automatically by cron
-            // before exam starts.
-            // =================================================
-
+            // testcode will be generated by cron
             testcode:
                 null,
 
             testcodeGeneratedAt:
                 null,
 
-            // =================================================
+            // -------------------------------------------------
             // AUDIT
-            // =================================================
+            // -------------------------------------------------
 
             createdBy:
                 req.user?.username || null,
 
             createdAt:
-                now,
+                new Date(),
 
             updatedAt:
-                now
+                new Date()
         };
 
         // =====================================================
@@ -393,8 +428,9 @@ const scheduleExam = async (req, res) => {
         // =====================================================
 
         const result =
-            await db.collection("schedule")
-                .insertOne(exam);
+            await db.collection("schedule").insertOne(
+                exam
+            );
 
         // =====================================================
         // RESPONSE
