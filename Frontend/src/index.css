@@ -1,5 +1,58 @@
 @import "tailwindcss";
 
+@theme {
+  --font-rome: "Times New Roman", ui-sans-serif, system-ui;
+  --color-prim: #fff;
+  --color-accn: #800000;
+  --color-text: #000;
+
+  @keyframes goldPulse {
+    0% { box-shadow: 0 0 0 0 rgba(253, 204, 3, 0.55); }
+    100% { box-shadow: 0 0 0 14px rgba(253, 204, 3, 0); }
+  }
+
+  @keyframes sizeUp {
+    0% { transform: scale(0); z-index: 100; }
+    100% { transform: scale(1); z-index: 100; }
+  }
+  @keyframes lowPetR {
+    100% { transform: translateX(-10%) translateY(-17%) rotate(90deg); }
+  }
+  @keyframes lowPetL {
+    100% { transform: translateX(10%) translateY(-17%) rotate(-90deg); }
+  }
+  @keyframes midPetR {
+    100% { transform: translateX(-3.75%) translateY(-6.5%) rotate(45deg); }
+  }
+  @keyframes midPetL {
+    100% { transform: translateX(3.75%) translateY(-6.5%) rotate(-45deg); }
+  }
+  @keyframes twirl {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(180deg); }
+  }
+  @keyframes bam {
+    0% { font-size: 0; }
+    100% { font-size: 2.75vmax; }
+  }
+  @keyframes bom {
+    0% { font-size: 0; }
+    100% { font-size: 1.5vmax; }
+  }
+  @keyframes bem {
+    0% { font-size: 0; }
+    100% { font-size: 2.25vmax; }
+  }
+  @keyframes fadOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; z-index: -1; }
+  }
+  @keyframes LslideUp {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100%); }
+  }
+}
+
 html,body,#root {
   height: 100%;
 }
@@ -17,4 +70,3 @@ body {
 .clip-right {
     clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%);
 }
-
