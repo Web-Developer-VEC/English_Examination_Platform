@@ -1,0 +1,281 @@
+
+        .vec-shell {
+          font-family: 'Poppins', sans-serif;
+          --gold-mild: #d9b23c;
+          --gold-mild-soft: #f7e5a8;
+          --bg: #ffffff;
+          --panel: #ffffff;
+          --maroon: #800000;
+          --maroon-soft: rgba(128, 0, 0, 0.08);
+          --maroon-soft-strong: rgba(128, 0, 0, 0.16);
+          --gold: #ffcc00;
+          --text-main: #1a1a1a;
+          --text-muted: #767676;
+          --border: #e9e2e2;
+          min-height: 100vh;
+          background: var(--bg);
+          display: flex;
+        }
+
+        .vec-topbar { display: none; }
+
+        /* ---------- Sidebar ---------- */
+        .vec-sidebar {
+          width: 280px;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          background: var(--panel);
+          border-right: 1px solid var(--border);
+          box-shadow: 2px 0 10px rgba(128, 0, 0, 0.04);
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: var(--maroon-soft-strong) transparent;
+          transition: transform 0.3s ease, width 0.25s ease;
+          z-index: 40;
+        }
+        .vec-sidebar::-webkit-scrollbar { width: 6px; }
+        .vec-sidebar::-webkit-scrollbar-thumb {
+          background: var(--maroon-soft-strong);
+          border-radius: 8px;
+        }
+
+        .vec-sidebar.collapsed { width: 80px; }
+
+        .vec-header {
+          display: flex;
+          align-items: center;
+          padding: 16px 14px;
+          border-bottom: 1px solid var(--border);
+        }
+        .vec-sidebar.collapsed .vec-header { justify-content: center; padding: 16px 0; }
+
+        .vec-collapse-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: auto;
+          background: transparent;
+          border: none;
+          color: var(--maroon);
+          cursor: pointer;
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          transition: background 0.2s ease;
+          flex-shrink: 0;
+        }
+        .vec-collapse-btn:hover { background: var(--maroon-soft); }
+        .vec-sidebar.collapsed .vec-collapse-btn { margin-left: 0; }
+
+        .vec-close-btn {
+          display: none;
+          margin-left: 4px;
+          background: transparent;
+          border: none;
+          color: var(--maroon);
+          cursor: pointer;
+        }
+
+        .vec-nav {
+          flex: 1;
+          padding: 16px 14px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .vec-sidebar.collapsed .vec-nav { padding: 16px 10px 20px; }
+
+        .vec-section-label {
+          font-size: 10.5px;
+          font-weight: 600;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          padding: 4px 10px 2px;
+        }
+        .vec-sidebar.collapsed .vec-section-label { display: none; }
+
+        .vec-item-btn {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          width: 100%;
+          padding: 14px 18px;
+          border: none;
+          background: transparent;
+          border-radius: 14px;
+          font-family: inherit;
+          font-size: 17.5px;
+          font-weight: 500;
+          color: var(--text-main);
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.1s ease, color 0.1s ease, transform 0.15s ease;
+        }
+        .vec-sidebar.collapsed .vec-item-btn {
+          justify-content: center;
+          padding: 14px 0;
+          gap: 0;
+        }
+        .vec-item-btn:hover {
+          background: var(--gold);
+          color: #1a1a1a;
+        }
+        .vec-item-btn:focus-visible {
+          outline: 2px solid var(--maroon);
+          outline-offset: 2px;
+        }
+        .vec-item-btn:active { transform: scale(0.99); }
+        .vec-item-btn.active {
+          background: var(--gold);
+          color: #1a1a1a;
+          font-weight: 600;
+          box-shadow: 0 6px 16px rgba(210, 170, 2, 0.3);
+        }
+        .vec-item-btn.parent-active-only { background: var(--maroon-soft-strong); }
+
+        .vec-icon {
+          width: 19px;
+          height: 19px;
+          flex-shrink: 0;
+          color: var(--maroon);
+          transition: color 0.2s ease;
+        }
+        .vec-icon.icon-gold {
+         color: var(--gold-mild);
+        }
+
+        .vec-label { flex: 1; white-space: nowrap; }
+        .vec-sidebar.collapsed .vec-label { display: none; }
+
+        .vec-chevron {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          transition: transform 0.25s ease;
+          color: inherit;
+        }
+        .vec-chevron.open { transform: rotate(180deg); }
+        .vec-sidebar.collapsed .vec-chevron { display: none; }
+
+        /* submenu */
+        .vec-submenu {
+          overflow: hidden;
+          max-height: 0;
+          transition: max-height 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-left: 16px;
+          padding-left: 14px;
+          border-left: 2px solid var(--maroon-soft-strong);
+        }
+        .vec-submenu.open {
+          max-height: 320px;
+          margin-top: 4px;
+          margin-bottom: 4px;
+        }
+        .vec-sidebar.collapsed .vec-submenu { display: none; }
+
+        .vec-subitem-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 11px 14px;
+          border: none;
+          background: transparent;
+          border-radius: 12px;
+          font-family: inherit;
+          font-size: 15.5px;
+          font-weight: 450;
+          color: var(--text-main);
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.1s ease, color 0.1s ease;
+        }
+        .vec-subitem-btn:hover {
+          background: var(--gold);
+          color: #1a1a1a;
+        }
+        .vec-subitem-btn:focus-visible {
+          outline: 2px solid var(--maroon);
+          outline-offset: 2px;
+        }
+        .vec-subitem-btn.active {
+          background: var(--gold);
+          color: #1a1a1a;
+          font-weight: 600;
+        }
+        .vec-subicon {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          color: var(--maroon);
+        }
+
+        .vec-overlay { display: none; }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 900px) {
+          .vec-topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 56px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
+            z-index: 30;
+          }
+          .vec-topbar-title { font-size: 14px; font-weight: 600; color: var(--maroon); }
+          .vec-hamburger {
+            background: var(--maroon-soft);
+            border: none;
+            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--maroon);
+            cursor: pointer;
+          }
+          .vec-shell { flex-direction: column; }
+          .vec-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translateX(-100%);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+          }
+          .vec-sidebar.mobile-open { transform: translateX(0); }
+          /* on mobile the drawer always opens full width, collapse state is ignored */
+          .vec-sidebar.collapsed { width: 280px; }
+          .vec-sidebar.collapsed .vec-section-label,
+          .vec-sidebar.collapsed .vec-label,
+          .vec-sidebar.collapsed .vec-chevron { display: revert; }
+          .vec-sidebar.collapsed .vec-submenu.open { display: flex; }
+          .vec-sidebar.collapsed .vec-item-btn {
+            justify-content: flex-start;
+            padding: 14px 18px;
+            gap: 13px;
+          }
+          .vec-collapse-btn { display: none; }
+          .vec-close-btn { display: inline-flex; }
+          .vec-overlay.mobile-open {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(20,0,0,0.35);
+            z-index: 35;
+          }
+        }
+      

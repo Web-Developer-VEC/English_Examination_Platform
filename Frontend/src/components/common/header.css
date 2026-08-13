@@ -1,0 +1,265 @@
+.vec-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 18px 40px;
+    min-height: 95px;
+    background: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* ================= LEFT ================= */
+
+.vec-header__brand{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    width:240px;
+    flex-shrink:0;
+    z-index:2;
+}
+
+.vec-header__logo{
+    width:55px;
+    height:55px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.vec-logo-image{
+    width:70px;
+    height:auto;
+}
+
+.vec-header__text{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+}
+
+.vec-header__college{
+    margin:0;
+    font-family:"Playfair Display",serif;
+    font-size:20px;
+    font-weight:600;
+    color:#4B1E1E;
+    line-height:1.1;
+}
+
+.vec-header__department{
+    margin:0;
+    font-size:13px;
+    color:#222;
+    letter-spacing:.5px;
+}
+
+.vec-header__tagline{
+    margin:0;
+    font-size:11px;
+    font-style:italic;
+    color:#666;
+}
+
+.vec-header__autonomy{
+    margin:0;
+    font-size:10px;
+    font-style:italic;
+    color:#777;
+}
+
+/* ================= CENTER ================= */
+
+.vec-header__portal{
+
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    width:calc(100% - 300px);
+    max-width:850px;
+    pointer-events:none;
+}
+
+.vec-header__portal-icon{
+
+    color:#800;
+    flex-shrink:0;
+}
+
+.vec-header__portal-title{
+
+    margin:0;
+    font-family:"Poppins",sans-serif;
+    font-size:30px;
+    font-weight:700;
+    color:#800;
+    text-align:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+/* ================= UNDERLINE ================= */
+
+.vec-header__underline{
+
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:5px;
+    background:linear-gradient(
+        90deg,
+        #f5b301,
+        #ffd873,
+        #f5b301
+    );
+}
+
+/* ================= LARGE LAPTOP ================= */
+
+@media(max-width:1200px){
+
+    .vec-header{
+       padding:16px 24px;
+    }
+
+    .vec-header__brand{
+        width:220px;
+    }
+
+    .vec-header__portal{
+        width:calc(100% - 280px);
+    }
+
+    .vec-header__portal-title{
+        font-size:26px;
+    }
+
+}
+
+/* ================= TABLET ================= */
+
+@media(max-width:992px){
+
+    .vec-header{
+        padding:16px 20px;
+    }
+
+    .vec-header__brand{
+        width:190px;
+    }
+
+    .vec-header__portal{
+        width:calc(100% - 240px);
+    }
+
+    .vec-header__portal-title{
+        font-size:22px;
+    }
+
+    .vec-logo-image{
+        width:60px;
+    }
+
+    .vec-header__college{
+        font-size:18px;
+    }
+
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:768px){
+
+    .vec-header{
+        flex-direction:column;
+        justify-content:center;
+        padding:18px 16px;
+        gap:16px;
+        min-height:auto;
+    }
+
+    .vec-header__brand{
+        width:100%;
+    }
+
+    .vec-header__portal{
+
+        position:static;
+        transform:none;
+        width:100%;
+        max-width:100%;
+        pointer-events:auto;
+    }
+
+    .vec-header__portal-title{
+
+        white-space:normal;
+        font-size:22px;
+    }
+
+}
+
+/* ================= SMALL MOBILE ================= */
+
+@media(max-width:480px){
+
+    .vec-header{
+        padding:14px 12px;
+    }
+
+    .vec-logo-image{
+        width:55px;
+    }
+
+    .vec-header__college{
+        font-size:17px;
+    }
+
+    .vec-header__department{
+        font-size:11px;
+    }
+
+    .vec-header__tagline{
+        font-size:10px;
+    }
+
+    .vec-header__autonomy{
+        font-size:9px;
+    }
+
+    .vec-header__portal-title{
+        font-size:19px;
+    }
+
+    .vec-header__portal-icon{
+        width:22px;
+        height:22px;
+    }
+
+}
+
+/* ================= EXTRA SMALL ================= */
+
+@media(max-width:360px){
+
+    .vec-header__portal-title{
+        font-size:17px;
+    }
+
+    .vec-header__college{
+        font-size:15px;
+    }
+
+}

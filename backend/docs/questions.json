@@ -1,0 +1,38 @@
+{
+  "_id": {
+    "$oid": "6a71b2639b2d61c53c26e506"
+  },
+  "testcode": "test1",
+  "audioUrl": "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/questions/test1/Shakira_Burna_Boy_-_Dai_Dai_Bootleg_Remixed_By_Dj_Neoo_(MP3.cc).mp3",
+  "questionsUrl": "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/questions/test1/template.xlsx",
+  "questions": [
+    {
+      "questionNo": 1,
+      "question": "What is a synonym for \"nimble\"?",
+      "options": {
+        "A": "Slow",
+        "B": "Clumsy",
+        "C": "Quick",
+        "D": "Unsteady"
+      },
+      "answer": "C"
+    },
+    {
+      "questionNo": 2,
+      "question": "What is a synonym for \"chaotic\"?",
+      "options": {
+        "A": "Organized",
+        "B": "Orderly",
+        "C": "Tidy",
+        "D": "Disordered"
+      },
+      "answer": "D"
+    }
+  ],
+  "createdAt": {
+    "$date": "2026-08-04T09:35:31.082Z"
+  },
+  "updatedAt": {
+    "$date": "2026-08-04T09:35:31.082Z"
+  }
+}
