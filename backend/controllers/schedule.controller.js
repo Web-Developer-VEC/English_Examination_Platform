@@ -186,6 +186,15 @@ const scheduleExam = async (req, res) => {
 
         const start = new Date(startTime);
         const end = new Date(endTime);
+        // ==========================
+        // Date Validation
+        // ==========================
+        const start = new Date(startTime).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+});
+        const end = new Date(endTime).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+});
 
         if (
             Number.isNaN(start.getTime()) ||
@@ -374,12 +383,13 @@ const scheduleExam = async (req, res) => {
             testcodeGeneratedAt:
                 null,
 
-            // =================================================
-            // AUDIT
-            // =================================================
+            createdAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
 
-            createdBy:
-                req.user?.username || null,
+            updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
 
             createdAt:
                 now,

@@ -536,8 +536,12 @@ const submitExam = async (req, res) => {
                         reason: ""
                     },
                     status: false,
-                    submittedAt: new Date(),
-                    updatedAt: new Date()
+                    submittedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
+                    updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                 }
             }
         );
@@ -838,9 +842,7 @@ const syncExam = async (req, res) => {
                 },
                 {
                     $set: {
-                        "answers.$.studentAnswer":
-                            normalizedStudentAnswer,
-
+                        "answers.$.studentAnswer": String(studentAnswer).trim().toUpperCase(),
                         updatedAt: new Date()
                     }
                 }
@@ -869,7 +871,9 @@ const syncExam = async (req, res) => {
                         }
                     },
                     $set: {
-                        updatedAt: new Date()
+                        updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                     }
                 }
             );
