@@ -25,14 +25,11 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
-<<<<<<< HEAD
-=======
          const exam = await db.collection("schedule").findOne({
           testcode: {
             $regex: new RegExp(`^${testcode.trim()}$`, "i")
          }
          });
->>>>>>> main
 
         // =====================================================
         // FIND SCHEDULED EXAM
@@ -375,11 +372,7 @@ const submitExam = async (req, res) => {
 
         const {
             testId,
-<<<<<<< HEAD
             admissionNo
-=======
-            admissionNo,
->>>>>>> main
         } = req.body;
 
         // ----------------------------
@@ -585,16 +578,9 @@ const syncExam = async (req, res) => {
             studentAnswer
         } = req.body;
 
-<<<<<<< HEAD
-        // =====================================================
-        // 1. VALIDATION
-        // =====================================================
-
-=======
         // ----------------------------
         // Validation
         // ----------------------------
->>>>>>> main
         if (
             !testId ||
             !admissionNo ||
@@ -882,7 +868,6 @@ const syncExam = async (req, res) => {
                                 normalizedStudentAnswer
                         }
                     },
->>>>>>> main
                     $set: {
                         updatedAt: new Date()
                     }
@@ -937,10 +922,6 @@ const syncExam = async (req, res) => {
             success: false,
             message: error.message
         });
-<<<<<<< HEAD
-=======
-
->>>>>>> main
     }
 };
 
