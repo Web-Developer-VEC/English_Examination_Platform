@@ -7,9 +7,8 @@ const questionsupload = async (req, res) => {
 
    
 
-        const { testcode } = req.body;
+        const { questionCode } = req.body;
         const { audio } = req.uploadedData;
-
         // Validate questionCode
         if (!questionCode || !questionCode.trim()) {
             return res.status(400).json({

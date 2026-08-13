@@ -25,7 +25,7 @@ const NAV_ITEMS = [
     icon: Users,
     children: [
       { key: "faculty-details", label: "Faculty Details", icon: UserCog },
-      { key: "create-test", label: "Create Test", icon: ClipboardPlus },
+      { key: "createtest", label: "Create Test", icon: ClipboardPlus },
       { key: "schedule-test", label: "Schedule Test", icon: CalendarClock },
       {
         key: "student-data-upload",
