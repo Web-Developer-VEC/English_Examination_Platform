@@ -261,9 +261,14 @@ const scheduleExam = async (req, res) => {
 
         const start = new Date(startTime);
         const end = new Date(endTime);
-
-        if (isNaN(start.getTime())) {
-
+        // ==========================
+        // Date Validation
+        // ==========================
+        
+        if (
+            Number.isNaN(start.getTime()) ||
+            Number.isNaN(end.getTime())
+        ) {
             return res.status(400).json({
                 success: false,
                 message:
