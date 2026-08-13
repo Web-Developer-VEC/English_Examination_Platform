@@ -10,7 +10,6 @@ router.use("/staff", questionRoutes);
 
 router.use("/auth", auth_routes);
 
-
 router.use("/exam", exam_routes);
 
 module.exports = router;
