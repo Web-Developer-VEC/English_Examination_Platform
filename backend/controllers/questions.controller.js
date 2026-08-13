@@ -32,9 +32,13 @@ const questionsupload = async (req, res) => {
 
             questions: parsedQuestions,
 
-            createdAt: new Date(),
+            createdAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
 
-            updatedAt: new Date()
+            updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
 
         };
 
