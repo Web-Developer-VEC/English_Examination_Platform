@@ -5,35 +5,19 @@ const staffAuth = require("../../middleware/roleby.access.middleware");
 
 const questions_upload_Middleware = require("../../middleware/questionupload_middleware");
 const { questionsupload } = require("../../controllers/questions.controller");
+const { scheduleExam } = require("../../controllers/schedule.controller");
+const { generateExamReport } = require("../../controllers/result.controller");
+const student_upload_Middleware = require("../../middleware/student_upload_middleware");
+const { studentsUpload } = require("../../controllers/student.controller");
+const { updateStudent } = require("../../controllers/student.controller");
 
-const {startExam, syncExam} = require("../../controllers/exam.controller");
-
-const {submitExam} = require("../../controllers/exam.controller");
-
+// Upload Student Excel
+router.post("/studentsupload", student_upload_Middleware, studentsUpload);
+router.put("/studentsupdate", student_upload_Middleware, updateStudent);
 // Upload Audio + Excel
-router.post(
-    "/questionsupload",
-    staffAuth,
-    questions_upload_Middleware,
-    questionsupload
-); 
-     
-router.post(
-    "/startexam",
-    
-    startExam
-);
+router.post("/questionsupload", questions_upload_Middleware, questionsupload);
+router.post("/schedule", scheduleExam);
 
-router.post(
-    "/submit",
-   
-    submitExam
-);   
-router.post(
-    "/examsync",
-    staffAuth,
-   syncExam
-   );                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-
+router.get("/exam-report", generateExamReport);
 
 module.exports = router;
