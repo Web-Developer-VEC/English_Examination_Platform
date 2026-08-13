@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
+  ClipboardClock,
   GraduationCap,
   ShieldCheck,
   Building2,
@@ -13,6 +14,9 @@ import {
   ChevronDown,
   X,
   Undo2,
+  CalendarRange,
+  Layers,
+  AlertCircle,
 } from "lucide-react";
 
 // -----------------------------------------------------
@@ -39,6 +43,16 @@ export const colors = {
 const CATEGORY_OPTIONS = ["Normal", "Retest"];
 
 const BATCH_OPTIONS = ["2023-2027", "2024-2028", "2025-2029"];
+
+const ACADEMIC_YEAR_OPTIONS = [
+  "2023-2024",
+  "2024-2025",
+  "2025-2026",
+  "2026-2027",
+  "2027-2028",
+];
+
+const SEMESTER_OPTIONS = ["Odd", "Even"];
 
 const DEPARTMENT_OPTIONS = ["AI & DS", "CSE", "IT", "ECE", "EEE"];
 
@@ -163,9 +177,8 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
           </span>
         </button>
         <ChevronDown
-          className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isOpen ? "rotate-180" : ""
+            }`}
         />
       </div>
 
@@ -217,20 +230,20 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
           {/* Analog clock face */}
           <div className="px-3 pb-3 pt-2">
-          <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
-            <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
-            <circle
-              cx={cx}
-              cy={cy}
-              r={outerRadius + 14}
-              fill="none"
-              stroke="#E5E7EB"
-              strokeWidth="1"
-            />
-            <circle cx={cx} cy={cy} r="3" fill="#800000" />
+            <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
+              <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
+              <circle
+                cx={cx}
+                cy={cy}
+                r={outerRadius + 14}
+                fill="none"
+                stroke="#E5E7EB"
+                strokeWidth="1"
+              />
+              <circle cx={cx} cy={cy} r="3" fill="#800000" />
 
-            {mode === "hour"
-              ? HOUR_VALUES.map((h) => {
+              {mode === "hour"
+                ? HOUR_VALUES.map((h) => {
                   const { x, y } = polarPoint(h, outerRadius, cx, cy);
                   const isSelected = hour === pad2(h);
                   return (
@@ -259,7 +272,7 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })
-              : MINUTE_VALUES.map((m, idx) => {
+                : MINUTE_VALUES.map((m, idx) => {
                   const { x, y } = polarPoint(idx, outerRadius, cx, cy);
                   const isSelected = minute === pad2(m);
                   return (
@@ -288,11 +301,11 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })}
-          </svg>
+            </svg>
 
-          <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
-            {mode === "hour" ? "Select hour, then minute" : "Select minute"}
-          </p>
+            <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
+              {mode === "hour" ? "Select hour, then minute" : "Select minute"}
+            </p>
           </div>
         </div>
       )}
@@ -306,6 +319,8 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 export default function Schedule() {
   // ---------------- STATE ----------------
   const [category, setCategory] = useState("Normal");
+  const [academicYear, setAcademicYear] = useState("");
+  const [semester, setSemester] = useState("");
   const [batch, setBatch] = useState("");
   const [testCode, setTestCode] = useState("");
 
@@ -314,11 +329,15 @@ export default function Schedule() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const pickerRef = useRef(null);
 
-  // Admission Numbers (multi-select, only relevant when category = Retest,
-  // but lives in the SAME form as everything else)
+  // Admission Numbers (multi-select) — now shown for BOTH Normal and Retest
   const [selectedAdmissionNos, setSelectedAdmissionNos] = useState([]);
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
   const admissionPickerRef = useRef(null);
+
+  // Range picker: pick a "from" and "to" admission number and select
+  // everything in between (inclusive), based on ADMISSION_NO_OPTIONS order.
+  const [rangeFrom, setRangeFrom] = useState("");
+  const [rangeTo, setRangeTo] = useState("");
 
   const [date, setDate] = useState("");
 
@@ -331,6 +350,71 @@ export default function Schedule() {
   const [endPeriod, setEndPeriod] = useState("AM");
 
   const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Per-category drafts: each category (Normal / Retest) keeps its own
+  // in-progress field values. Switching category never wipes anything —
+  // it just saves what's currently on screen under the OLD category and
+  // loads back whatever was last saved under the NEW category (blank the
+  // first time). This keeps them independent without losing pending work.
+  const draftsRef = useRef({ Normal: null, Retest: null });
+
+  const captureCurrentFields = () => ({
+    academicYear,
+    semester,
+    batch,
+    testCode,
+    selectedCombos,
+    selectedAdmissionNos,
+    rangeFrom,
+    rangeTo,
+    date,
+    startHour,
+    startMinute,
+    startPeriod,
+    endHour,
+    endMinute,
+    endPeriod,
+  });
+
+  // Applies a saved draft (or blanks everything if none was saved yet)
+  const applyFields = (draft) => {
+    const d = draft || {};
+    setAcademicYear(d.academicYear || "");
+    setSemester(d.semester || "");
+    setBatch(d.batch || "");
+    setTestCode(d.testCode || "");
+    setSelectedCombos(d.selectedCombos || []);
+    setIsPickerOpen(false);
+    setSelectedAdmissionNos(d.selectedAdmissionNos || []);
+    setIsAdmissionPickerOpen(false);
+    setRangeFrom(d.rangeFrom || "");
+    setRangeTo(d.rangeTo || "");
+    setDate(d.date || "");
+    setStartHour(d.startHour || "");
+    setStartMinute(d.startMinute || "");
+    setStartPeriod(d.startPeriod || "AM");
+    setEndHour(d.endHour || "");
+    setEndMinute(d.endMinute || "");
+    setEndPeriod(d.endPeriod || "AM");
+  };
+
+  // Clears every field EXCEPT category — used after a successful submit
+  // (fresh form for the next schedule) and also clears that category's
+  // saved draft so it doesn't reappear later.
+  const resetFormFields = () => {
+    applyFields(null);
+    draftsRef.current[category] = null;
+  };
+
+  const handleCategoryChange = (e) => {
+    const nextCategory = e.target.value;
+    // Save whatever is currently on screen under the category we're leaving
+    draftsRef.current[category] = captureCurrentFields();
+    // Restore whatever was previously saved for the category we're entering
+    applyFields(draftsRef.current[nextCategory]);
+    setCategory(nextCategory);
+  };
 
   // Close dropdowns when clicking outside them
   useEffect(() => {
@@ -355,6 +439,13 @@ export default function Schedule() {
     const timer = setTimeout(() => setStatusMessage(""), 4000);
     return () => clearTimeout(timer);
   }, [statusMessage]);
+
+  // Auto-clear the validation error banner
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => setErrorMessage(""), 5000);
+    return () => clearTimeout(timer);
+  }, [errorMessage]);
 
   // ---------------- DEPARTMENT & SECTION FUNCTIONS ----------------
   const isAllCombosSelected =
@@ -406,12 +497,83 @@ export default function Schedule() {
   // Clears everything, and doubles as "undo" for the whole selection
   const handleClearAllAdmission = () => setSelectedAdmissionNos([]);
 
+  // Selects every admission number between rangeFrom and rangeTo
+  // (inclusive), based on their order in ADMISSION_NO_OPTIONS. Works
+  // regardless of which one the user picked first (from/to auto-swap).
+  const handleApplyAdmissionRange = () => {
+    if (!rangeFrom || !rangeTo) return;
+
+    const fromIndex = ADMISSION_NO_OPTIONS.indexOf(rangeFrom);
+    const toIndex = ADMISSION_NO_OPTIONS.indexOf(rangeTo);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
+    const rangeNos = ADMISSION_NO_OPTIONS.slice(start, end + 1);
+
+    setSelectedAdmissionNos((prev) => {
+      const merged = new Set(prev);
+      rangeNos.forEach((no) => merged.add(no));
+      return ADMISSION_NO_OPTIONS.filter((no) => merged.has(no));
+    });
+  };
+
   // ---------------- SUBMIT ----------------
   const buildTimeString = (hour, minute, period) =>
     hour && minute && period ? `${hour}:${minute} ${period}` : "";
 
+  // Converts a 12-hour hour/minute/period into minutes-since-midnight,
+  // so start/end times can be compared properly (e.g. 11:50 PM vs 12:05 AM).
+  const toMinutesSinceMidnight = (hour, minute, period) => {
+    let h = parseInt(hour, 10) % 12;
+    if (period === "PM") h += 12;
+    return h * 60 + parseInt(minute, 10);
+  };
+
+  // Checks every required field and returns a list of human-readable
+  // problems. An empty list means the form is ready to submit.
+  const validateForm = () => {
+    const problems = [];
+
+    if (!academicYear) problems.push("Academic Year is required");
+    if (!semester) problems.push("Semester is required");
+    if (!batch) problems.push("Batch is required");
+    if (selectedCombos.length === 0)
+      problems.push("Select at least one Department & Section");
+    if (!testCode) problems.push("Test Code is required");
+    if (!date) problems.push("Date is required");
+
+    const hasStartTime = startHour && startMinute && startPeriod;
+    const hasEndTime = endHour && endMinute && endPeriod;
+    if (!hasStartTime) problems.push("Start Time is required");
+    if (!hasEndTime) problems.push("End Time is required");
+
+    if (hasStartTime && hasEndTime) {
+      const startMinutes = toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+      const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
+      if (endMinutes <= startMinutes) {
+        problems.push("End Time must be after Start Time");
+      }
+    }
+
+    // Admission Number is mandatory for Retest (matches backend rule);
+    // optional for Normal.
+    if (category === "Retest" && selectedAdmissionNos.length === 0) {
+      problems.push("Select at least one Admission Number for Retest");
+    }
+
+    return problems;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const problems = validateForm();
+    if (problems.length > 0) {
+      setStatusMessage("");
+      setErrorMessage(problems.join(" • "));
+      return;
+    }
 
     const departmentPayload = selectedCombos.map((key) => {
       const option = DEPT_SECTION_OPTIONS.find((o) => o.key === key);
@@ -420,19 +582,26 @@ export default function Schedule() {
 
     const payload = {
       category,
+      academicYear,
+      semester,
       batch,
       departments: departmentPayload,
       testCode,
       date,
       startTime: buildTimeString(startHour, startMinute, startPeriod),
       endTime: buildTimeString(endHour, endMinute, endPeriod),
-      ...(category === "Retest" && { admissionNumbers: selectedAdmissionNos }),
+      // Admission numbers now sent regardless of category
+      admissionNumbers: selectedAdmissionNos,
     };
 
     console.log(payload);
+    setErrorMessage("");
     setStatusMessage(
       category === "Normal" ? "Dummy Schedule Created" : "Dummy Retest Assigned"
     );
+    // Clear the form after a successful submit so leftover data
+    // never carries into the next schedule (or the other category).
+    resetFormFields();
   };
 
   // ---------------- RENDER ----------------
@@ -443,10 +612,10 @@ export default function Schedule() {
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#FDCC03]/40 bg-[#800000] shadow-md shadow-[#800000]/20">
-            <GraduationCap className="h-7 w-7 text-[#FDCC03]" strokeWidth={2} />
-            <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FDCC03] shadow-sm">
-              <ShieldCheck className="h-3 w-3 text-[#800000]" strokeWidth={3} />
-            </span>
+            <ClipboardClock
+              className="h-7 w-7 text-[#FDCC03]"
+              strokeWidth={2}
+            />
           </div>
           <div>
             <h3
@@ -470,7 +639,7 @@ export default function Schedule() {
               <BadgeCheck className={iconLeftClasses} />
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={handleCategoryChange}
                 className={boxClasses + " appearance-none font-medium"}
               >
                 {CATEGORY_OPTIONS.map((option) => (
@@ -483,7 +652,7 @@ export default function Schedule() {
             </div>
           </div>
 
-          {/* Main card — same fields always; Retest only ADDS Admission Number */}
+          {/* Main card — same fields always, including Admission Number */}
           <div className={cardClasses + " md:p-6"}>
             <h2
               className="mb-5 text-center text-lg font-bold"
@@ -493,6 +662,49 @@ export default function Schedule() {
             </h2>
 
             <div className="flex flex-col gap-5">
+              {/* Academic Year & Semester — single row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClasses}>Academic Year</label>
+                  <div className="relative">
+                    <CalendarRange className={iconLeftClasses} />
+                    <select
+                      value={academicYear}
+                      onChange={(e) => setAcademicYear(e.target.value)}
+                      className={boxClasses + " appearance-none"}
+                    >
+                      <option value="">Select Academic Year</option>
+                      {ACADEMIC_YEAR_OPTIONS.map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClasses}>Semester</label>
+                  <div className="relative">
+                    <Layers className={iconLeftClasses} />
+                    <select
+                      value={semester}
+                      onChange={(e) => setSemester(e.target.value)}
+                      className={boxClasses + " appearance-none"}
+                    >
+                      <option value="">Select Semester</option>
+                      {SEMESTER_OPTIONS.map((sem) => (
+                        <option key={sem} value={sem}>
+                          {sem} Semester
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                  </div>
+                </div>
+              </div>
+
               {/* Batch */}
               <div>
                 <label className={labelClasses}>Batch</label>
@@ -531,9 +743,8 @@ export default function Schedule() {
                     </span>
                   </button>
                   <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-                      isPickerOpen ? "rotate-180" : ""
-                    }`}
+                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isPickerOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </div>
 
@@ -605,32 +816,75 @@ export default function Schedule() {
                 )}
               </div>
 
-              {/* Admission Number — added into the SAME form only for Retest */}
-              {category === "Retest" && (
-                <div ref={admissionPickerRef} className="relative">
-                  <label className={labelClasses}>Admission Number</label>
-                  <div className="relative">
-                    <BadgeCheck className={iconLeftClasses} />
-                    <button
-                      type="button"
-                      onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                      className={boxClasses + " flex items-center justify-between text-left"}
-                    >
-                      <span className={selectedAdmissionNos.length ? "" : "text-[#9CA3AF]"}>
-                        {selectedAdmissionNos.length
-                          ? `${selectedAdmissionNos.length} Selected`
-                          : "Select admission number(s)"}
-                      </span>
-                    </button>
-                    <ChevronDown
-                      className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-                        isAdmissionPickerOpen ? "rotate-180" : ""
+              {/* Admission Number — now rendered for BOTH Normal and Retest */}
+              <div ref={admissionPickerRef} className="relative">
+                {/* <label className={labelClasses}>Admission Number</label>
+                <div className="relative">
+                  <BadgeCheck className={iconLeftClasses} />
+                  <button
+                    type="button"
+                    onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
+                    className={boxClasses + " flex items-center justify-between text-left"}
+                  >
+                    <span className={selectedAdmissionNos.length ? "" : "text-[#9CA3AF]"}>
+                      {selectedAdmissionNos.length
+                        ? `${selectedAdmissionNos.length} Selected`
+                        : "Select admission number(s)"}
+                    </span>
+                  </button>
+                  <ChevronDown
+                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isAdmissionPickerOpen ? "rotate-180" : ""
                       }`}
-                    />
-                  </div>
+                  />
+                </div> */}
 
-                  {isAdmissionPickerOpen && (
-                    <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                {isAdmissionPickerOpen && (
+                  <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {/* Range picker: select from-number to-number */}
+                    <div className="border-b border-gray-100 bg-[#FAFAFA] p-3">
+                      <p className="mb-2 text-xs font-semibold text-[#000000]">
+                        Select Range
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={rangeFrom}
+                          onChange={(e) => setRangeFrom(e.target.value)}
+                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-[#000000] outline-none focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40"
+                        >
+                          <option value="">From</option>
+                          {ADMISSION_NO_OPTIONS.map((no) => (
+                            <option key={no} value={no}>
+                              {no}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
+                          to
+                        </span>
+                        <select
+                          value={rangeTo}
+                          onChange={(e) => setRangeTo(e.target.value)}
+                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-[#000000] outline-none focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40"
+                        >
+                          <option value="">To</option>
+                          {ADMISSION_NO_OPTIONS.map((no) => (
+                            <option key={no} value={no}>
+                              {no}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleApplyAdmissionRange}
+                        disabled={!rangeFrom || !rangeTo}
+                        className="mt-2 w-full rounded-md bg-[#800000] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#690000] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Add Range
+                      </button>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto">
                       <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-[#800000] transition hover:bg-[#FDCC03]/10">
                         <input
                           type="checkbox"
@@ -655,48 +909,48 @@ export default function Schedule() {
                         </label>
                       ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {selectedAdmissionNos.length > 0 && (
-                    <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-[#000000]">
-                          Selected ({selectedAdmissionNos.length})
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleClearAllAdmission}
-                          className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-                        >
-                          <Undo2 className="h-3 w-3" />
-                          Clear All
-                        </button>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        {selectedAdmissionNos.map((no) => (
-                          <div
-                            key={no}
-                            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-                          >
-                            <span className="flex items-center gap-2">
-                              <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
-                              {no}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAdmission(no)}
-                              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                              aria-label={`Remove ${no}`}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                {selectedAdmissionNos.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#000000]">
+                        Selected ({selectedAdmissionNos.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearAllAdmission}
+                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        Clear All
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
+                    <div className="flex flex-col gap-1.5">
+                      {selectedAdmissionNos.map((no) => (
+                        <div
+                          key={no}
+                          className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
+                        >
+                          <span className="flex items-center gap-2">
+                            <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
+                            {no}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAdmission(no)}
+                            className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+                            aria-label={`Remove ${no}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Test Code */}
               <div>
@@ -770,6 +1024,13 @@ export default function Schedule() {
               <CheckCircle2 className="h-5 w-5" />
               {category === "Normal" ? "Confirm Schedule" : "Assign Retest"}
             </button>
+
+            {errorMessage && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             {statusMessage && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-[#800000]/20 bg-[#800000]/3 px-4 py-3 text-sm font-medium text-[#800000]">
