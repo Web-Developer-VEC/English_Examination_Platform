@@ -142,6 +142,52 @@ const scheduleExam = async (req, res) => {
         }
 
         // =====================================================
+        // ACADEMIC YEAR VALIDATION
+        // =====================================================
+
+        const normalizedAcademicYear =
+            String(academicYear).trim();
+
+        if (!normalizedAcademicYear) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Academic year is required."
+            });
+        }
+
+        // Example:
+        // 2024-2028
+        // 2025-2029
+
+        if (!/^\d{4}-\d{4}$/.test(normalizedAcademicYear)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Academic year must be in format YYYY-YYYY. Example: 2024-2028."
+            });
+        }
+
+        // =====================================================
+        // SEMESTER VALIDATION
+        // =====================================================
+
+        const normalizedSemester =
+            Number(semester);
+
+        if (
+            !Number.isInteger(normalizedSemester) ||
+            normalizedSemester < 1 ||
+            normalizedSemester > 8
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Semester must be an integer between 1 and 8."
+            });
+        }
+
+        // =====================================================
         // ADMISSION NUMBER VALIDATION
         // =====================================================
 
