@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -9,6 +9,7 @@ import {
   CalendarClock,
   UploadCloud,
   FileBarChart,
+  ClipboardList,
   Menu,
   X,
   PanelLeftClose,
@@ -27,19 +28,35 @@ const NAV_ITEMS = [
     label: "Faculty",
     icon: Users,
     children: [
-      { key: "create-test", label: "Create Test", icon: ClipboardPlus, location: "/admin/create-test" },
-      { key: "schedule-test", label: "Schedule Test", icon: CalendarClock, location: "/admin/faculty/schedule-test" },
+      {
+        key: "create-test",
+        label: "Create Test",
+        icon: ClipboardPlus,
+        location: "/admin/create-test",
+      },
+      {
+        key: "schedule-test",
+        label: "Schedule Test",
+        icon: CalendarClock,
+        location: "/admin/schedule",
+      },
       {
         key: "student-data-upload",
         label: "Student Data Upload",
         icon: UploadCloud,
-        location: "/admin/faculty/student-data-upload",
+        location: "/admin/student-data",
       },
       {
         key: "post-exam-report",
         label: "Post-Exam Report Generation",
         icon: FileBarChart,
         location: "/admin/faculty/post-exam-report",
+      },
+      {
+        key: "student-result",
+        label: "Student Result",
+        icon: ClipboardList,
+        location: "/admin/student-result",
       },
     ],
   },
@@ -131,7 +148,7 @@ export default function AdminSidebar() {
 
             return (
               <div key={item.key}>
-               <button
+                <button
                   className={`vec-item-btn ${
                     isDirectActive
                       ? "active"
@@ -139,7 +156,9 @@ export default function AdminSidebar() {
                         ? "parent-active-only"
                         : ""
                   }`}
-                  onClick={() => handleSelect(item.key, hasChildren, item.location)}
+                  onClick={() =>
+                    handleSelect(item.key, hasChildren, item.location)
+                  }
                   aria-expanded={hasChildren ? isOpen : undefined}
                   title={collapsed ? item.label : undefined}
                 >
@@ -161,7 +180,9 @@ export default function AdminSidebar() {
                         <button
                           key={child.key}
                           className={`vec-subitem-btn ${childActive ? "active" : ""}`}
-                          onClick={() => handleSelect(child.key, false, child.location)}
+                          onClick={() =>
+                            handleSelect(child.key, false, child.location)
+                          }
                         >
                           <ChildIcon className="vec-subicon" />
                           <span>{child.label}</span>
