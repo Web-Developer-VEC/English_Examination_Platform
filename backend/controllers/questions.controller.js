@@ -5,10 +5,16 @@ const questionsupload = async (req, res) => {
 
     try {
 
-   
-
-        const { testcode } = req.body;
+        const { questionCode, cie } = req.body;
         const { audio } = req.uploadedData;
+
+        // Validate CIE
+        if (!cie || !cie.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "cie is required."
+            });
+        }
 
         // Validate questionCode
         if (!questionCode || !questionCode.trim()) {
@@ -28,17 +34,19 @@ const questionsupload = async (req, res) => {
 
             questionCode: questionCode.trim(),
 
+            cie: cie.trim(),
+
             audioUrl: audio.url,
 
             questions: parsedQuestions,
 
             createdAt: new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata"
-}),
+                timeZone: "Asia/Kolkata"
+            }),
 
             updatedAt: new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata"
-})
+                timeZone: "Asia/Kolkata"
+            })
 
         };
 
@@ -71,7 +79,6 @@ const questionsupload = async (req, res) => {
 
         console.error("Questions Upload Error:", error);
 
-        // Validation Errors
         return res.status(error.status || 500).json({
 
             success: false,
