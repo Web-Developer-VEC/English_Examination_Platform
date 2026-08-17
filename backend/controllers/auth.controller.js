@@ -17,7 +17,6 @@ const register = async (req, res) => {
             department,
             batch,
             name,
-            department,
             admissionNo
         } = req.body;
 
