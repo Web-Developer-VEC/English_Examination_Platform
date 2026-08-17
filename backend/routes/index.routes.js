@@ -4,13 +4,9 @@ const router = express.Router();
 
 const staffRoutes = require("./staff/staff.routes");
 const auth_routes = require("./auth/auth.routes")
-const student_routes=require("./student/student.routes")
-const report_routes=require("./staff/report.routes")
-const schedule_routes=require("./staff/schedule.routes")
+const exam_routes=require("./exams/exams.routes")
 router.use("/staff", staffRoutes);
 router.use("/auth",auth_routes);
-router.use("/student",student_routes);
-router.use("/staff/report", report_routes);
-router.use("/staff/schedule", schedule_routes);
+router.use("/exam",exam_routes);
 
 module.exports = router;
