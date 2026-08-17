@@ -1,13 +1,21 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
 
-// =========================
+
+// =====================================================
 // START EXAM
-// =========================
+// =====================================================
 const startExam = async (req, res) => {
     try {
 
-        const { testcode, admissionNo } = req.body;
+        const {
+            testcode,
+            admissionNo
+        } = req.body;
+
+        // =====================================================
+        // VALIDATION
+        // =====================================================
 
         if (!testcode || !admissionNo) {
             return res.status(400).json({
@@ -17,13 +25,16 @@ const startExam = async (req, res) => {
         }
 
         const db = getDB();
-         const exam = await db.collection("schedule").findOne({
-          testcode: {
-            $regex: new RegExp(`^${testcode.trim()}$`, "i")
-         }
-         });
 
-        console.log(exam);
+        const exam = await db.collection("schedule").findOne({
+            testcode: {
+                $regex: new RegExp(`^${testcode.trim()}$`, "i")
+            }
+        });
+
+        // =====================================================
+        // FIND SCHEDULED EXAM
+        // =====================================================
 
         if (!exam) {
             return res.status(404).json({
@@ -32,9 +43,42 @@ const startExam = async (req, res) => {
             });
         }
 
-        // Student Exists
+        // =====================================================
+        // CHECK EXAM TIME
+        // =====================================================
+
+        const now = new Date();
+
+        const startTime = exam.startTime
+            ? new Date(exam.startTime)
+            : null;
+
+        const endTime = exam.endTime
+            ? new Date(exam.endTime)
+            : null;
+
+        if (startTime && now < startTime) {
+            return res.status(403).json({
+                success: false,
+                message: "Exam has not started yet.",
+                startTime
+            });
+        }
+
+        if (endTime && now >= endTime) {
+            return res.status(403).json({
+                success: false,
+                message: "Exam time has ended.",
+                endTime
+            });
+        }
+
+        // =====================================================
+        // FIND STUDENT
+        // =====================================================
+
         const student = await db.collection("students").findOne({
-            admissionNo
+            admissionNo: admissionNo.trim()
         });
 
         if (!student) {
@@ -44,100 +88,283 @@ const startExam = async (req, res) => {
             });
         }
 
-        // Already Attempted
-        // Check previous exam attempt
+        // =====================================================
+        // CHECK ELIGIBILITY
+        // =====================================================
+
+        if (
+            exam.eligibility?.department &&
+            exam.eligibility.department !== student.department
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not eligible for this examination."
+            });
+        }
+
+        if (
+            exam.eligibility?.batch &&
+            exam.eligibility.batch !== student.batch
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not eligible for this examination."
+            });
+        }
+
+        if (
+            exam.eligibility?.section &&
+            exam.eligibility.section !== student.section
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not eligible for this examination."
+            });
+        }
+
+        // =====================================================
+        // CHECK QUESTION SET ID
+        // =====================================================
+
+        if (!exam.questionSetId) {
+            return res.status(404).json({
+                success: false,
+                message: "Question set not assigned to this exam."
+            });
+        }
+
+        if (!ObjectId.isValid(exam.questionSetId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid questionSetId."
+            });
+        }
+
+        // =====================================================
+        // GET QUESTION SET
+        // =====================================================
+
+        const questionSet = await db.collection("questions").findOne({
+            _id: new ObjectId(exam.questionSetId)
+        });
+
+        if (!questionSet) {
+            return res.status(404).json({
+                success: false,
+                message: "Question set not found."
+            });
+        }
+
+        if (
+            !Array.isArray(questionSet.questions) ||
+            questionSet.questions.length === 0
+        ) {
+            return res.status(404).json({
+                success: false,
+                message: "No questions found."
+            });
+        }
+
+        // =====================================================
+        // GET CIE
+        // =====================================================
+
+        const cie = questionSet.cie || null;
+
+        // =====================================================
+        // REMOVE CORRECT ANSWERS
+        // =====================================================
+
+        const questions = questionSet.questions.map(question => ({
+            questionNo: question.questionNo,
+            question: question.question,
+            options: question.options
+        }));
+
+        // =====================================================
+        // CHECK PREVIOUS EXAM ATTEMPT
+        // =====================================================
+
         const alreadyAttempted = await db.collection("exam").findOne({
             testId: exam._id,
             admissionNo: student.admissionNo
         });
 
-        // If attempt exists and status is true
-        if (alreadyAttempted && alreadyAttempted.status === true) {
+        // =====================================================
+        // ALREADY SUBMITTED
+        // =====================================================
+
+        if (
+            alreadyAttempted &&
+            alreadyAttempted.status === false
+        ) {
             return res.status(403).json({
                 success: false,
                 message: "You have already attended this examination.",
-                status: alreadyAttempted.status
+                status: false
             });
         }
-        // Create exam attempt
-        const questionSet = await db.collection("questions").findOne({
-    _id: new ObjectId(exam.questionSetId)
-});
 
-const examAttempt = {
+        // =====================================================
+        // EXAM ALREADY STARTED
+        // =====================================================
 
-    testId: exam._id,
+        if (
+            alreadyAttempted &&
+            alreadyAttempted.status === true
+        ) {
 
-    questionSetId: exam.questionSetId,
+            return res.status(200).json({
 
-    title: exam.title,
+                success: true,
 
-    category: exam.category,
+                message: "Exam already started.",
 
-    admissionNo: student.admissionNo,
+                examId: alreadyAttempted._id,
 
-    registerNo: student.registerNo,
+                testId: exam._id,
 
-    studentName: student.name,
+                questionSetId: exam.questionSetId,
 
-    department: student.department,
+                title: exam.title || null,
 
-    batch: student.batch,
+                category: exam.category || null,
 
-    year: student.year,
+                cie: alreadyAttempted.cie || cie,
 
-    section: student.section,
+                duration: exam.duration,
 
-    answers: [],
+                startedAt: alreadyAttempted.startedAt,
 
-    totalQuestions: questionSet.questions.length,
+                endTime: endTime,
 
-    obtainedMarks: 0,
+                questions
 
-    totalMarks: questionSet.questions.length,
+            });
+        }
 
-    percentage: 0,
+        // =====================================================
+        // CREATE NEW EXAM ATTEMPT
+        // =====================================================
 
-    result: "Pending",
+        const startedAt = new Date();
 
-    malpractice: {
-        status: false,
-        reason: ""
-    },
+        const examAttempt = {
 
-    status: true,
+            testId: exam._id,
 
-    startedAt: new Date(),
+            questionSetId: exam.questionSetId,
 
-    submittedAt: null,
+            title: exam.title || null,
 
-    createdAt: new Date(),
+            category: exam.category || null,
 
-    updatedAt: new Date()
-};
+            // CIE I / II / III
+            cie: cie,
 
-        // Save attempt
-        const result = await db.collection("exam").insertOne(examAttempt);
+            admissionNo: student.admissionNo,
+
+            registerNo: student.registerNo,
+
+            studentName: student.name,
+
+            department: student.department,
+
+            batch: student.batch,
+
+            year: student.year,
+
+            section: student.section,
+
+            answers: [],
+
+            totalQuestions: questions.length,
+
+            obtainedMarks: 0,
+
+            totalMarks: questions.length,
+
+            percentage: 0,
+
+            result: "Pending",
+
+            malpractice: {
+                status: false,
+                reason: ""
+            },
+
+            // true = exam active
+            // false = exam submitted
+            status: true,
+
+            startedAt: startedAt,
+
+            submittedAt: null,
+
+            createdAt: startedAt,
+
+            updatedAt: startedAt
+        };
+
+        // =====================================================
+        // INSERT EXAM ATTEMPT
+        // =====================================================
+
+        const insertResult = await db
+            .collection("exam")
+            .insertOne(examAttempt);
+
+        // =====================================================
+        // RESPONSE
+        // =====================================================
 
         return res.status(200).json({
+
             success: true,
+
             message: "Exam started successfully.",
-            examId: result.insertedId,
+
+            examId: insertResult.insertedId,
+
             testId: exam._id,
+
             questionSetId: exam.questionSetId,
-            title: exam.title,
-            duration: exam.duration
+
+            title: exam.title || null,
+
+            category: exam.category || null,
+
+            // CIE I / II / III
+            cie: cie,
+
+            duration: exam.duration,
+
+            startedAt: startedAt,
+
+            endTime: endTime,
+
+            totalQuestions: questions.length,
+
+            questions
+
         });
 
     } catch (error) {
+
+        console.error(
+            "START EXAM ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
 };
+
+
+
 
 // =========================
 // SUBMIT EXAM
@@ -149,7 +376,7 @@ const submitExam = async (req, res) => {
 
         const {
             testId,
-            admissionNo,
+            admissionNo
         } = req.body;
 
         // ----------------------------
@@ -313,8 +540,12 @@ const submitExam = async (req, res) => {
                         reason: ""
                     },
                     status: false,
-                    submittedAt: new Date(),
-                    updatedAt: new Date()
+                    submittedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+}),
+                    updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                 }
             }
         );
@@ -362,32 +593,207 @@ const syncExam = async (req, res) => {
             !testId ||
             !admissionNo ||
             questionNo == null ||
-            !studentAnswer
+            studentAnswer == null ||
+            String(studentAnswer).trim() === ""
         ) {
             return res.status(400).json({
                 success: false,
-                message: "testId, admissionNo, questionNo and studentAnswer are required."
+                message:
+                    "testId, admissionNo, questionNo and studentAnswer are required."
             });
         }
 
-        // ----------------------------
-        // Find Exam Attempt
-        // ----------------------------
-        const examAttempt = await db.collection("exam").findOne({
-            testId: new ObjectId(testId),
+        // =====================================================
+        // 2. VALIDATE TEST ID
+        // =====================================================
+
+        if (!ObjectId.isValid(testId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid testId."
+            });
+        }
+
+        // =====================================================
+        // 3. FIND STUDENT
+        // =====================================================
+
+        const student = await db.collection("students").findOne({
             admissionNo
         });
 
-        if (!examAttempt) {
+        if (!student) {
             return res.status(404).json({
                 success: false,
-                message: "Exam not started."
+                message: "Student not found."
             });
         }
 
-        // ----------------------------
-        // Already Submitted?
-        // ----------------------------
+        // =====================================================
+        // 4. FIND SCHEDULED TEST
+        // =====================================================
+
+        const test = await db.collection("schedule").findOne({
+            _id: new ObjectId(testId)
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Scheduled Test not found."
+            });
+        }
+
+        // =====================================================
+        // 5. CHECK QUESTION SET
+        // =====================================================
+
+        if (!test.questionSetId) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Question set is not assigned to this test."
+            });
+        }
+
+        if (!ObjectId.isValid(test.questionSetId)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid questionSetId in scheduled test."
+            });
+        }
+
+        // =====================================================
+        // 6. FIND QUESTION SET
+        // =====================================================
+
+        const questionSet = await db.collection("questions").findOne({
+            _id: new ObjectId(test.questionSetId)
+        });
+
+        if (!questionSet) {
+            return res.status(404).json({
+                success: false,
+                message: "Question set not found."
+            });
+        }
+
+        // =====================================================
+        // 7. CHECK QUESTIONS
+        // =====================================================
+
+        if (
+            !Array.isArray(questionSet.questions) ||
+            questionSet.questions.length === 0
+        ) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    "No questions found in this question set."
+            });
+        }
+
+        // =====================================================
+        // 8. FIND QUESTION BY QUESTION NO
+        // =====================================================
+
+        const question = questionSet.questions.find(
+            q =>
+                Number(q.questionNo) ===
+                Number(questionNo)
+        );
+
+        if (!question) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    `Question ${questionNo} does not exist.`
+            });
+        }
+
+        // =====================================================
+        // 9. NORMALIZE STUDENT ANSWER
+        // =====================================================
+
+        const normalizedStudentAnswer =
+            String(studentAnswer).trim();
+
+        // =====================================================
+        // 10. VALIDATE ANSWER AGAINST OPTION VALUES
+        //
+        // Example:
+        //
+        // options:
+        // {
+        //     A: "Slow",
+        //     B: "Clumsy",
+        //     C: "Quick",
+        //     D: "Unsteady"
+        // }
+        //
+        // Student can send:
+        //
+        // "Quick"
+        //
+        // NOT:
+        //
+        // "C"
+        // =====================================================
+
+        if (
+            !question.options ||
+            typeof question.options !== "object"
+        ) {
+            return res.status(500).json({
+                success: false,
+                message:
+                    `Options are missing for question ${questionNo}.`
+            });
+        }
+
+        const optionValues = Object.values(
+            question.options
+        ).map(option =>
+            String(option).trim()
+        );
+
+        const answerExistsInOptions =
+            optionValues.some(
+                option =>
+                    option.toLowerCase() ===
+                    normalizedStudentAnswer.toLowerCase()
+            );
+
+        if (!answerExistsInOptions) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    `Invalid answer '${normalizedStudentAnswer}' for question ${questionNo}.`
+            });
+        }
+
+        // =====================================================
+        // 11. FIND EXAM ATTEMPT
+        // =====================================================
+
+        const examAttempt = await db.collection("exam").findOne({
+            testId: new ObjectId(testId),
+            admissionNo: student.admissionNo
+        });
+
+        if (!examAttempt) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Please start the exam first."
+            });
+        }
+
+        // =====================================================
+        // 12. CHECK SUBMITTED
+        // =====================================================
+
         if (examAttempt.status === false) {
             return res.status(403).json({
                 success: false,
@@ -395,16 +801,44 @@ const syncExam = async (req, res) => {
             });
         }
 
-        // ----------------------------
-        // Find Existing Answer
-        // ----------------------------
-        const existingIndex = examAttempt.answers.findIndex(
-            answer => Number(answer.questionNo) === Number(questionNo)
-        );
+        // =====================================================
+        // 13. ENSURE ANSWERS ARRAY
+        // =====================================================
 
-        if (existingIndex >= 0) {
+        if (!Array.isArray(examAttempt.answers)) {
 
-            // Update existing answer
+            await db.collection("exam").updateOne(
+                {
+                    _id: examAttempt._id
+                },
+                {
+                    $set: {
+                        answers: [],
+                        updatedAt: new Date()
+                    }
+                }
+            );
+
+            examAttempt.answers = [];
+        }
+
+        // =====================================================
+        // 14. CHECK EXISTING ANSWER
+        // =====================================================
+
+        const existingAnswer =
+            examAttempt.answers.find(
+                answer =>
+                    Number(answer.questionNo) ===
+                    Number(questionNo)
+            );
+
+        // =====================================================
+        // 15. UPDATE EXISTING ANSWER
+        // =====================================================
+
+        if (existingAnswer) {
+
             await db.collection("exam").updateOne(
                 {
                     _id: examAttempt._id,
@@ -418,9 +852,14 @@ const syncExam = async (req, res) => {
                 }
             );
 
-        } else {
+        }
 
-            // Insert new answer
+        // =====================================================
+        // 16. INSERT NEW ANSWER
+        // =====================================================
+
+        else {
+
             await db.collection("exam").updateOne(
                 {
                     _id: examAttempt._id
@@ -428,40 +867,69 @@ const syncExam = async (req, res) => {
                 {
                     $push: {
                         answers: {
-                            questionNo: Number(questionNo),
-                            studentAnswer: String(studentAnswer).trim().toUpperCase()
+                            questionNo:
+                                Number(questionNo),
+
+                            studentAnswer:
+                                normalizedStudentAnswer
                         }
                     },
                     $set: {
-                        updatedAt: new Date()
+                        updatedAt: new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+})
                     }
                 }
             );
-
         }
 
-        // ----------------------------
-        // Return Updated Answers
-        // ----------------------------
-        const updatedExam = await db.collection("exam").findOne({
-            _id: examAttempt._id
-        });
+        // =====================================================
+        // 17. GET UPDATED EXAM
+        // =====================================================
+
+        const updatedExam =
+            await db.collection("exam").findOne({
+                _id: examAttempt._id
+            });
 
         return res.status(200).json({
             success: true,
-            message: "Answer synchronized successfully.",
-            answers: updatedExam.answers
+
+            message: existingAnswer
+                ? "Answer updated successfully."
+                : "Answer synchronized successfully.",
+
+            data: {
+
+                testId:
+                    updatedExam.testId,
+
+                admissionNo:
+                    updatedExam.admissionNo,
+
+                questionNo:
+                    Number(questionNo),
+
+                studentAnswer:
+                    normalizedStudentAnswer,
+
+                totalAnswered:
+                    updatedExam.answers.length
+            }
+
         });
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "SYNC EXAM ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
 };
 

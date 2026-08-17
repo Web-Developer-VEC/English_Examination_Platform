@@ -5,16 +5,16 @@ const questionsupload = async (req, res) => {
 
     try {
 
-        // Validate middleware execution
-        if (!req.uploadedData) {
+        const { questionCode, cie } = req.body;
+        const { audio } = req.uploadedData;
+
+        // Validate CIE
+        if (!cie || !cie.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "Upload failed. Please upload both audio and Excel files."
+                message: "cie is required."
             });
         }
-
-        const { questionCode } = req.body;
-        const { audio, questions } = req.uploadedData;
 
         // Validate questionCode
         if (!questionCode || !questionCode.trim()) {
@@ -34,15 +34,19 @@ const questionsupload = async (req, res) => {
 
             questionCode: questionCode.trim(),
 
-            audioUrl: audio.url,
+            cie: cie.trim(),
 
-            questionsUrl: questions.url,
+            audioUrl: audio.url,
 
             questions: parsedQuestions,
 
-            createdAt: new Date(),
+            createdAt: new Date().toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata"
+            }),
 
-            updatedAt: new Date()
+            updatedAt: new Date().toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata"
+            })
 
         };
 
@@ -75,7 +79,6 @@ const questionsupload = async (req, res) => {
 
         console.error("Questions Upload Error:", error);
 
-        // Validation Errors
         return res.status(error.status || 500).json({
 
             success: false,

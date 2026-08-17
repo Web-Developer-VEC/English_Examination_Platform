@@ -230,20 +230,20 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
           {/* Analog clock face */}
           <div className="px-3 pb-3 pt-2">
-            <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
-              <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
-              <circle
-                cx={cx}
-                cy={cy}
-                r={outerRadius + 14}
-                fill="none"
-                stroke="#E5E7EB"
-                strokeWidth="1"
-              />
-              <circle cx={cx} cy={cy} r="3" fill="#800000" />
+          <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
+            <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
+            <circle
+              cx={cx}
+              cy={cy}
+              r={outerRadius + 14}
+              fill="none"
+              stroke="#E5E7EB"
+              strokeWidth="1"
+            />
+            <circle cx={cx} cy={cy} r="3" fill="#800000" />
 
-              {mode === "hour"
-                ? HOUR_VALUES.map((h) => {
+            {mode === "hour"
+              ? HOUR_VALUES.map((h) => {
                   const { x, y } = polarPoint(h, outerRadius, cx, cy);
                   const isSelected = hour === pad2(h);
                   return (
@@ -272,7 +272,7 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })
-                : MINUTE_VALUES.map((m, idx) => {
+              : MINUTE_VALUES.map((m, idx) => {
                   const { x, y } = polarPoint(idx, outerRadius, cx, cy);
                   const isSelected = minute === pad2(m);
                   return (
@@ -301,11 +301,11 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })}
-            </svg>
+          </svg>
 
-            <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
-              {mode === "hour" ? "Select hour, then minute" : "Select minute"}
-            </p>
+          <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
+            {mode === "hour" ? "Select hour, then minute" : "Select minute"}
+          </p>
           </div>
         </div>
       )}
@@ -616,6 +616,10 @@ export default function Schedule() {
               className="h-7 w-7 text-[#FDCC03]"
               strokeWidth={2}
             />
+            <GraduationCap className="h-7 w-7 text-[#FDCC03]" strokeWidth={2} />
+            <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FDCC03] shadow-sm">
+              <ShieldCheck className="h-3 w-3 text-[#800000]" strokeWidth={3} />
+            </span>
           </div>
           <div>
             <h3
@@ -640,6 +644,7 @@ export default function Schedule() {
               <select
                 value={category}
                 onChange={handleCategoryChange}
+                onChange={(e) => setCategory(e.target.value)}
                 className={boxClasses + " appearance-none font-medium"}
               >
                 {CATEGORY_OPTIONS.map((option) => (
