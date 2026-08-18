@@ -6,7 +6,6 @@ const {getScheduleData,getScheduledExams} = require("../../controllers/getschedu
 const {scheduleExam} = require("../../controllers/schedule.controller");
 router.get(
     "/getscheduledata",
-    staffAuth,
     getScheduleData
 );
 router.get(
