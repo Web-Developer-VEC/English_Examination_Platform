@@ -3,12 +3,9 @@ const { ObjectId } = require("mongodb");
 const fs = require("fs");
 const path = require("path");
 
-const puppeteer = require("puppeteer");
-const { ObjectId } = require("mongodb");
-
 const { getDB } = require("../config/db");
 const { getFromS3, uploadToS3 } = require("../service/s3_service");
-const { getFromS3, uploadToS3 } = require("../service/s3_service");
+
 
 
 // ============================================================

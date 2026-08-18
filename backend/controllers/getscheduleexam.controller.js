@@ -75,11 +75,12 @@ const getScheduleData = async (req, res) => {
                 }
             )
             .toArray();
-
+      
         const tests = questions.map(question => ({
             questionSetId: question._id,
             questionCode: question.questionCode,
         }));
+        console.log(tests);
 
 
         // ==========================================
