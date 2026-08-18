@@ -1,12 +1,17 @@
 {
-    "testcode": "test1",
+    
     "category": "normal",
-    "questionSetId": "6a71b2639b2d61c53c26e506",
+    "questionSetId": "6a7d953b08abeea91520e30a",
+    "cie": "I",
     "department": "AI&DS",
+      "academicYear": "2026-2027",
+  "semester": 7,
     "batch": "2024-2028",
     "section": "A",
     "admissionNo": [],
     "duration": 60,
-    "startTime": "2026-08-04T09:00:00Z",
-    "endTime": "2026-08-10T10:00:00Z"
+    
+  "startTime": "2026-08-13T15:33:00+05:30",
+  "endTime": "2026-08-13T15:37:00+05:30"
+
 }

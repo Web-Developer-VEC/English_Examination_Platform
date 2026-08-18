@@ -1,3 +1,5 @@
+const puppeteer = require("puppeteer");
+const { ObjectId } = require("mongodb");
 const fs = require("fs");
 const path = require("path");
 
@@ -5,6 +7,7 @@ const puppeteer = require("puppeteer");
 const { ObjectId } = require("mongodb");
 
 const { getDB } = require("../config/db");
+const { getFromS3, uploadToS3 } = require("../service/s3_service");
 const { getFromS3, uploadToS3 } = require("../service/s3_service");
 
 
@@ -442,28 +445,28 @@ const generateExamReport = async (req, res) => {
                         </td>
                     `;
 
-                return `
-                    <tr>
+                    return `
+                        <tr>
 
-                        <td>
-                            ${index + 1}
-                        </td>
+                            <td>
+                                ${index + 1}
+                            </td>
 
-                        <td>
-                            ${student.admissionNo || "-"}
-                        </td>
+                            <td>
+                                ${student.admissionNo}
+                            </td>
 
-                        <td class="name">
-                            ${student.studentName || "-"}
-                        </td>
+                            <td class="name">
+                                ${student.studentName}
+                            </td>
 
                         ${marksCells}
 
-                    </tr>
-                `;
+                        </tr>
+                    `;
 
-            })
-            .join("");
+                })
+                .join("");
 
 
         // ====================================================
@@ -656,24 +659,25 @@ const generateExamReport = async (req, res) => {
         // GENERATE PDF
         // ====================================================
 
-        const pdf = await page.pdf({
+        const pdf =
+            await page.pdf({
 
-            format: "A4",
+                format: "A4",
 
-            landscape: true,
+                landscape: true,
 
-            printBackground: true,
+                printBackground: true,
 
-            margin: {
+                margin: {
 
                 top: "15mm",
                 bottom: "15mm",
                 left: "10mm",
                 right: "10mm"
 
-            }
+                }
 
-        });
+            });
 
 
         // ====================================================
@@ -783,7 +787,14 @@ const generateExamReport = async (req, res) => {
 
         if (browser) {
 
-            await browser.close();
+            try {
+                await browser.close();
+            } catch (closeError) {
+                console.error(
+                    "Browser close error:",
+                    closeError
+                );
+            }
 
         }
 
