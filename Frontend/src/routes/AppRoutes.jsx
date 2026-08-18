@@ -32,7 +32,7 @@ export default function AppRoutes() {
       {/* Student */}
       <Route path="/student" element={<StudentLayout />}>
         <Route path="start-test" element={<StartTest />} />
-        <Route path="audio" element={<AudioTest />} />
+        <Route path="exam" element={<AudioTest />} />
       </Route>
 
       {/* admin */}

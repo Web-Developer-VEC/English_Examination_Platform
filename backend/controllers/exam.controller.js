@@ -238,6 +238,8 @@ const startExam = async (req, res) => {
 
                 endTime: endTime,
 
+                audioUrl: questionSet.audioUrl,
+
                 questions
 
             });
@@ -344,6 +346,8 @@ const startExam = async (req, res) => {
             endTime: endTime,
 
             totalQuestions: questions.length,
+
+            audioUrl: questionSet.audioUrl,
 
             questions
 
