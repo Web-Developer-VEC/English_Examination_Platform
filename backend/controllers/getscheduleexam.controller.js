@@ -12,7 +12,7 @@ const getScheduleData = async (req, res) => {
         const db = getDB();
 
         // ==========================================
-        // Get required student fields
+        // Get required student fields 
         // ==========================================
 
         const students = await db
@@ -156,13 +156,13 @@ const getScheduledExams = async (req, res) => {
                         ? questionSet.testcode
                         : null,
 
-                    department: exam.department,
+                    department: exam.eligibility.department,
 
-                    batch: exam.batch,
+                    batch: exam.eligibility.batch,
 
-                    section: exam.section,
+                    section: exam.eligibility.section,
 
-                    admissionNo: exam.admissionNo || [],
+                    admissionNo: exam.eligibility.admissionNo || [],
 
                     duration: exam.duration,
 
