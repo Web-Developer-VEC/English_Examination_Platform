@@ -17,19 +17,15 @@ const getScheduleData = async (req, res) => {
 
         const students = await db
             .collection("students")
-            .find(
-                {},
-                {
-                    projection: {
-                        _id: 0,
-                        batch: 1,
-                        department: 1,
-                        section: 1,
-                        admissionNo: 1
-                    }
-                }
-            )
+            .find({})
+            .sort({
+                batch:1,
+                department:1,
+                section: 1,
+                name: 1
+            })
             .toArray();
+            
 
         // ==========================================
         // Batch + Department + Section combinations
@@ -74,7 +70,7 @@ const getScheduleData = async (req, res) => {
 
         const tests = questions.map(question => ({
             questionSetId: question._id,
-            testcode: question.testcode
+            questionCode: question.questionCode,
         }));
 
         // ==========================================
@@ -98,7 +94,7 @@ const getScheduleData = async (req, res) => {
                         .map(student => student.admissionNo)
                         .filter(Boolean)
                 )
-            ];
+            ].sort();
         }
 
         // ==========================================
@@ -120,9 +116,6 @@ const getScheduleData = async (req, res) => {
         });
     }
 };
-
-
-
 
 
 const getScheduledExams = async (req, res) => {
@@ -197,9 +190,72 @@ const getScheduledExams = async (req, res) => {
         });
     }
 };
+const getStudentsByDepartmentAndBatch = async (req, res) => {
+    try {
+
+        const { department, batch } = req.body;
+
+        // ==========================================
+        // Validate input
+        // ==========================================
+
+        if (!department || !department.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Department is required"
+            });
+        }
+
+        if (!batch || !batch.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Batch is required"
+            });
+        }
+
+        const db = getDB();
+
+        // ==========================================
+        // Get students
+        // ==========================================
+
+        const students = await db
+            .collection("students")
+            .find({
+                department: department.trim(),
+                batch: batch.trim()
+            })
+            .sort({
+                section: 1,
+                name: 1
+            })
+            .toArray();
+
+        // ==========================================
+        // Response
+        // ==========================================
+
+        return res.status(200).json({
+            success: true,
+            data: students
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get Students By Department And Batch Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Internal Server Error"
+        });
+    }
+};
 
 
 module.exports = {
-    getScheduleData, getScheduledExams
+    getScheduleData, getScheduledExams,getStudentsByDepartmentAndBatch
 
 };

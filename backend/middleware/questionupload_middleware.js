@@ -80,7 +80,7 @@ const questions_upload_Middleware = (req, res, next) => {
         
 
             req.uploadedData = {
-                
+                questionCode,
                 audio: uploadedAudio
             };
 
