@@ -40,7 +40,7 @@ export default function AppRoutes() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="admins" element={<Admins />} />
-        <Route path="create-test" element={<CreateTest />} />
+        <Route path="createtest" element={<CreateTest />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="results" element={<Results />} />
         {/* <Route path="Sidebar" element={<Sidebar />} /> */}
