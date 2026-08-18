@@ -14,7 +14,6 @@ router.get(
 );
 router.post(
     "/scheduleexam",
-    staffAuth,
     scheduleExam
 );
 
