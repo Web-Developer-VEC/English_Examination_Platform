@@ -1,120 +1,84 @@
+const puppeteer = require("puppeteer");
+const { ObjectId } = require("mongodb");
 const fs = require("fs");
 const path = require("path");
-const Busboy = require("busboy");
-const puppeteer = require("puppeteer");
 
 const { getDB } = require("../config/db");
+const { getFromS3, uploadToS3 } = require("../service/s3_service");
 
 
-// =========================
-// GENERATE EXAM REPORT PDF
-// =========================
+// ============================================================
+// GENERATE EXAM RESULT REPORT
+// ============================================================
+
 const generateExamReport = async (req, res) => {
 
     let browser = null;
 
     try {
 
-        // =====================================
-        // PARSE MULTIPART/FORM-DATA USING BUSBOY
-        // =====================================
-
-        const fields = {};
-
-        const busboy = Busboy({
-            headers: req.headers
-        });
-
-
-        busboy.on("field", (name, value) => {
-
-            fields[name] = value;
-
-        });
-
-
-        await new Promise((resolve, reject) => {
-
-            busboy.on("finish", resolve);
-
-            busboy.on("error", reject);
-
-            req.pipe(busboy);
-
-        });
-
-
-        console.log("FORM-DATA:");
-        console.log(fields);
-
-
-        // =====================================
-        // GET JSON DATA
-        // =====================================
-
-        if (!fields.data) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message: "data field is required."
-
-            });
-
-        }
-
-
-        // =====================================
-        // PARSE JSON
-        // =====================================
-
-        let data;
-
-        try {
-
-            data = JSON.parse(fields.data);
-
-        } catch (error) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message: "Invalid JSON in data field."
-
-            });
-
-        }
-
-
-        console.log("JSON DATA:");
-        console.log(data);
-
-
-        // =====================================
-        // GET FILTERS
-        // =====================================
+        // ====================================================
+        // GET JSON BODY
+        // ====================================================
 
         const {
             batch,
             department,
-            section
-        } = data;
+            section,
+            cie
+        } = req.body;
 
 
-        // =====================================
-        // GET DATABASE
-        // =====================================
+        console.log("========================================");
+        console.log("REPORT REQUEST");
+        console.log("========================================");
+
+        console.log({
+            batch,
+            department,
+            section,
+            cie
+        });
+
+
+        // ====================================================
+        // VALIDATE CIE
+        // ====================================================
+
+        const cieNumber = Number(cie);
+
+        if (![1, 2, 3].includes(cieNumber)) {
+
+            return res.status(400).json({
+                success: false,
+                message: "cie must be 1, 2 or 3."
+            });
+
+        }
+
+
+        // ====================================================
+        // EXPECTED TEST COUNT
+        // ====================================================
+
+        const expectedTests =
+            cieNumber === 3 ? 2 : 4;
+
+
+        // ====================================================
+        // DATABASE
+        // ====================================================
 
         const db = getDB();
 
 
-        // =====================================
-        // BUILD MONGODB FILTER
-        // =====================================
+        // ====================================================
+        // SCHEDULE FILTER
+        // ====================================================
 
-        const filter = {};
+        const scheduleFilter = {
+            cie: cieNumber
+        };
 
 
         if (
@@ -123,7 +87,7 @@ const generateExamReport = async (req, res) => {
             batch.trim() !== ""
         ) {
 
-            filter.batch = batch.trim();
+            scheduleFilter.batch = batch.trim();
 
         }
 
@@ -134,7 +98,7 @@ const generateExamReport = async (req, res) => {
             department.trim() !== ""
         ) {
 
-            filter.department = department.trim();
+            scheduleFilter.department = department.trim();
 
         }
 
@@ -145,210 +109,585 @@ const generateExamReport = async (req, res) => {
             section.trim() !== ""
         ) {
 
-            filter.section = section.trim();
+            scheduleFilter.section = section.trim();
 
         }
 
 
-        console.log("MONGODB FILTER:");
-        console.log(filter);
+        console.log("========================================");
+        console.log("SCHEDULE FILTER");
+        console.log("========================================");
+
+        console.log(scheduleFilter);
 
 
-        // =====================================
-        // GET EXAM RECORDS
-        // =====================================
+        // ====================================================
+        // GET SCHEDULES
+        //
+        // questionSetId -> testcode
+        // ====================================================
 
-        const students = await db
+        const schedules = await db
+            .collection("schedule")
+            .find(scheduleFilter)
+            .project({
+                questionSetId: 1,
+                testcode: 1,
+                cie: 1,
+                startTime: 1,
+                endTime: 1
+            })
+            .sort({
+                startTime: 1
+            })
+            .toArray();
+
+
+        console.log("========================================");
+        console.log("SCHEDULES FOUND");
+        console.log("========================================");
+
+        console.log(schedules);
+
+
+        // ====================================================
+        // CHECK TEST COUNT
+        // ====================================================
+
+        // if (schedules.length !== expectedTests) {
+
+        //     return res.status(400).json({
+
+        //         success: false,
+
+        //         message:
+        //             `Expected ${expectedTests} tests for CIE ${cieNumber}, but found ${schedules.length}.`,
+
+        //         expectedTests,
+
+        //         foundTests:
+        //             schedules.length
+
+        //     });
+
+        // }
+
+
+        // ====================================================
+        // CREATE QUESTION SET -> SCHEDULE MAP
+        // ====================================================
+
+        const scheduleMap = new Map();
+
+
+        schedules.forEach(schedule => {
+
+            if (!schedule.questionSetId) {
+                return;
+            }
+
+            scheduleMap.set(
+                schedule.questionSetId.toString(),
+                schedule
+            );
+
+        });
+
+
+        // ====================================================
+        // GET QUESTION SET IDS
+        // ====================================================
+
+        const questionSetIds = schedules
+            .map(schedule =>
+                schedule.questionSetId?.toString()
+            )
+            .filter(Boolean);
+
+
+        // ====================================================
+        // CONVERT QUESTION SET IDS TO OBJECT IDS
+        // ====================================================
+
+        const questionSetObjectIds =
+            questionSetIds
+                .filter(id =>
+                    ObjectId.isValid(id)
+                )
+                .map(id =>
+                    new ObjectId(id)
+                );
+
+
+        if (questionSetObjectIds.length === 0) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "No valid questionSetId found in schedules."
+
+            });
+
+        }
+
+
+        // ====================================================
+        // EXAM FILTER
+        // ====================================================
+
+        const examFilter = {
+
+            questionSetId: {
+                $in: questionSetObjectIds
+            }
+
+        };
+
+
+        if (
+            batch &&
+            typeof batch === "string" &&
+            batch.trim() !== ""
+        ) {
+
+            examFilter.batch = batch.trim();
+
+        }
+
+
+        if (
+            department &&
+            typeof department === "string" &&
+            department.trim() !== ""
+        ) {
+
+            examFilter.department = department.trim();
+
+        }
+
+
+        if (
+            section &&
+            typeof section === "string" &&
+            section.trim() !== ""
+        ) {
+
+            examFilter.section = section.trim();
+
+        }
+
+
+        console.log("========================================");
+        console.log("EXAM FILTER");
+        console.log("========================================");
+
+        console.log(examFilter);
+
+
+        // ====================================================
+        // GET EXAM RESULTS
+        // ====================================================
+
+        const exams = await db
             .collection("exam")
-            .find(filter)
+            .find(examFilter)
             .project({
 
                 _id: 0,
 
                 admissionNo: 1,
-
+                registerNo: 1,
                 studentName: 1,
 
                 department: 1,
-
                 batch: 1,
-
                 section: 1,
 
-                obtainedMarks: 1,
+                questionSetId: 1,
 
+                obtainedMarks: 1,
                 totalMarks: 1
 
             })
             .sort({
 
-                studentName: 1
+                admissionNo: 1,
+                createdAt: 1
 
             })
             .toArray();
 
 
-        // =====================================
-        // CHECK RECORDS
-        // =====================================
+        // ====================================================
+        // CHECK RESULTS
+        // ====================================================
 
-        if (students.length === 0) {
+        if (exams.length === 0) {
 
             return res.status(404).json({
 
                 success: false,
 
                 message:
-                    "No examination records found for the given filters."
+                    `No examination records found for CIE ${cieNumber}.`
 
             });
 
         }
 
 
-        console.log(
-            `Found ${students.length} students`
-        );
+        // ====================================================
+        // GROUP BY STUDENT
+        //
+        // ONE STUDENT = ONE ROW
+        // ====================================================
+
+        const studentMap = new Map();
 
 
-        // =====================================
-        // GENERATE TABLE ROWS
-        // =====================================
+        for (const exam of exams) {
 
-        const rows = students
-            .map((student, index) => {
-
-                return `
-                    <tr>
-
-                        <td>
-                            ${index + 1}
-                        </td>
-
-                        <td>
-                            ${student.admissionNo || "-"}
-                        </td>
-
-                        <td class="name">
-                            ${student.studentName || "-"}
-                        </td>
-
-                        <td>
-                            ${student.department || "-"}
-                        </td>
-
-                        <td>
-                            ${student.batch || "-"}
-                        </td>
-
-                        <td>
-                            ${student.section || "-"}
-                        </td>
-
-                        <td>
-                            ${student.obtainedMarks ?? 0}/${student.totalMarks ?? 0}
-                        </td>
-
-                    </tr>
-                `;
-
-            })
-            .join("");
+            if (!exam.admissionNo) {
+                continue;
+            }
 
 
-        // =====================================
-        // READ HTML TEMPLATE
-        // =====================================
+            const admissionNo =
+                exam.admissionNo.toString();
+
+
+            // =================================================
+            // CREATE STUDENT
+            // =================================================
+
+            if (!studentMap.has(admissionNo)) {
+
+                studentMap.set(
+                    admissionNo,
+                    {
+
+                        admissionNo,
+
+                        registerNo:
+                            exam.registerNo || "-",
+
+                        studentName:
+                            exam.studentName || "-",
+
+                        department:
+                            exam.department || "-",
+
+                        batch:
+                            exam.batch || "-",
+
+                        section:
+                            exam.section || "-",
+
+                        tests: []
+
+                    }
+                );
+
+            }
+
+
+            // =================================================
+            // QUESTION SET ID
+            // =================================================
+
+            const questionSetId =
+                exam.questionSetId?.toString();
+
+
+            if (!questionSetId) {
+                continue;
+            }
+
+
+            // =================================================
+            // FIND SCHEDULE
+            //
+            // questionSetId
+            //       ↓
+            // schedule
+            //       ↓
+            // testcode
+            // =================================================
+
+            const schedule =
+                scheduleMap.get(questionSetId);
+
+
+            if (!schedule) {
+                continue;
+            }
+
+
+            // =================================================
+            // GET STUDENT
+            // =================================================
+
+            const student =
+                studentMap.get(admissionNo);
+
+
+            // =================================================
+            // ADD TEST RESULT
+            // =================================================
+
+            student.tests.push({
+
+                questionSetId,
+
+                testcode:
+                    schedule.testcode || "-",
+
+                obtainedMarks:
+                    exam.obtainedMarks ?? 0,
+
+                totalMarks:
+                    exam.totalMarks ?? 0
+
+            });
+
+        }
+
+
+        // ====================================================
+        // CONVERT TO ARRAY
+        // ====================================================
+
+        const students =
+            Array.from(
+                studentMap.values()
+            );
+
+
+        // ====================================================
+        // SORT STUDENTS
+        // ====================================================
+
+        students.sort((a, b) => {
+
+            return a.admissionNo.localeCompare(
+                b.admissionNo
+            );
+
+        });
+
+
+        // ====================================================
+        // GENERATE TEST HEADERS
+        // ====================================================
+
+        const testHeaders =
+            schedules
+                .map((schedule, index) => {
+
+                    return `
+                        <th class="test-header">
+
+                            Test ${index + 1}
+
+                            <small>
+                                ${schedule.testcode || "-"}
+                            </small>
+
+                        </th>
+                    `;
+
+                })
+                .join("");
+
+
+        // ====================================================
+        // GENERATE STUDENT ROWS
+        //
+        // ONE STUDENT = ONE ROW
+        // ====================================================
+
+        const rows =
+            students
+                .map((student, index) => {
+
+                    const testCells =
+                        schedules
+                            .map(schedule => {
+
+                                const questionSetId =
+                                    schedule.questionSetId?.toString();
+
+
+                                const test =
+                                    student.tests.find(
+                                        item =>
+                                            item.questionSetId ===
+                                            questionSetId
+                                    );
+
+
+                                if (!test) {
+
+                                    return `
+                                        <td>-</td>
+                                    `;
+
+                                }
+
+
+                                return `
+                                    <td>
+                                        ${test.obtainedMarks}/${test.totalMarks}
+                                    </td>
+                                `;
+
+                            })
+                            .join("");
+
+
+                    return `
+                        <tr>
+
+                            <td>
+                                ${index + 1}
+                            </td>
+
+                            <td>
+                                ${student.admissionNo}
+                            </td>
+
+                            <td class="name">
+                                ${student.studentName}
+                            </td>
+
+                            <td>
+                                ${student.department}
+                            </td>
+
+                            <td>
+                                ${student.batch}
+                            </td>
+
+                            <td>
+                                ${student.section}
+                            </td>
+
+                            ${testCells}
+
+                        </tr>
+                    `;
+
+                })
+                .join("");
+
+
+        // ====================================================
+        // GET LOCAL HTML TEMPLATE
+        // ====================================================
 
         const templatePath = path.join(
             __dirname,
-            "../html/examExport.html"
+            "../../templates/examExport.html"
         );
 
 
-        if (!fs.existsSync(templatePath)) {
+        let html;
+
+
+        try {
+
+            html = fs.readFileSync(
+                templatePath,
+                "utf8"
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Local HTML Template Error:",
+                error
+            );
 
             return res.status(500).json({
 
                 success: false,
 
-                message: "HTML template not found."
+                message:
+                    "HTML template not found.",
+
+                error:
+                    error.message
 
             });
 
         }
 
 
-        let html = fs.readFileSync(
-            templatePath,
-            "utf8"
-        );
+        // ====================================================
+        // GET LOGO FROM S3
+        // ====================================================
+
+        const logoKey =
+            "english_exam_platform/assets/logo.png";
 
 
-        // =====================================
-        // READ LOGO
-        // =====================================
-
-        const logoPath = path.join(
-            __dirname,
-            "../assets/logo.png"
-        );
+        let logoBase64;
 
 
-        if (!fs.existsSync(logoPath)) {
+        try {
+
+            const logoBuffer =
+                await getFromS3(logoKey);
+
+            logoBase64 =
+                logoBuffer.toString("base64");
+
+        } catch (error) {
+
+            console.error(
+                "S3 Logo Error:",
+                error
+            );
 
             return res.status(500).json({
 
                 success: false,
 
-                message: "College logo not found."
+                message:
+                    "College logo not found."
 
             });
 
         }
 
 
-        const logoBase64 = fs.readFileSync(
-            logoPath,
-            "base64"
-        );
-
+        // ====================================================
+        // LOGO DATA
+        // ====================================================
 
         const logoData =
             `data:image/png;base64,${logoBase64}`;
 
 
-        // =====================================
-        // DISPLAY FILTER VALUES
-        // =====================================
+        // ====================================================
+        // FILTER VALUES
+        // ====================================================
 
         const batchValue =
-            batch &&
-            typeof batch === "string" &&
-            batch.trim() !== ""
-                ? batch.trim()
-                : "All";
-
+            batch?.trim() || "All";
 
         const departmentValue =
-            department &&
-            typeof department === "string" &&
-            department.trim() !== ""
-                ? department.trim()
-                : "All";
-
+            department?.trim() || "All";
 
         const sectionValue =
-            section &&
-            typeof section === "string" &&
-            section.trim() !== ""
-                ? section.trim()
-                : "All";
+            section?.trim() || "All";
 
 
-        // =====================================
+        // ====================================================
         // REPLACE HTML PLACEHOLDERS
-        // =====================================
+        // ====================================================
 
         html = html
 
@@ -373,6 +712,16 @@ const generateExamReport = async (req, res) => {
             )
 
             .replace(
+                "{{CIE}}",
+                cieNumber
+            )
+
+            .replace(
+                "{{TEST_HEADERS}}",
+                testHeaders
+            )
+
+            .replace(
                 "{{ROWS}}",
                 rows
             )
@@ -383,27 +732,18 @@ const generateExamReport = async (req, res) => {
             );
 
 
-        // =====================================
-        // LAUNCH PUPPETEER
-        // =====================================
+        // ====================================================
+        // PUPPETEER
+        // ====================================================
 
         browser = await puppeteer.launch({
-
             headless: true
-
         });
 
 
-        // =====================================
-        // CREATE PAGE
-        // =====================================
+        const page =
+            await browser.newPage();
 
-        const page = await browser.newPage();
-
-
-        // =====================================
-        // LOAD HTML
-        // =====================================
 
         await page.setContent(
             html,
@@ -413,59 +753,108 @@ const generateExamReport = async (req, res) => {
         );
 
 
-        // =====================================
+        // ====================================================
         // GENERATE PDF
-        // =====================================
+        // ====================================================
 
-        const pdf = await page.pdf({
+        const pdf =
+            await page.pdf({
 
-            format: "A4",
+                format: "A4",
 
-            landscape: true,
+                landscape: true,
 
-            printBackground: true,
+                printBackground: true,
 
-            margin: {
+                margin: {
 
-                top: "15mm",
+                    top: "15mm",
+                    bottom: "15mm",
+                    left: "10mm",
+                    right: "10mm"
 
-                bottom: "15mm",
+                }
 
-                left: "10mm",
-
-                right: "10mm"
-
-            }
-
-        });
+            });
 
 
-        // =====================================
+        // ====================================================
         // CLOSE BROWSER
-        // =====================================
+        // ====================================================
 
         await browser.close();
 
         browser = null;
 
 
-        // =====================================
-        // SEND PDF
-        // =====================================
+        // ====================================================
+        // UPLOAD PDF
+        // ====================================================
 
-        res.setHeader(
-            "Content-Type",
-            "application/pdf"
-        );
+        const file = {
+
+            buffer: pdf,
+
+            filename:
+                `cie-${cieNumber}-report-${Date.now()}.pdf`,
+
+            mimeType:
+                "application/pdf"
+
+        };
 
 
-        res.setHeader(
-            "Content-Disposition",
-            "attachment; filename=exam-report.pdf"
-        );
+        const uploadResult =
+            await uploadToS3(
+                file,
+                "reports"
+            );
 
 
-        return res.send(pdf);
+        // ====================================================
+        // RESPONSE
+        // ====================================================
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                `CIE ${cieNumber} report generated successfully.`,
+
+            data: {
+
+                cie:
+                    cieNumber,
+
+                tests:
+                    schedules.map(
+                        (schedule, index) => ({
+
+                            testNo:
+                                index + 1,
+
+                            questionSetId:
+                                schedule.questionSetId,
+
+                            testcode:
+                                schedule.testcode
+
+                        })
+                    ),
+
+                totalStudents:
+                    students.length,
+
+                key:
+                    uploadResult.key,
+
+                url:
+                    uploadResult.url
+
+            }
+
+        });
 
 
     } catch (error) {
@@ -478,7 +867,14 @@ const generateExamReport = async (req, res) => {
 
         if (browser) {
 
-            await browser.close();
+            try {
+                await browser.close();
+            } catch (closeError) {
+                console.error(
+                    "Browser close error:",
+                    closeError
+                );
+            }
 
         }
 
@@ -490,7 +886,8 @@ const generateExamReport = async (req, res) => {
             message:
                 "Failed to generate examination report.",
 
-            error: error.message
+            error:
+                error.message
 
         });
 
