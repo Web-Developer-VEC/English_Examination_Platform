@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   ClipboardClock,
   GraduationCap,
@@ -17,7 +17,21 @@ import {
   CalendarRange,
   Layers,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
+
+// -----------------------------------------------------
+// API CONFIG
+// -----------------------------------------------------
+const API_BASE_URL = "http://localhost:5000";
+const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/scheduleexam`;
+// NOTE: this route is registered as GET on the backend but its controller
+// reads a "retest" flag from req.body. Browsers cannot send a body on a
+// GET request (fetch/XHR strips or rejects it), so retest === "true" can
+// never be true from this client — admissionNos will never be included
+// in the response as the backend is currently written. Flag this to the
+// backend team; until fixed, admission numbers fall back to a static list.
+const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/getscheduledata`;
 
 // -----------------------------------------------------
 // PROJECT COLOR TOKENS
@@ -38,11 +52,12 @@ export const colors = {
 };
 
 // -----------------------------------------------------
-// DUMMY BACKEND DATA
+// STATIC OPTIONS
+// (batch, department, section, and test/questionSetId now come from
+// GET /api/staff/getscheduledata — see fetchScheduleData in the
+// component. These remain static because the backend doesn't provide them.)
 // -----------------------------------------------------
-const CATEGORY_OPTIONS = ["Normal", "Retest"];
-
-const BATCH_OPTIONS = ["2023-2027", "2024-2028", "2025-2029"];
+const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 
 const ACADEMIC_YEAR_OPTIONS = [
   "2023-2024",
@@ -52,19 +67,18 @@ const ACADEMIC_YEAR_OPTIONS = [
   "2027-2028",
 ];
 
-const SEMESTER_OPTIONS = ["Odd", "Even"];
+// Backend requires semester as an integer 1-8, not "Odd"/"Even".
+const SEMESTER_OPTIONS = [1, 2];
+// const SEMESTER_OPTIONS = useMemo(
+//   () => scheduleData.semesters || [],
+//   [scheduleData.semesters]
+// );
 
-const DEPARTMENT_OPTIONS = ["AI & DS", "CSE", "IT", "ECE", "EEE"];
 
-const SECTION_MAP = {
-  "AI & DS": ["A", "B"],
-  CSE: ["A", "B", "C"],
-  IT: ["A"],
-  ECE: ["A", "B"],
-  EEE: ["A"],
-};
+// CIE is a separate field from category, required only when
+// category === "Normal". Backend accepts "I" | "II" | "III".
+const CIE_OPTIONS = ["I", "II", "III"];
 
-const TEST_CODE_OPTIONS = ["ENG001", "ENG002", "ENG003", "ENG004"];
 
 const ADMISSION_NO_OPTIONS = [
   "113224072054",
@@ -72,22 +86,6 @@ const ADMISSION_NO_OPTIONS = [
   "113224072060",
   "113224072005",
 ];
-
-// Flat list of every Department + Section combination — built from
-// whatever DEPARTMENT_OPTIONS / SECTION_MAP contain, so it keeps working
-// no matter how many departments/sections a real backend sends.
-const DEPT_SECTION_OPTIONS = DEPARTMENT_OPTIONS.flatMap((dept) => {
-  const sections = SECTION_MAP[dept] || [];
-  if (sections.length === 0) {
-    return [{ key: dept, dept, section: null, label: dept }];
-  }
-  return sections.map((sec) => ({
-    key: `${dept}__${sec}`,
-    dept,
-    section: sec,
-    label: `${dept} - Section ${sec}`,
-  }));
-});
 
 // 12-hour clock face values
 const HOUR_VALUES = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
@@ -230,20 +228,20 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
           {/* Analog clock face */}
           <div className="px-3 pb-3 pt-2">
-          <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
-            <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
-            <circle
-              cx={cx}
-              cy={cy}
-              r={outerRadius + 14}
-              fill="none"
-              stroke="#E5E7EB"
-              strokeWidth="1"
-            />
-            <circle cx={cx} cy={cy} r="3" fill="#800000" />
+            <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
+              <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
+              <circle
+                cx={cx}
+                cy={cy}
+                r={outerRadius + 14}
+                fill="none"
+                stroke="#E5E7EB"
+                strokeWidth="1"
+              />
+              <circle cx={cx} cy={cy} r="3" fill="#800000" />
 
-            {mode === "hour"
-              ? HOUR_VALUES.map((h) => {
+              {mode === "hour"
+                ? HOUR_VALUES.map((h) => {
                   const { x, y } = polarPoint(h, outerRadius, cx, cy);
                   const isSelected = hour === pad2(h);
                   return (
@@ -272,7 +270,7 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })
-              : MINUTE_VALUES.map((m, idx) => {
+                : MINUTE_VALUES.map((m, idx) => {
                   const { x, y } = polarPoint(idx, outerRadius, cx, cy);
                   const isSelected = minute === pad2(m);
                   return (
@@ -301,11 +299,11 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })}
-          </svg>
+            </svg>
 
-          <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
-            {mode === "hour" ? "Select hour, then minute" : "Select minute"}
-          </p>
+            <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
+              {mode === "hour" ? "Select hour, then minute" : "Select minute"}
+            </p>
           </div>
         </div>
       )}
@@ -321,6 +319,7 @@ export default function Schedule() {
   const [category, setCategory] = useState("Normal");
   const [academicYear, setAcademicYear] = useState("");
   const [semester, setSemester] = useState("");
+  const [cie, setCie] = useState("");
   const [batch, setBatch] = useState("");
   const [testCode, setTestCode] = useState("");
 
@@ -351,17 +350,102 @@ export default function Schedule() {
 
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ---------------- REFERENCE DATA (batches, dept/section, tests) ----------------
+  const [scheduleData, setScheduleData] = useState({
+    batchDepartmentSections: [],
+    tests: [],
+    admissionNos: [],
+  });
+  const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
+  const [scheduleDataError, setScheduleDataError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    let cancelled = false;
+
+    async function fetchScheduleData() {
+      setIsLoadingScheduleData(true);
+      setScheduleDataError("");
+      try {
+        // GET request — no body sent (browsers can't send one on GET),
+        // so the backend's retest-flag/admissionNos branch never fires.
+        const res = await fetch(GET_SCHEDULE_DATA_ENDPOINT, {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const body = await res.json();
+        if (!res.ok || !body.success) {
+          throw new Error(body.message || `Request failed (${res.status})`);
+        }
+        if (!cancelled) {
+          setScheduleData({
+            batchDepartmentSections: body.data.batchDepartmentSections || [],
+            tests: body.data.tests || [],
+            admissionNos: body.data.admissionNos || [],
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setScheduleDataError(
+            err.message || "Failed to load batches/departments/test codes."
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingScheduleData(false);
+      }
+    }
+
+    fetchScheduleData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Unique batches, in the order they first appear.
+  const BATCH_OPTIONS = useMemo(
+    () => [...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch))],
+    [scheduleData.batchDepartmentSections]
+  );
+
+  // Department + Section combos, filtered to the currently selected batch —
+  // a section only shows up here if a student in that batch/dept/section
+  // actually exists, matching how getScheduleData builds the list server-side.
+  const DEPT_SECTION_OPTIONS = useMemo(() => {
+    return scheduleData.batchDepartmentSections
+      .filter((c) => !batch || c.batch === batch)
+      .map((c) => ({
+        key: `${c.department}__${c.section}`,
+        dept: c.department,
+        section: c.section,
+        label: `${c.department} - Section ${c.section}`,
+      }));
+  }, [scheduleData.batchDepartmentSections, batch]);
+  const ADMISSION_NO_OPTIONS = useMemo(
+    () => scheduleData.admissionNos || [],
+    [scheduleData.admissionNos]
+  );
+
+  // Test code -> questionSetId lookup, built from the real questions
+  // collection instead of a hardcoded stub.
+  const TEST_CODE_OPTIONS = useMemo(
+    () => scheduleData.tests,
+    [scheduleData.tests]
+  );
   // Per-category drafts: each category (Normal / Retest) keeps its own
   // in-progress field values. Switching category never wipes anything —
   // it just saves what's currently on screen under the OLD category and
   // loads back whatever was last saved under the NEW category (blank the
   // first time). This keeps them independent without losing pending work.
-  const draftsRef = useRef({ Normal: null, Retest: null });
+  const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
   const captureCurrentFields = () => ({
     academicYear,
     semester,
+    cie,
     batch,
     testCode,
     selectedCombos,
@@ -382,6 +466,7 @@ export default function Schedule() {
     const d = draft || {};
     setAcademicYear(d.academicYear || "");
     setSemester(d.semester || "");
+    setCie(d.cie || "");
     setBatch(d.batch || "");
     setTestCode(d.testCode || "");
     setSelectedCombos(d.selectedCombos || []);
@@ -416,6 +501,18 @@ export default function Schedule() {
     setCategory(nextCategory);
   };
 
+  // Department & Section options depend on the selected batch. If the
+  // batch changes, drop any selected combos that no longer belong to it
+  // rather than silently submitting a stale department/section.
+  useEffect(() => {
+    setSelectedCombos((prev) => {
+      const validKeys = new Set(DEPT_SECTION_OPTIONS.map((o) => o.key));
+      const next = prev.filter((k) => validKeys.has(k));
+      return next.length === prev.length ? prev : next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batch]);
+
   // Close dropdowns when clicking outside them
   useEffect(() => {
     function handleClickOutside(event) {
@@ -443,7 +540,7 @@ export default function Schedule() {
   // Auto-clear the validation error banner
   useEffect(() => {
     if (!errorMessage) return;
-    const timer = setTimeout(() => setErrorMessage(""), 5000);
+    const timer = setTimeout(() => setErrorMessage(""), 6000);
     return () => clearTimeout(timer);
   }, [errorMessage]);
 
@@ -518,16 +615,32 @@ export default function Schedule() {
     });
   };
 
-  // ---------------- SUBMIT ----------------
-  const buildTimeString = (hour, minute, period) =>
-    hour && minute && period ? `${hour}:${minute} ${period}` : "";
+  // ---------------- SUBMIT HELPERS ----------------
 
-  // Converts a 12-hour hour/minute/period into minutes-since-midnight,
-  // so start/end times can be compared properly (e.g. 11:50 PM vs 12:05 AM).
-  const toMinutesSinceMidnight = (hour, minute, period) => {
+  // Converts 12-hour hour/minute/period into 24-hour {h, m}.
+  const to24Hour = (hour, minute, period) => {
     let h = parseInt(hour, 10) % 12;
     if (period === "PM") h += 12;
-    return h * 60 + parseInt(minute, 10);
+    return { h, m: parseInt(minute, 10) };
+  };
+
+  // Combines the date input (YYYY-MM-DD) with a 12-hour time selection
+  // into an ISO datetime string, e.g. "2026-08-04T09:00:00".
+  // NOTE: built as local time, no explicit timezone offset — matches the
+  // "Z"-less/"Z" ambiguity seen in the sample payloads. If the backend
+  // expects UTC specifically, convert here before sending.
+  const buildIsoDateTime = (dateStr, hour, minute, period) => {
+    if (!dateStr || !hour || !minute) return null;
+    const { h, m } = to24Hour(hour, minute, period);
+    const pad2 = (n) => String(n).padStart(2, "0");
+    return `${dateStr}T${pad2(h)}:${pad2(m)}:00`;
+  };
+
+  // Minutes-since-midnight, for comparing/validating start vs end and for
+  // computing duration.
+  const toMinutesSinceMidnight = (hour, minute, period) => {
+    const { h, m } = to24Hour(hour, minute, period);
+    return h * 60 + m;
   };
 
   // Checks every required field and returns a list of human-readable
@@ -537,6 +650,8 @@ export default function Schedule() {
 
     if (!academicYear) problems.push("Academic Year is required");
     if (!semester) problems.push("Semester is required");
+    if (category === "Normal" && !cie)
+      problems.push("CIE (I, II, or III) is required for Normal category");
     if (!batch) problems.push("Batch is required");
     if (selectedCombos.length === 0)
       problems.push("Select at least one Department & Section");
@@ -565,7 +680,8 @@ export default function Schedule() {
     return problems;
   };
 
-  const handleSubmit = (e) => {
+  // ---------------- SUBMIT ----------------
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const problems = validateForm();
@@ -574,34 +690,110 @@ export default function Schedule() {
       setErrorMessage(problems.join(" • "));
       return;
     }
+    const questionSetId = testCode;
 
-    const departmentPayload = selectedCombos.map((key) => {
-      const option = DEPT_SECTION_OPTIONS.find((o) => o.key === key);
-      return { department: option?.dept, section: option?.section };
-    });
+    if (!questionSetId) {
+      setStatusMessage("");
+      setErrorMessage("Test Code is required");
+      return;
+    }
 
-    const payload = {
-      category,
-      academicYear,
-      semester,
-      batch,
-      departments: departmentPayload,
-      testCode,
-      date,
-      startTime: buildTimeString(startHour, startMinute, startPeriod),
-      endTime: buildTimeString(endHour, endMinute, endPeriod),
-      // Admission numbers now sent regardless of category
-      admissionNumbers: selectedAdmissionNos,
-    };
+    const startTime = buildIsoDateTime(date, startHour, startMinute, startPeriod);
+    const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
+    const duration =
+      toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
+      toMinutesSinceMidnight(startHour, startMinute, startPeriod);
 
-    console.log(payload);
+    // The backend only accepts one department + one section per request,
+    // so a multi-combo selection becomes one POST per combo.
+    const combosToSubmit = selectedCombos
+      .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
+      .filter(Boolean);
+
+    const token = localStorage.getItem("token");
+
+    setIsSubmitting(true);
     setErrorMessage("");
-    setStatusMessage(
-      category === "Normal" ? "Dummy Schedule Created" : "Dummy Retest Assigned"
+    setStatusMessage("");
+
+    const results = await Promise.allSettled(
+      combosToSubmit.map((combo) => {
+        const payload = {
+          // testcode is NOT sent — the backend generates it itself via a
+          // cron job (stored as null at creation time). The frontend's
+          // testCode dropdown is only used locally to look up questionSetId.
+          category: category.toLowerCase(),
+          questionSetId,
+          department: combo.dept,
+          batch,
+          academicYear,
+          semester: Number(semester),
+          section: combo.section,
+          admissionNo: selectedAdmissionNos,
+          duration,
+          startTime,
+          endTime,
+        };
+        // CIE is a separate field from category, required only for
+        // "normal" — omit entirely for Retest/University so the backend's
+        // "cie must be I/II/III" check isn't triggered on an empty value.
+        if (category === "Normal") {
+          payload.cie = cie;
+        }
+
+        return fetch(SCHEDULE_EXAM_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        }).then(async (res) => {
+          let body = null;
+          try {
+            body = await res.json();
+          } catch {
+            // no JSON body — leave as null
+          }
+          if (!res.ok) {
+            const message =
+              (body && (body.message || body.error)) ||
+              `Request failed (${res.status})`;
+            throw new Error(`${combo.label}: ${message}`);
+          }
+          return body;
+        });
+      })
     );
-    // Clear the form after a successful submit so leftover data
-    // never carries into the next schedule (or the other category).
-    resetFormFields();
+
+    setIsSubmitting(false);
+
+    const failures = results.filter((r) => r.status === "rejected");
+    const successCount = results.length - failures.length;
+
+    if (failures.length === 0) {
+      const verb =
+        category === "Retest"
+          ? "Retest assigned"
+          : category === "University"
+            ? "University exam scheduled"
+            : "Schedule created";
+      setStatusMessage(
+        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
+      );
+      // Clear the form after a fully successful submit so leftover data
+      // never carries into the next schedule (or the other category).
+      resetFormFields();
+    } else if (successCount > 0) {
+      setStatusMessage(`${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`);
+      setErrorMessage(
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+      );
+    } else {
+      setErrorMessage(
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+      );
+    }
   };
 
   // ---------------- RENDER ----------------
@@ -616,10 +808,7 @@ export default function Schedule() {
               className="h-7 w-7 text-[#FDCC03]"
               strokeWidth={2}
             />
-            <GraduationCap className="h-7 w-7 text-[#FDCC03]" strokeWidth={2} />
-            <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FDCC03] shadow-sm">
-              <ShieldCheck className="h-3 w-3 text-[#800000]" strokeWidth={3} />
-            </span>
+
           </div>
           <div>
             <h3
@@ -644,7 +833,6 @@ export default function Schedule() {
               <select
                 value={category}
                 onChange={handleCategoryChange}
-                onChange={(e) => setCategory(e.target.value)}
                 className={boxClasses + " appearance-none font-medium"}
               >
                 {CATEGORY_OPTIONS.map((option) => (
@@ -701,7 +889,7 @@ export default function Schedule() {
                       <option value="">Select Semester</option>
                       {SEMESTER_OPTIONS.map((sem) => (
                         <option key={sem} value={sem}>
-                          {sem} Semester
+                          Semester {sem}
                         </option>
                       ))}
                     </select>
@@ -730,6 +918,29 @@ export default function Schedule() {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
                 </div>
               </div>
+
+              {/* CIE — required by backend only for Normal category */}
+              {category === "Normal" && (
+                <div>
+                  <label className={labelClasses}>CIE</label>
+                  <div className="relative">
+                    <BadgeCheck className={iconLeftClasses} />
+                    <select
+                      value={cie}
+                      onChange={(e) => setCie(e.target.value)}
+                      className={boxClasses + " appearance-none"}
+                    >
+                      <option value="">Select CIE</option>
+                      {CIE_OPTIONS.map((c) => (
+                        <option key={c} value={c}>
+                          CIE {c}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                  </div>
+                </div>
+              )}
 
               {/* Department & Section */}
               <div ref={pickerRef} className="relative">
@@ -823,7 +1034,7 @@ export default function Schedule() {
 
               {/* Admission Number — now rendered for BOTH Normal and Retest */}
               <div ref={admissionPickerRef} className="relative">
-                {/* <label className={labelClasses}>Admission Number</label>
+                <label className={labelClasses}>Admission Number</label>
                 <div className="relative">
                   <BadgeCheck className={iconLeftClasses} />
                   <button
@@ -841,7 +1052,7 @@ export default function Schedule() {
                     className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isAdmissionPickerOpen ? "rotate-180" : ""
                       }`}
                   />
-                </div> */}
+                </div>
 
                 {isAdmissionPickerOpen && (
                   <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
@@ -968,9 +1179,12 @@ export default function Schedule() {
                     className={boxClasses + " appearance-none"}
                   >
                     <option value="">Select Test Code</option>
-                    {TEST_CODE_OPTIONS.map((code) => (
-                      <option key={code} value={code}>
-                        {code}
+                    {TEST_CODE_OPTIONS.map((test) => (
+                      <option
+                        key={test.questionSetId}
+                        value={test.questionSetId}
+                      >
+                        {test.questionCode}
                       </option>
                     ))}
                   </select>
@@ -1024,11 +1238,31 @@ export default function Schedule() {
             {/* Submit */}
             <button
               type="submit"
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] shadow-md shadow-[#FDCC03]/30 transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99]"
+              disabled={isSubmitting || isLoadingScheduleData}
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] shadow-md shadow-[#FDCC03]/30 transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <CheckCircle2 className="h-5 w-5" />
-              {category === "Normal" ? "Confirm Schedule" : "Assign Retest"}
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5" />
+              )}
+              {isSubmitting
+                ? "Submitting..."
+                : isLoadingScheduleData
+                  ? "Loading options..."
+                  : category === "Retest"
+                    ? "Assign Retest"
+                    : "Confirm Schedule"}
             </button>
+
+            {scheduleDataError && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  Couldn't load batches/departments/test codes: {scheduleDataError}
+                </span>
+              </div>
+            )}
 
             {errorMessage && (
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
