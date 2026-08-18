@@ -12,7 +12,7 @@ const getScheduleData = async (req, res) => {
         const db = getDB();
 
         // ==========================================
-        // Get required student fields
+        // Get required student fields 
         // ==========================================
 
         const students = await db
