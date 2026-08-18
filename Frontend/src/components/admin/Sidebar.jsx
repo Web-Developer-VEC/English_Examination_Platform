@@ -8,7 +8,6 @@ import {
   ClipboardPlus,
   CalendarClock,
   UploadCloud,
-  FileBarChart,
   ClipboardList,
   Menu,
   X,
@@ -29,11 +28,11 @@ const NAV_ITEMS = [
     icon: Users,
     children: [
       {
-        key: "create-test",
-        label: "Create Test",
+        key: "createtest",
+        label: "Create-Test",
         icon: ClipboardPlus,
-        location: "/admin/create-test",
-      },
+        location: "/admin/createtest",
+    },
       {
         key: "schedule-test",
         label: "Schedule Test",
@@ -47,14 +46,8 @@ const NAV_ITEMS = [
         location: "/admin/student-data",
       },
       {
-        key: "post-exam-report",
-        label: "Post-Exam Report Generation",
-        icon: FileBarChart,
-        location: "/admin/faculty/post-exam-report",
-      },
-      {
         key: "student-result",
-        label: "Student Result",
+        label: "Result Download",
         icon: ClipboardList,
         location: "/admin/student-result",
       },
