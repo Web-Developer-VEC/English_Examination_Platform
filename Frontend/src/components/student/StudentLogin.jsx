@@ -6,6 +6,7 @@ import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
 import { Navigate, useNavigate } from "react-router-dom";
+import {saveStudentSession} from "../../utils/helpers";
 
 const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,20 +20,23 @@ const StudentLogin = () => {
     e.preventDefault();
 
     try {
-      const data = await loginUser(
+      const response = await loginUser(
         formData.identifier,
         formData.password,
         "student"
       );
 
-      sessionStorage.setItem("token", data.token);
+      if (response.success) {
+        sessionStorage.setItem(
+          "studentSession",
+          JSON.stringify({
+            token: response.token,
+            user: response.user
+          })
+        );
 
-      sessionStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
-
-      navigate("/student/start-test");
+        navigate("/student/start-test");
+      }
 
     } catch (error) {
 
@@ -106,7 +110,7 @@ const StudentLogin = () => {
           Login
         </button>
 
-        <div className="login-footer">
+        {/*<div className="login-footer">
           <>
             <p className="login-footer__link">Forgot your password?</p>
             <p className="login-footer__link">Contact your mentor</p>
@@ -114,7 +118,7 @@ const StudentLogin = () => {
               New Student? Sign Up
             </button>
           </>
-        </div>
+        </div>*/}
       </form>
     </div>
     </div>

@@ -20,49 +20,92 @@ import {
   Upload,
   Table2,
   AlertCircle,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 
 import "./StudentDataUpload.css";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/studentsupload`;
+const EXISTING_STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/student-data`;
+const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const STUDENTS_PER_PAGE = 50;
+
+const getValue = (object, keys) => {
+  for (const key of keys) {
+    if (
+      object &&
+      Object.prototype.hasOwnProperty.call(object, key) &&
+      object[key] !== null &&
+      object[key] !== undefined
+    ) {
+      return object[key];
+    }
+  }
+
+  return "";
+};
+
+const normalizeStudent = (student = {}) => ({
+  id: getValue(student, ["_id"]),
+  name: getValue(student, ["name"]),
+  registerNo: getValue(student, ["registerNo"]),
+  admissionNo: getValue(student, ["admissionNo",]),
+  email: getValue(student, ["email"]),
+  phone: getValue(student, ["phone"]),
+  department: getValue(student, ["department"]),
+  year: getValue(student, ["year"]),
+  section: getValue(student, ["section"]),
+  batch: getValue(student, ["batch"]),
+  dob: getValue(student, ["dob"]),
+});
+
+const toArray = (value) => {
+  if (Array.isArray(value)) return value;
+
+  if (Array.isArray(value?.students)) return value.students;
+  if (Array.isArray(value?.student_data)) return value.student_data;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.records)) return value.records;
+
+  return [];
+};
+
+const readApiResponse = async (response) => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      success: response.ok,
+      message: text || "",
+    };
+  }
+};
+
+const getErrorMessage = (data, fallback) =>
+  data?.message ||
+  data?.error ||
+  data?.detail ||
+  data?.errors?.[0]?.message ||
+  fallback;
+
 const StudentDataUpload = () => {
   const fileInputRef = useRef(null);
-
-  /* =========================================================
-     API CONFIGURATION
-     ========================================================= */
-
-  const API_BASE_URL = "http://localhost:5000/api";
-
-  const UPLOAD_URL = `${API_BASE_URL}/students/upload`;
-
-  /*
-    Future backend endpoint:
-
-    GET /api/students?batch=2025&department=AI%20%26%20DS
-
-    Expected response:
-
-    {
-      "success": true,
-      "students": [
-        {
-          "registerNo": "23AD001",
-          "name": "Arun Kumar",
-          "batch": "2025",
-          "department": "AI & DS",
-          "section": "A",
-          "email": "arun@gmail.com",
-          "phone": "9876543210"
-        }
-      ]
-    }
-  */
-
-  const EXISTING_DATA_URL = `${API_BASE_URL}/students`;
-
-  /* =========================================================
-     UPLOAD STATE
-     ========================================================= */
 
   const [activeMode, setActiveMode] = useState("upload");
 
@@ -75,216 +118,38 @@ const StudentDataUpload = () => {
 
   const [showInstructions, setShowInstructions] = useState(false);
 
-  /* =========================================================
-     EXISTING DATA STATE
-     ========================================================= */
-
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
+
+  // These values are populated only from the schedule API.
+  const [batchDepartmentSections, setBatchDepartmentSections] = useState([]);
+  const [loadingScheduleData, setLoadingScheduleData] = useState(false);
 
   const [students, setStudents] = useState([]);
-
   const [loadingStudents, setLoadingStudents] = useState(false);
 
   const [existingMessage, setExistingMessage] = useState("");
   const [existingMessageType, setExistingMessageType] = useState("");
 
   const [studentSearch, setStudentSearch] = useState("");
-
   const [currentPage, setCurrentPage] = useState(1);
-
-  const STUDENTS_PER_PAGE = 8;
-
-  /* =========================================================
-     FILTER OPTIONS
-     ========================================================= */
-
-  const batchOptions = [
-    "2023",
-    "2024",
-    "2025",
-    "2026",
-  ];
-
-  const departmentOptions = [
-    "AI & DS",
-    "CSE",
-    "ECE",
-    "EEE",
-    "MECH",
-    "CIVIL",
-    "IT",
-  ];
-
-  /* =========================================================
-     DEMO DATA
-     =========================================================
-     This is ONLY for frontend development.
-
-     Later remove this and use the backend response.
-  */
-
-  const demoStudents = [
-    {
-      id: 1,
-      registerNo: "23AD001",
-      name: "Arun Kumar",
-      batch: "2025",
-      department: "AI & DS",
-      section: "A",
-      email: "arun.kumar@gmail.com",
-      phone: "9876543210",
-    },
-    {
-      id: 2,
-      registerNo: "23AD002",
-      name: "Barath Raj",
-      batch: "2025",
-      department: "AI & DS",
-      section: "A",
-      email: "barath.raj@gmail.com",
-      phone: "9876543211",
-    },
-    {
-      id: 3,
-      registerNo: "23AD003",
-      name: "Dharshan S",
-      batch: "2025",
-      department: "AI & DS",
-      section: "A",
-      email: "dharshan@gmail.com",
-      phone: "9876543212",
-    },
-    {
-      id: 4,
-      registerNo: "23AD004",
-      name: "Gokul M",
-      batch: "2025",
-      department: "AI & DS",
-      section: "A",
-      email: "gokul@gmail.com",
-      phone: "9876543213",
-    },
-    {
-      id: 5,
-      registerNo: "23AD005",
-      name: "Harish Kumar",
-      batch: "2025",
-      department: "AI & DS",
-      section: "A",
-      email: "harish@gmail.com",
-      phone: "9876543214",
-    },
-    {
-      id: 6,
-      registerNo: "23AD006",
-      name: "Karthik S",
-      batch: "2025",
-      department: "AI & DS",
-      section: "B",
-      email: "karthik@gmail.com",
-      phone: "9876543215",
-    },
-    {
-      id: 7,
-      registerNo: "23AD007",
-      name: "Lokesh P",
-      batch: "2025",
-      department: "AI & DS",
-      section: "B",
-      email: "lokesh@gmail.com",
-      phone: "9876543216",
-    },
-    {
-      id: 8,
-      registerNo: "23AD008",
-      name: "Manoj R",
-      batch: "2025",
-      department: "AI & DS",
-      section: "B",
-      email: "manoj@gmail.com",
-      phone: "9876543217",
-    },
-    {
-      id: 9,
-      registerNo: "23AD009",
-      name: "Naveen Kumar",
-      batch: "2025",
-      department: "AI & DS",
-      section: "B",
-      email: "naveen@gmail.com",
-      phone: "9876543218",
-    },
-    {
-      id: 10,
-      registerNo: "23AD010",
-      name: "Praveen S",
-      batch: "2025",
-      department: "AI & DS",
-      section: "B",
-      email: "praveen@gmail.com",
-      phone: "9876543219",
-    },
-    {
-      id: 11,
-      registerNo: "23CS001",
-      name: "Ajay Kumar",
-      batch: "2025",
-      department: "CSE",
-      section: "A",
-      email: "ajay@gmail.com",
-      phone: "9876543220",
-    },
-    {
-      id: 12,
-      registerNo: "23CS002",
-      name: "Rahul S",
-      batch: "2025",
-      department: "CSE",
-      section: "A",
-      email: "rahul@gmail.com",
-      phone: "9876543221",
-    },
-    {
-      id: 13,
-      registerNo: "24AD001",
-      name: "Vignesh R",
-      batch: "2026",
-      department: "AI & DS",
-      section: "A",
-      email: "vignesh@gmail.com",
-      phone: "9876543222",
-    },
-  ];
-
-  /* =========================================================
-     COMMON MESSAGE
-     ========================================================= */
 
   const showMessage = (text, type) => {
     setMessage(text);
     setMessageType(type);
   };
 
-  const showExistingMessage = (text, type) => {
+  const showExistingError = (text) => {
     setExistingMessage(text);
-    setExistingMessageType(type);
+    setExistingMessageType("error");
   };
-
-  /* =========================================================
-     FILE VALIDATION
-     ========================================================= */
-
-  const allowedExtensions = [".xlsx", ".xls"];
 
   const isExcelFile = (file) => {
     if (!file) return false;
 
-    const fileName = file.name.toLowerCase();
-
-    return allowedExtensions.some((extension) =>
-      fileName.endsWith(extension)
-    );
+    const name = file.name.toLowerCase();
+    return name.endsWith(".xlsx") || name.endsWith(".xls");
   };
 
   const validateFile = (file) => {
@@ -301,19 +166,13 @@ const StudentDataUpload = () => {
       return false;
     }
 
-    const maxSize = 10 * 1024 * 1024;
-
-    if (file.size > maxSize) {
+    if (file.size > MAX_FILE_SIZE) {
       showMessage("File size must be less than 10 MB.", "error");
       return false;
     }
 
     return true;
   };
-
-  /* =========================================================
-     FILE HANDLING
-     ========================================================= */
 
   const handleFileSelect = (file) => {
     setMessage("");
@@ -385,9 +244,97 @@ const StudentDataUpload = () => {
     return `${(kb / 1024).toFixed(2)} MB`;
   };
 
-  /* =========================================================
-     UPLOAD STUDENT DATA
-     ========================================================= */
+  const fetchScheduleData = async () => {
+    setLoadingScheduleData(true);
+    setExistingMessage("");
+    setExistingMessageType("");
+
+    try {
+      const response = await fetch(SCHEDULE_DATA_URL, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const data = await readApiResponse(response);
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          getErrorMessage(data, "Unable to load batch, department and section data.")
+        );
+      }
+
+      const rows = Array.isArray(data?.data?.batchDepartmentSections)
+        ? data.data.batchDepartmentSections
+        : [];
+
+      const normalizedRows = rows
+        .map((item) => ({
+          batch: String(item?.batch ?? "").trim(),
+          department: String(item?.department ?? "").trim(),
+          section: String(item?.section ?? "").trim(),
+        }))
+        .filter(
+          (item) => item.batch && item.department && item.section
+        );
+
+      setBatchDepartmentSections(normalizedRows);
+
+      // Reset selections whenever the backend group list is refreshed.
+      setSelectedBatch("");
+      setSelectedDepartment("");
+      setSelectedSection("");
+      setStudents([]);
+      setCurrentPage(1);
+      setStudentSearch("");
+    } catch (error) {
+      console.error("Schedule data fetch error:", error);
+
+      setBatchDepartmentSections([]);
+      setSelectedBatch("");
+      setSelectedDepartment("");
+      setSelectedSection("");
+      setStudents([]);
+
+      showExistingError(
+        error?.message ||
+          "Unable to load batch, department and section data."
+      );
+    } finally {
+      setLoadingScheduleData(false);
+    }
+  };
+
+  const batchOptions = useMemo(
+    () =>
+      [...new Set(batchDepartmentSections.map((item) => item.batch))].sort(),
+    [batchDepartmentSections]
+  );
+
+  const departmentOptions = useMemo(() => {
+    const rows = selectedBatch
+      ? batchDepartmentSections.filter(
+          (item) => item.batch === selectedBatch
+        )
+      : batchDepartmentSections;
+
+    return [...new Set(rows.map((item) => item.department))].sort();
+  }, [batchDepartmentSections, selectedBatch]);
+
+  const sectionOptions = useMemo(() => {
+    const rows = batchDepartmentSections.filter(
+      (item) =>
+        (!selectedBatch || item.batch === selectedBatch) &&
+        (!selectedDepartment || item.department === selectedDepartment)
+    );
+
+    return [...new Set(rows.map((item) => item.section))].sort();
+  }, [batchDepartmentSections, selectedBatch, selectedDepartment]);
+
+  useEffect(() => {
+    fetchScheduleData();
+  }, []);
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -405,24 +352,24 @@ const StudentDataUpload = () => {
     try {
       const formData = new FormData();
 
+      // Backend expects the uploaded Excel file under "student_data".
       formData.append("student_data", selectedFile);
 
-      const response = await fetch(UPLOAD_URL, {
+      const response = await fetch(STUDENT_DATA_URL, {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
-      if (!response.ok) {
+      if (!response.ok || data?.success === false) {
         throw new Error(
-          data?.message || "Student data upload failed."
+          getErrorMessage(data, "Student data upload failed.")
         );
       }
 
       showMessage(
-        data?.message ||
-          "Student data uploaded successfully!",
+        getErrorMessage(data, "Student data uploaded successfully."),
         "success"
       );
 
@@ -431,12 +378,20 @@ const StudentDataUpload = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      // If the user has already selected a group, immediately refresh it
+      // so the newly uploaded Excel records appear in Existing Data.
+      if (selectedBatch && selectedDepartment && selectedSection) {
+        await fetchExistingStudents({
+          keepMessage: true,
+          resetSearch: false,
+        });
+      }
     } catch (error) {
       console.error("Student upload error:", error);
 
       showMessage(
-        error.message ||
-          "Something went wrong while uploading.",
+        error?.message || "Something went wrong while uploading.",
         "error"
       );
     } finally {
@@ -444,98 +399,71 @@ const StudentDataUpload = () => {
     }
   };
 
-  /* =========================================================
-     FETCH EXISTING STUDENTS
-     ========================================================= */
-
-  const fetchExistingStudents = async () => {
-    if (!selectedBatch || !selectedDepartment) {
-      showExistingMessage(
-        "Please select both batch and department.",
-        "error"
+  const fetchExistingStudents = async ({
+    keepMessage = false,
+    resetSearch = true,
+  } = {}) => {
+    if (!selectedBatch || !selectedDepartment || !selectedSection) {
+      showExistingError(
+        "Please select batch, department and section."
       );
       return;
     }
 
     setLoadingStudents(true);
     setCurrentPage(1);
-    setStudentSearch("");
-    setExistingMessage("");
+
+    if (resetSearch) {
+      setStudentSearch("");
+    }
+
+    if (!keepMessage) {
+      setExistingMessage("");
+      setExistingMessageType("");
+    }
 
     try {
-      /*
-        ======================================================
-        FUTURE BACKEND VERSION
-        ======================================================
-
-        const params = new URLSearchParams({
+      const response = await fetch(EXISTING_STUDENT_DATA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
           batch: selectedBatch,
           department: selectedDepartment,
-        });
+          section: selectedSection,
+        }),
+      });
+      const data = await readApiResponse(response);
 
-        const response = await fetch(
-          `${EXISTING_DATA_URL}?${params.toString()}`
-        );
+      console.log("Existing student data API response:", data);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data?.message || "Unable to load student data."
-          );
-        }
-
-        setStudents(data.students || []);
-      */
-
-      /*
-        ------------------------------------------------------
-        TEMPORARY DEMO VERSION
-        ------------------------------------------------------
-        This simulates your backend response.
-      */
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 600)
-      );
-
-      const filteredDemoData = demoStudents.filter(
-        (student) =>
-          student.batch === selectedBatch &&
-          student.department === selectedDepartment
-      );
-
-      setStudents(filteredDemoData);
-
-      if (filteredDemoData.length === 0) {
-        showExistingMessage(
-          "No students found for the selected batch and department.",
-          "error"
-        );
-      } else {
-        showExistingMessage(
-          `${filteredDemoData.length} student(s) loaded successfully.`,
-          "success"
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          getErrorMessage(data, "Unable to load student data.")
         );
       }
+
+      const rawStudents = toArray(data);
+      const normalizedStudents = rawStudents.map(normalizeStudent);
+
+      setStudents(normalizedStudents);
+
+      // No green "X students loaded successfully" message is shown.
+      setExistingMessage("");
+      setExistingMessageType("");
     } catch (error) {
       console.error("Fetch students error:", error);
 
       setStudents([]);
-
-      showExistingMessage(
-        error.message ||
-          "Unable to load existing student data.",
-        "error"
+      showExistingError(
+        error?.message || "Unable to load existing student data."
       );
     } finally {
       setLoadingStudents(false);
     }
   };
-
-  /* =========================================================
-     SEARCH
-     ========================================================= */
 
   const filteredStudents = useMemo(() => {
     const search = studentSearch.trim().toLowerCase();
@@ -545,29 +473,15 @@ const StudentDataUpload = () => {
     }
 
     return students.filter((student) =>
-      [
-        student.registerNo,
-        student.name,
-        student.email,
-        student.phone,
-        student.section,
-      ]
-        .filter(Boolean)
-        .some((value) =>
-          String(value).toLowerCase().includes(search)
-        )
+      String(student.name || "")
+        .toLowerCase()
+        .includes(search)
     );
   }, [students, studentSearch]);
 
-  /* =========================================================
-     PAGINATION
-     ========================================================= */
-
   const totalPages = Math.max(
     1,
-    Math.ceil(
-      filteredStudents.length / STUDENTS_PER_PAGE
-    )
+    Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE)
   );
 
   const paginatedStudents = filteredStudents.slice(
@@ -581,130 +495,143 @@ const StudentDataUpload = () => {
     }
   }, [currentPage, totalPages]);
 
-  /* =========================================================
-     MODE SWITCH
-     ========================================================= */
-
   const handleModeChange = (mode) => {
     setActiveMode(mode);
-
     setMessage("");
     setExistingMessage("");
+    setExistingMessageType("");
 
     if (mode === "existing") {
       setSelectedFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
-  /* =========================================================
-     RENDER
-     ========================================================= */
+  const handleDownloadTemplate = () => {
+    if (!TEMPLATE_URL) {
+      showMessage(
+        "Student data template URL is not configured.",
+        "error"
+      );
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = TEMPLATE_URL;
+    link.download = "STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const handleBatchChange = (event) => {
+    const batch = event.target.value;
+
+    setSelectedBatch(batch);
+    setSelectedDepartment("");
+    setSelectedSection("");
+    setStudents([]);
+    setCurrentPage(1);
+    setStudentSearch("");
+    setExistingMessage("");
+    setExistingMessageType("");
+  };
+
+  const handleDepartmentChange = (event) => {
+    const department = event.target.value;
+
+    setSelectedDepartment(department);
+    setSelectedSection("");
+    setStudents([]);
+    setCurrentPage(1);
+    setStudentSearch("");
+    setExistingMessage("");
+    setExistingMessageType("");
+  };
+
+  const handleSectionChange = (event) => {
+    setSelectedSection(event.target.value);
+    setStudents([]);
+    setCurrentPage(1);
+    setStudentSearch("");
+    setExistingMessage("");
+    setExistingMessageType("");
+  };
 
   return (
     <div className="student-upload-page">
-
       <div className="student-upload-container">
-
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
-
         <div className="student-upload-header">
-
           <div className="header-icon">
-            <UserRound
-              size={29}
-              strokeWidth={2.2}
-            />
+            <UserRound size={29} strokeWidth={2.2} />
           </div>
 
           <div className="student-upload-title">
-
             <h1>Student Data Management</h1>
-
             <p>
-              Upload new student records or view existing
-              student information
+              Upload new student records or view existing student
+              information
             </p>
-
           </div>
-
         </div>
 
-        {/* =====================================================
-            MODE SWITCH
-        ===================================================== */}
-
         <div className="student-mode-switch">
-
           <button
             type="button"
-            className={`mode-button ${
-              activeMode === "upload"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              handleModeChange("upload")
-            }
+            className={`mode-button ${activeMode === "upload" ? "active" : ""
+              }`}
+            onClick={() => handleModeChange("upload")}
           >
             <Upload size={17} />
-
             <span>Upload New Data</span>
           </button>
 
           <button
             type="button"
-            className={`mode-button ${
-              activeMode === "existing"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              handleModeChange("existing")
-            }
+            className={`mode-button ${activeMode === "existing" ? "active" : ""
+              }`}
+            onClick={() => handleModeChange("existing")}
           >
             <Database size={17} />
-
             <span>Existing Data</span>
           </button>
-
         </div>
-
-        {/* =====================================================
-            UPLOAD MODE
-        ===================================================== */}
 
         {activeMode === "upload" && (
           <div className="student-upload-card">
+            <div className="upload-tools">
+              <button
+                type="button"
+                className="upload-tool-button"
+                onClick={() => setShowInstructions(true)}
+              >
+                <Info size={17} />
+                <span>Instructions</span>
+              </button>
 
-            <button
-              type="button"
-              className="instruction-button"
-              onClick={() =>
-                setShowInstructions(true)
-              }
-              title="Upload instructions"
-              aria-label="Upload instructions"
-            >
-              <Info
-                size={19}
-                strokeWidth={2.5}
-              />
-            </button>
+              <button
+                type="button"
+                className="upload-tool-button template-button"
+                onClick={handleDownloadTemplate}
+              >
+                <Download size={17} />
+                <span>Download Template</span>
+              </button>
+            </div>
 
             <div
-              className={`student-drop-zone ${
-                isDragging ? "dragging" : ""
-              } ${
-                selectedFile ? "has-file" : ""
-              }`}
+              className={`student-drop-zone ${isDragging ? "dragging" : ""
+                } ${selectedFile ? "has-file" : ""}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={handleBrowseClick}
             >
-
               <input
                 ref={fileInputRef}
                 type="file"
@@ -715,31 +642,19 @@ const StudentDataUpload = () => {
 
               {!selectedFile ? (
                 <>
-
                   <div className="upload-icon-wrapper">
-
                     <div className="upload-icon">
-
-                      <CloudUpload
-                        size={34}
-                        strokeWidth={2}
-                      />
-
+                      <CloudUpload size={34} strokeWidth={2} />
                     </div>
-
                   </div>
 
-                  <h2>
-                    Upload Student Excel File
-                  </h2>
+                  <h2>Upload Student Excel File</h2>
 
                   <p className="drop-text">
-                    Drag & drop your Excel file here
+                    Drag &amp; drop your Excel file here
                   </p>
 
-                  <span className="or-text">
-                    OR
-                  </span>
+                  <span className="or-text">OR</span>
 
                   <button
                     type="button"
@@ -753,55 +668,32 @@ const StudentDataUpload = () => {
                   </button>
 
                   <p className="supported-text">
-                    Supported formats:{" "}
-                    <strong>.xlsx</strong>{" "}
-                    and{" "}
+                    Supported formats: <strong>.xlsx</strong> and{" "}
                     <strong>.xls</strong>
                   </p>
 
                   <p className="size-text">
                     Maximum file size: 10 MB
                   </p>
-
                 </>
               ) : (
-
                 <div
                   className="selected-file-wrapper"
-                  onClick={(event) =>
-                    event.stopPropagation()
-                  }
+                  onClick={(event) => event.stopPropagation()}
                 >
-
                   <div className="excel-file-icon">
-
-                    <FileSpreadsheet
-                      size={27}
-                      strokeWidth={2}
-                    />
-
+                    <FileSpreadsheet size={27} strokeWidth={2} />
                   </div>
 
                   <div className="selected-file-info">
+                    <h3>{selectedFile.name}</h3>
 
-                    <h3>
-                      {selectedFile.name}
-                    </h3>
+                    <p>{formatFileSize(selectedFile.size)}</p>
 
-                    <p>
-                      {formatFileSize(
-                        selectedFile.size
-                      )}
-                    </p>
-
-                    <div className="file-valid">
-
+                    {/* <div className="file-valid">
                       <CheckCircle2 size={15} />
-
                       Valid Excel file
-
-                    </div>
-
+                    </div> */}
                   </div>
 
                   <button
@@ -813,44 +705,30 @@ const StudentDataUpload = () => {
                   >
                     <X size={18} />
                   </button>
-
                 </div>
-
               )}
-
             </div>
 
             {message && (
-              <div
-                className={`upload-message ${messageType}`}
-              >
-
+              <div className={`upload-message ${messageType}`}>
                 <span className="message-icon">
-
                   {messageType === "success" ? (
                     <CheckCircle2 size={16} />
                   ) : (
-                    <Info size={16} />
+                    <AlertCircle size={16} />
                   )}
-
                 </span>
-
                 <span>{message}</span>
-
               </div>
             )}
 
             <button
               type="button"
-              className={`upload-submit-button ${
-                uploading ? "uploading" : ""
-              }`}
-              disabled={
-                !selectedFile || uploading
-              }
+              className={`upload-submit-button ${uploading ? "uploading" : ""
+                }`}
+              disabled={!selectedFile || uploading}
               onClick={handleUpload}
             >
-
               {uploading ? (
                 <>
                   <span className="loading-spinner"></span>
@@ -862,191 +740,149 @@ const StudentDataUpload = () => {
                   Upload Student Data
                 </>
               )}
-
             </button>
 
             <div className="upload-security-note">
-
               <ShieldCheck size={14} />
-
               <span>
-                Your student data is securely uploaded
-                to the server.
+                Your student data is securely uploaded to the server.
               </span>
-
             </div>
-
           </div>
         )}
 
-        {/* =====================================================
-            EXISTING DATA MODE
-        ===================================================== */}
-
         {activeMode === "existing" && (
           <div className="existing-data-card">
-
-            {/* HEADER */}
-
             <div className="existing-data-header">
-
               <div className="existing-heading">
-
                 <div className="existing-icon">
-
-                  <Database
-                    size={22}
-                    strokeWidth={2}
-                  />
-
+                  <Database size={22} strokeWidth={2} />
                 </div>
 
                 <div>
-
-                  <h2>
-                    Existing Student Data
-                  </h2>
-
+                  <h2>Existing Student Data</h2>
                   <p>
-                    Select a batch and department
-                    to view uploaded students
+                    Select a batch, department and section to view uploaded
+                    students
                   </p>
-
                 </div>
-
               </div>
 
               <div className="record-badge">
-
                 <Table2 size={15} />
-
                 Student Records
-
               </div>
-
             </div>
 
-            {/* FILTER AREA */}
-
             <div className="existing-filter-section">
-
               <div className="filter-heading">
-
                 <Filter size={17} />
-
-                <span>
-                  Select Student Group
-                </span>
-
+                <span>Select Student Group</span>
               </div>
 
               <div className="filter-grid">
-
-                {/* BATCH */}
-
                 <div className="filter-field">
-
-                  <label>
-                    Batch
-                  </label>
+                  <label htmlFor="student-batch">Batch</label>
 
                   <div className="select-wrapper">
-
-                    <GraduationCap
-                      size={17}
-                    />
+                    <GraduationCap size={17} />
 
                     <select
+                      id="student-batch"
                       value={selectedBatch}
-                      onChange={(event) => {
-                        setSelectedBatch(
-                          event.target.value
-                        );
-                        setStudents([]);
-                        setExistingMessage("");
-                      }}
+                      onChange={handleBatchChange}
+                      disabled={loadingScheduleData}
                     >
-
                       <option value="">
-                        Select Batch
+                        {loadingScheduleData ? "Loading..." : "Select Batch"}
                       </option>
 
-                      {batchOptions.map(
-                        (batch) => (
-                          <option
-                            key={batch}
-                            value={batch}
-                          >
-                            {batch}
-                          </option>
-                        )
-                      )}
-
+                      {batchOptions.map((batch) => (
+                        <option key={batch} value={batch}>
+                          {batch}
+                        </option>
+                      ))}
                     </select>
 
+                    <ChevronDown
+                      className="select-chevron"
+                      size={16}
+                    />
                   </div>
-
                 </div>
-
-                {/* DEPARTMENT */}
 
                 <div className="filter-field">
-
-                  <label>
-                    Department
-                  </label>
+                  <label htmlFor="student-department">Department</label>
 
                   <div className="select-wrapper">
-
-                    <Building2
-                      size={17}
-                    />
+                    <Building2 size={17} />
 
                     <select
-                      value={
-                        selectedDepartment
-                      }
-                      onChange={(event) => {
-                        setSelectedDepartment(
-                          event.target.value
-                        );
-                        setStudents([]);
-                        setExistingMessage("");
-                      }}
+                      id="student-department"
+                      value={selectedDepartment}
+                      onChange={handleDepartmentChange}
+                      disabled={!selectedBatch || loadingScheduleData}
                     >
+                      <option value="">Select Department</option>
 
-                      <option value="">
-                        Select Department
-                      </option>
-
-                      {departmentOptions.map(
-                        (department) => (
-                          <option
-                            key={department}
-                            value={department}
-                          >
-                            {department}
-                          </option>
-                        )
-                      )}
-
+                      {departmentOptions.map((department) => (
+                        <option key={department} value={department}>
+                          {department}
+                        </option>
+                      ))}
                     </select>
 
+                    <ChevronDown
+                      className="select-chevron"
+                      size={16}
+                    />
                   </div>
-
                 </div>
 
-                {/* SEARCH BUTTON */}
+                <div className="filter-field">
+                  <label htmlFor="student-section">Section</label>
+
+                  <div className="select-wrapper">
+                    <Users size={17} />
+
+                    <select
+                      id="student-section"
+                      value={selectedSection}
+                      onChange={handleSectionChange}
+                      disabled={
+                        !selectedBatch ||
+                        !selectedDepartment ||
+                        loadingScheduleData
+                      }
+                    >
+                      <option value="">Select Section</option>
+
+                      {sectionOptions.map((section) => (
+                        <option key={section} value={section}>
+                          {section}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ChevronDown
+                      className="select-chevron"
+                      size={16}
+                    />
+                  </div>
+                </div>
 
                 <button
                   type="button"
                   className="view-students-button"
-                  onClick={
-                    fetchExistingStudents
+                  onClick={() => fetchExistingStudents()}
+                  disabled={
+                    loadingStudents ||
+                    loadingScheduleData ||
+                    !selectedBatch ||
+                    !selectedDepartment ||
+                    !selectedSection
                   }
-                  disabled={loadingStudents}
                 >
-
                   {loadingStudents ? (
                     <>
                       <span className="button-spinner"></span>
@@ -1058,118 +894,74 @@ const StudentDataUpload = () => {
                       View Students
                     </>
                   )}
-
                 </button>
-
               </div>
-
             </div>
-
-            {/* MESSAGE */}
 
             {existingMessage && (
               <div
                 className={`existing-message ${existingMessageType}`}
               >
-
-                {existingMessageType ===
-                "success" ? (
-                  <CheckCircle2 size={17} />
-                ) : (
-                  <AlertCircle size={17} />
-                )}
-
-                <span>
-                  {existingMessage}
-                </span>
-
+                <AlertCircle size={17} />
+                <span>{existingMessage}</span>
               </div>
             )}
 
-            {/* RESULTS */}
-
             {students.length > 0 && (
               <div className="student-results-section">
-
-                {/* RESULTS TOP */}
-
                 <div className="results-toolbar">
-
                   <div className="results-title">
-
                     <div className="results-title-icon">
                       <Users size={18} />
                     </div>
 
                     <div>
-
                       <h3>
-                        {selectedDepartment}
-                        {" "}
-                        Students
+                        {selectedDepartment} · Section {selectedSection} Students
                       </h3>
-
                       <p>
-                        Batch {selectedBatch}
+                        Batch {selectedBatch} · Section {selectedSection}
                       </p>
-
                     </div>
-
                   </div>
 
                   <div className="results-actions">
-
                     <div className="student-count">
-
                       <Users size={15} />
-
-                      {filteredStudents.length}
-                      {" "}
-                      Students
-
+                      {filteredStudents.length} Students
                     </div>
 
                     <button
                       type="button"
                       className="refresh-button"
-                      onClick={
-                        fetchExistingStudents
+                      onClick={() =>
+                        fetchExistingStudents({
+                          keepMessage: false,
+                          resetSearch: false,
+                        })
                       }
-                      disabled={
-                        loadingStudents
-                      }
+                      disabled={loadingStudents}
                       title="Refresh"
                     >
-
                       <RefreshCw
                         size={17}
                         className={
-                          loadingStudents
-                            ? "refresh-spin"
-                            : ""
+                          loadingStudents ? "refresh-spin" : ""
                         }
                       />
-
                     </button>
-
                   </div>
-
                 </div>
 
-                {/* SEARCH */}
-
                 <div className="student-search-wrapper">
-
                   <Search size={17} />
 
                   <input
                     type="text"
-                    placeholder="Search by register number, name, email, phone..."
+                    placeholder="Search by student name..."
                     value={studentSearch}
                     onChange={(event) => {
-                      setStudentSearch(
-                        event.target.value
-                      );
+                      setStudentSearch(event.target.value);
                       setCurrentPage(1);
                     }}
                   />
@@ -1186,486 +978,282 @@ const StudentDataUpload = () => {
                       <X size={16} />
                     </button>
                   )}
-
                 </div>
 
-                {/* TABLE */}
-
                 <div className="student-table-container">
-
                   <table className="student-table">
-
                     <thead>
-
                       <tr>
-
-                        <th>
-                          #
-                        </th>
-
-                        <th>
-                          Register No.
-                        </th>
-
-                        <th>
-                          Student Name
-                        </th>
-
-                        <th>
-                          Section
-                        </th>
-
-                        <th>
-                          Email
-                        </th>
-
-                        <th>
-                          Phone
-                        </th>
-
-                        <th>
-                          Batch
-                        </th>
-
-                        <th>
-                          Department
-                        </th>
-
+                        <th>SI No</th>
+                        <th>Name</th>
+                        <th>Register No.</th>
+                        <th>Admission No.</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Department</th>
+                        <th>Year</th>
+                        <th>Section</th>
+                        <th>Batch</th>
+                        <th>DOB</th>
                       </tr>
-
                     </thead>
 
                     <tbody>
+                      {paginatedStudents.length > 0 ? (
+                        paginatedStudents.map((student, index) => (
+                          <tr
+                            key={
+                              student.id ||
+                              student.registerNo ||
+                              student.admissionNo ||
+                              `${student.name}-${index}`
+                            }
+                          >
+                            <td>
+                              <span className="row-number">
+                                {(currentPage - 1) *
+                                  STUDENTS_PER_PAGE +
+                                  index +
+                                  1}
+                              </span>
+                            </td>
 
-                      {paginatedStudents.length >
-                      0 ? (
-                        paginatedStudents.map(
-                          (student, index) => (
-                            <tr
-                              key={
-                                student.id ||
-                                student.registerNo ||
-                                index
-                              }
-                            >
+                            <td>
+                              <span className="student-name-only">
+                                {student.name || "-"}
+                              </span>
+                            </td>
 
-                              <td>
-                                <span className="row-number">
-                                  {(currentPage - 1) *
-                                    STUDENTS_PER_PAGE +
-                                    index +
-                                    1}
-                                </span>
-                              </td>
+                            <td>
+                              <span className="register-number">
+                                {student.registerNo || "-"}
+                              </span>
+                            </td>
 
-                              <td>
+                            <td>
+                              {student.admissionNo || "-"}
+                            </td>
 
-                                <span className="register-number">
-                                  {
-                                    student.registerNo
-                                  }
-                                </span>
+                            <td>
+                              <span className="email-text">
+                                {student.email || "-"}
+                              </span>
+                            </td>
 
-                              </td>
+                            <td>{student.phone || "-"}</td>
 
-                              <td>
+                            <td>
+                              <span className="department-badge">
+                                {student.department ||
+                                  selectedDepartment ||
+                                  "-"}
+                              </span>
+                            </td>
 
-                                <div className="student-name-cell">
+                            <td>{student.year || "-"}</td>
 
-                                  <div className="student-avatar">
+                            <td>
+                              <span className="section-badge">
+                                {student.section || "-"}
+                              </span>
+                            </td>
 
-                                    {student.name
-                                      ?.charAt(0)
-                                      ?.toUpperCase() ||
-                                      "S"}
+                            <td>
+                              {student.batch || selectedBatch || "-"}
+                            </td>
 
-                                  </div>
-
-                                  <span>
-                                    {student.name}
-                                  </span>
-
-                                </div>
-
-                              </td>
-
-                              <td>
-
-                                <span className="section-badge">
-                                  {
-                                    student.section ||
-                                    "-"
-                                  }
-                                </span>
-
-                              </td>
-
-                              <td>
-                                <span className="email-text">
-                                  {
-                                    student.email ||
-                                    "-"
-                                  }
-                                </span>
-                              </td>
-
-                              <td>
-                                {
-                                  student.phone ||
-                                  "-"
-                                }
-                              </td>
-
-                              <td>
-                                {
-                                  student.batch ||
-                                  selectedBatch
-                                }
-                              </td>
-
-                              <td>
-
-                                <span className="department-badge">
-                                  {
-                                    student.department ||
-                                    selectedDepartment
-                                  }
-                                </span>
-
-                              </td>
-
-                            </tr>
-                          )
-                        )
+                            <td>{student.dob || "-"}</td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
-
                           <td
-                            colSpan="8"
+                            colSpan="11"
                             className="empty-search"
                           >
-
-                            <Search
-                              size={30}
-                            />
-
-                            <strong>
-                              No students found
-                            </strong>
-
+                            <Search size={30} />
+                            <strong>No students found</strong>
                             <span>
-                              Try another search term.
+                              Try another student name.
                             </span>
-
                           </td>
-
                         </tr>
                       )}
-
                     </tbody>
-
                   </table>
-
                 </div>
-
-                {/* PAGINATION */}
 
                 {filteredStudents.length > 0 && (
                   <div className="pagination">
-
                     <div className="pagination-info">
-
                       Showing{" "}
                       <strong>
                         {(currentPage - 1) *
                           STUDENTS_PER_PAGE +
                           1}
                       </strong>{" "}
-                      -
-                      {" "}
+                      -{" "}
                       <strong>
                         {Math.min(
-                          currentPage *
-                            STUDENTS_PER_PAGE,
+                          currentPage * STUDENTS_PER_PAGE,
                           filteredStudents.length
                         )}
                       </strong>{" "}
                       of{" "}
-                      <strong>
-                        {filteredStudents.length}
-                      </strong>
-
+                      <strong>{filteredStudents.length}</strong>
                     </div>
 
                     <div className="pagination-controls">
-
                       <button
                         type="button"
-                        disabled={
-                          currentPage === 1
-                        }
+                        disabled={currentPage === 1}
                         onClick={() =>
-                          setCurrentPage(
-                            (page) =>
-                              Math.max(
-                                1,
-                                page - 1
-                              )
+                          setCurrentPage((page) =>
+                            Math.max(1, page - 1)
                           )
                         }
                       >
-
-                        <ChevronLeft
-                          size={17}
-                        />
-
+                        <ChevronLeft size={17} />
                         Previous
-
                       </button>
 
                       <span className="page-number">
-
                         {currentPage}
-
-                        <span>
-                          /
-                        </span>
-
+                        <span>/</span>
                         {totalPages}
-
                       </span>
 
                       <button
                         type="button"
-                        disabled={
-                          currentPage ===
-                          totalPages
-                        }
+                        disabled={currentPage === totalPages}
                         onClick={() =>
-                          setCurrentPage(
-                            (page) =>
-                              Math.min(
-                                totalPages,
-                                page + 1
-                              )
+                          setCurrentPage((page) =>
+                            Math.min(totalPages, page + 1)
                           )
                         }
                       >
-
                         Next
-
-                        <ChevronRight
-                          size={17}
-                        />
-
+                        <ChevronRight size={17} />
                       </button>
-
                     </div>
-
                   </div>
                 )}
-
               </div>
             )}
 
-            {/* INITIAL STATE */}
-
             {!loadingStudents &&
+              !loadingScheduleData &&
               students.length === 0 &&
               !existingMessage && (
                 <div className="existing-empty-state">
-
                   <div className="empty-database-icon">
-
                     <Database size={34} />
-
                   </div>
 
-                  <h3>
-                    Select a Batch & Department
-                  </h3>
+                  <h3>Select Batch, Department &amp; Section</h3>
 
                   <p>
-                    Choose the student batch and
-                    department above to view the
-                    existing records.
+                    Choose the batch, department and section above
+                    to view the existing records.
                   </p>
-
                 </div>
               )}
-
           </div>
         )}
-
       </div>
-
-      {/* =====================================================
-          INSTRUCTION MODAL
-      ===================================================== */}
 
       {showInstructions && (
         <div
           className="instruction-overlay"
-          onClick={() =>
-            setShowInstructions(false)
-          }
+          onClick={() => setShowInstructions(false)}
         >
-
           <div
             className="instruction-modal"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
-
             <div className="instruction-modal-header">
-
               <div className="instruction-heading">
-
                 <div className="instruction-icon">
-
                   <Info size={21} />
-
                 </div>
 
                 <div>
-
-                  <h2>
-                    Upload Instructions
-                  </h2>
-
-                  <p>
-                    Please check these before
-                    uploading
-                  </p>
-
+                  <h2>Upload Instructions</h2>
+                  <p>Please check these before uploading</p>
                 </div>
-
               </div>
 
               <button
                 type="button"
                 className="instruction-close"
-                onClick={() =>
-                  setShowInstructions(false)
-                }
+                onClick={() => setShowInstructions(false)}
               >
                 <X size={20} />
               </button>
-
             </div>
 
             <div className="instruction-content">
-
               <div className="instruction-item">
-
-                <span className="instruction-number">
-                  01
-                </span>
+                <span className="instruction-number">01</span>
 
                 <div>
-
-                  <h3>
-                    Use the correct Excel file
-                  </h3>
-
+                  <h3>Use the correct Excel file</h3>
                   <p>
-                    Upload only Excel files with
-                    <strong> .xlsx </strong>
-                    or
-                    <strong> .xls </strong>
-                    extension.
+                    Upload only Excel files with{" "}
+                    <strong>.xlsx</strong> or{" "}
+                    <strong>.xls</strong> extension.
                   </p>
-
                 </div>
-
               </div>
 
               <div className="instruction-item">
-
-                <span className="instruction-number">
-                  02
-                </span>
+                <span className="instruction-number">02</span>
 
                 <div>
-
-                  <h3>
-                    Check the column names
-                  </h3>
-
+                  <h3>Keep the column names unchanged</h3>
                   <p>
-                    Make sure all required student
-                    data columns are present and
-                    the column names are not changed.
+                    Use the same columns as the downloaded student
+                    data template.
                   </p>
-
                 </div>
-
               </div>
 
               <div className="instruction-item">
-
-                <span className="instruction-number">
-                  03
-                </span>
+                <span className="instruction-number">03</span>
 
                 <div>
-
-                  <h3>
-                    Remove unnecessary rows
-                  </h3>
-
+                  <h3>Remove unnecessary rows</h3>
                   <p>
-                    Remove empty rows or unnecessary
-                    data before uploading the file.
+                    Remove empty rows or unnecessary data before
+                    uploading the file.
                   </p>
-
                 </div>
-
               </div>
 
               <div className="instruction-item">
-
-                <span className="instruction-number">
-                  04
-                </span>
+                <span className="instruction-number">04</span>
 
                 <div>
-
-                  <h3>
-                    Check the file size
-                  </h3>
-
+                  <h3>Check the file size</h3>
                   <p>
-                    The Excel file must be less than
-                    <strong> 10 MB</strong>.
+                    The Excel file must be less than{" "}
+                    <strong>10 MB</strong>.
                   </p>
-
                 </div>
-
               </div>
-
             </div>
 
             <button
               type="button"
               className="got-it-button"
-              onClick={() =>
-                setShowInstructions(false)
-              }
+              onClick={() => setShowInstructions(false)}
             >
-
               <CheckCircle2 size={18} />
-
               Got it
-
             </button>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 };
