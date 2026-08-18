@@ -1,20 +1,6 @@
-{
+[{
   "username": "staff01",
   "password": "Staff@123",
   "role": "staff"
 }
-{
-  "name": "Jasim",
-  "role":"student",
-  "registerNo": "113224072035",
-  "admissionNo": "24VEC_900",
-  "email": "jasim860p@gmail.com",
-  "phone": "6385804794",
-  "department":"AI&DS",
-  "year": 3,
-  "section": "B",
-  "batch": "2024-2028",
-  "dob": "16-11-2006",
-  "username": "24VEC_900",
-  "password": "16-11-2006"
-}
+]
