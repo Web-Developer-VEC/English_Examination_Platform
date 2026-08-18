@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
-
+//POST /api/exam/malpractice
 const MALPRACTICE_LIMIT = 3;
 
 const reportMalpractice = async (req, res) => {
