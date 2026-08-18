@@ -15,6 +15,7 @@ export default function CreateTest() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
   const [questionCode, setQuestionCode] = useState("");
+  const [cie, setCie] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
   useEffect(() => {
@@ -60,7 +61,10 @@ export default function CreateTest() {
       alert("Please enter a Question Code.");
       return;
     }
-
+    if (!cie) {
+      alert("Please select a CIE.");
+      return;
+    }
     // Check Audio
     if (!audioFile) {
       alert("Please upload an MP3 audio file.");
@@ -77,51 +81,53 @@ export default function CreateTest() {
       const formData = new FormData();
 
       formData.append("questionCode", questionCode.trim());
+      formData.append("cie", cie);
       formData.append("audio", audioFile);
       formData.append("questions", questionFile);
       console.log("========== CREATE TEST PAYLOAD ==========");
-console.log("Question Code:", questionCode.trim());
+      console.log("Question Code:", questionCode.trim());
+      console.log("CIE:", cie);
 
-console.log("Audio File:", {
-  name: audioFile?.name,
-  type: audioFile?.type,
-  size: audioFile?.size,
-});
+      console.log("Audio File:", {
+        name: audioFile?.name,
+        type: audioFile?.type,
+        size: audioFile?.size,
+      });
 
-console.log("Question File:", {
-  name: questionFile?.name,
-  type: questionFile?.type,
-  size: questionFile?.size,
-});
+      console.log("Question File:", {
+        name: questionFile?.name,
+        type: questionFile?.type,
+        size: questionFile?.size,
+      });
 
-console.log("FormData:");
+      console.log("FormData:");
 
-for (const [key, value] of formData.entries()) {
-  if (value instanceof File) {
-    console.log(key, {
-      name: value.name,
-      type: value.type,
-      size: value.size,
-    });
-  } else {
-    console.log(key, value);
-  }
-}
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(key, {
+            name: value.name,
+            type: value.type,
+            size: value.size,
+          });
+        } else {
+          console.log(key, value);
+        }
+      }
 
-console.log("========================================");
+      console.log("========================================");
 
       const token = localStorage.getItem("token");
 
-const response = await fetch(
-    "http://localhost:5000/api/staff/questions/questionsupload",
-    {
-        method: "POST",
-        headers: {
+      const response = await fetch(
+        "http://localhost:5000/api/staff/questions/questionsupload",
+        {
+          method: "POST",
+          headers: {
             Authorization: `Bearer ${token}`,
+          },
+          body: formData,
         },
-        body: formData,
-    }
-);
+      );
 
       const data = await response.json();
 
@@ -135,6 +141,7 @@ const response = await fetch(
 
       // Clear form
       setQuestionCode("");
+      setCie("");
       setAudioFile(null);
       setQuestionFile(null);
 
@@ -159,14 +166,15 @@ const response = await fetch(
             <Upload size={28} className="text-[#800000]" />
 
             <h1 className="text-3xl font-sans font-bold text-[#800000]">
-              Create English Test
+              Upload English Test
             </h1>
           </div>
 
           {/* Instructions Button - Far Right */}
           <button
             onClick={() => setShowInstructions(true)}
-            className="absolute right-0 w-8 h-8 rounded-full bg-[#FDCC03] text-white flex items-center justify-center text-sm font-bold hover:bg-[#800000] transition shadow-sm"
+            className="absolute right-0 w-8 h-8 rounded-full border-2 border-black bg-transparent text-black flex items-center justify-center text-sm font-bold hover:bg-gray-100 transition shadow-sm"
+            title="Instructions"
             title="Instructions"
           >
             !
@@ -186,6 +194,22 @@ const response = await fetch(
           onChange={(e) => setQuestionCode(e.target.value)}
           className="w-full border border-gray-400 rounded-lg px-3 py-2.5 mb-4 outline-none focus:border-[#D4AF37]"
         />
+        {/* CIE */}
+        <label className="flex items-center gap-2 font-semibold text-lg text-[#800000] mb-2">
+          <ClipboardCheck size={20} />                                                                                                                                                                                                                                               
+          CIE
+        </label>
+
+        <select
+          value={cie}
+          onChange={(e) => setCie(e.target.value)}
+          className="w-full border border-gray-400 rounded-lg px-3 py-2.5 mb-4 outline-none focus:border-[#D4AF37] bg-white"
+        >
+          <option value="">Select CIE</option>
+          <option value="cie1">CIE1</option>
+          <option value="cie2">CIE2</option>
+          <option value="cie3">CIE3</option>
+        </select>
 
         {/* Audio */}
         <label className="flex items-center gap-2 font-semibold text-lg text-[#800000] mb-2">
@@ -292,7 +316,7 @@ const response = await fetch(
         >
           <div className="bg-white w-[650px] max-h-[85vh] rounded-2xl shadow-2xl flex flex-col">
             {/* Header */}
-           <div className="flex items-center gap-4 px-8 py-5 border-b flex-shrink-0">
+            <div className="flex items-center gap-4 px-8 py-5 border-b flex-shrink-0">
               <div className="w-11 h-11 rounded-full bg-[#800000] text-white flex items-center justify-center text-lg font-bold">
                 !
               </div>

@@ -1,7 +1,7 @@
 
         .vec-shell {
           font-family: 'Poppins', sans-serif;
-          --gold-mild: #d9b23c;
+          --gold-mild: #ffc800b5;
           --gold-mild-soft: #f7e5a8;
           --bg: #ffffff;
           --panel: #ffffff;
@@ -136,7 +136,9 @@
           font-weight: 600;
           box-shadow: 0 6px 16px rgba(210, 170, 2, 0.3);
         }
-        .vec-item-btn.parent-active-only { background: var(--maroon-soft-strong); }
+       .vec-item-btn.parent-active-only {
+          background: var(--gold-mild-soft);
+        }
 
         .vec-icon {
           width: 19px;
@@ -145,9 +147,7 @@
           color: var(--maroon);
           transition: color 0.2s ease;
         }
-        .vec-icon.icon-gold {
-         color: var(--gold-mild);
-        }
+       /* removed — Faculty icon now uses the default .vec-icon maroon color */
 
         .vec-label { flex: 1; white-space: nowrap; }
         .vec-sidebar.collapsed .vec-label { display: none; }
@@ -220,62 +220,92 @@
 
         .vec-overlay { display: none; }
 
-        /* ---------- Responsive ---------- */
-        @media (max-width: 900px) {
-          .vec-topbar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            position: sticky;
-            top: 0;
-            width: 100%;
-            height: 56px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
-            padding: 0 16px;
-            z-index: 30;
-          }
-          .vec-topbar-title { font-size: 14px; font-weight: 600; color: var(--maroon); }
-          .vec-hamburger {
-            background: var(--maroon-soft);
-            border: none;
-            border-radius: 8px;
-            width: 34px;
-            height: 34px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--maroon);
-            cursor: pointer;
-          }
-          .vec-shell { flex-direction: column; }
-          .vec-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translateX(-100%);
-            box-shadow: 4px 0 24px rgba(0,0,0,0.18);
-          }
-          .vec-sidebar.mobile-open { transform: translateX(0); }
-          /* on mobile the drawer always opens full width, collapse state is ignored */
-          .vec-sidebar.collapsed { width: 280px; }
-          .vec-sidebar.collapsed .vec-section-label,
-          .vec-sidebar.collapsed .vec-label,
-          .vec-sidebar.collapsed .vec-chevron { display: revert; }
-          .vec-sidebar.collapsed .vec-submenu.open { display: flex; }
-          .vec-sidebar.collapsed .vec-item-btn {
-            justify-content: flex-start;
-            padding: 14px 18px;
-            gap: 13px;
-          }
-          .vec-collapse-btn { display: none; }
-          .vec-close-btn { display: inline-flex; }
-          .vec-overlay.mobile-open {
-            display: block;
-            position: fixed;
-            inset: 0;
-            background: rgba(20,0,0,0.35);
-            z-index: 35;
-          }
-        }
-      
+      /* ---------- Responsive ---------- */
+
+/* Half-screen / tablet: keep the sidebar visible (icon-only), no topbar/hamburger */
+@media (max-width: 900px) and (min-width: 601px) {
+  .vec-sidebar {
+    width: 80px;
+  }
+  .vec-sidebar .vec-section-label,
+  .vec-sidebar .vec-label,
+  .vec-sidebar .vec-chevron { display: none; }
+  .vec-sidebar .vec-submenu { display: none; }
+  .vec-sidebar .vec-item-btn {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+  }
+  .vec-sidebar .vec-header { justify-content: center; padding: 16px 0; }
+  .vec-sidebar:hover {
+    width: 280px;
+  }
+  .vec-sidebar:hover .vec-section-label,
+  .vec-sidebar:hover .vec-label,
+  .vec-sidebar:hover .vec-chevron { display: revert; }
+  .vec-sidebar:hover .vec-item-btn {
+    justify-content: flex-start;
+    padding: 14px 18px;
+    gap: 13px;
+  }
+  .vec-sidebar:hover .vec-header { justify-content: flex-start; padding: 16px 14px; }
+}
+
+/* True mobile: fall back to hamburger + drawer */
+@media (max-width: 600px) {
+  .vec-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 56px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    z-index: 30;
+  }
+  .vec-topbar-title { font-size: 14px; font-weight: 600; color: var(--maroon); }
+  .vec-hamburger {
+    background: var(--maroon-soft);
+    border: none;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--maroon);
+    cursor: pointer;
+  }
+  .vec-shell { flex-direction: column; }
+  .vec-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+  }
+  .vec-sidebar.mobile-open { transform: translateX(0); }
+  /* on mobile the drawer always opens full width, collapse state is ignored */
+  .vec-sidebar.collapsed { width: 280px; }
+  .vec-sidebar.collapsed .vec-section-label,
+  .vec-sidebar.collapsed .vec-label,
+  .vec-sidebar.collapsed .vec-chevron { display: revert; }
+  .vec-sidebar.collapsed .vec-submenu.open { display: flex; }
+  .vec-sidebar.collapsed .vec-item-btn {
+    justify-content: flex-start;
+    padding: 14px 18px;
+    gap: 13px;
+  }
+  .vec-collapse-btn { display: none; }
+  .vec-close-btn { display: inline-flex; }
+  .vec-overlay.mobile-open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,0,0,0.35);
+    z-index: 35;
+  }
+}
