@@ -1,15 +1,17 @@
-const puppeteer = require("puppeteer");
-const { ObjectId } = require("mongodb");
 const fs = require("fs");
 const path = require("path");
+
+const puppeteer = require("puppeteer");
+const { ObjectId } = require("mongodb");
 
 const { getDB } = require("../config/db");
 const { getFromS3, uploadToS3 } = require("../service/s3_service");
 
 
 // ============================================================
-// GENERATE EXAM RESULT REPORT
+// GENERATE EXAM REPORT PDF
 // ============================================================
+
 
 const generateExamReport = async (req, res) => {
 
@@ -20,66 +22,52 @@ const generateExamReport = async (req, res) => {
         // ====================================================
         // GET JSON BODY
         // ====================================================
+        // Requires express.json() middleware to be applied
+        // (globally, or on this route) so req.body is already
+        // a parsed object here.
+
+        const data = req.body;
+
+        if (!data || Object.keys(data).length === 0) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Request body is required."
+            });
+
+        }
+
+        console.log("JSON DATA:");
+        console.log(data);
+
+
+        // ====================================================
+        // GET FILTERS
+        // ====================================================
 
         const {
             batch,
             department,
             section,
-            cie
-        } = req.body;
-
-
-        console.log("========================================");
-        console.log("REPORT REQUEST");
-        console.log("========================================");
-
-        console.log({
-            batch,
-            department,
-            section,
-            cie
-        });
+            cie,
+            semester
+        } = data;
 
 
         // ====================================================
-        // VALIDATE CIE
-        // ====================================================
-
-        const cieNumber = Number(cie);
-
-        if (![1, 2, 3].includes(cieNumber)) {
-
-            return res.status(400).json({
-                success: false,
-                message: "cie must be 1, 2 or 3."
-            });
-
-        }
-
-
-        // ====================================================
-        // EXPECTED TEST COUNT
-        // ====================================================
-
-        const expectedTests =
-            cieNumber === 3 ? 2 : 4;
-
-
-        // ====================================================
-        // DATABASE
+        // GET DATABASE
         // ====================================================
 
         const db = getDB();
 
 
         // ====================================================
-        // SCHEDULE FILTER
+        // BUILD COMMON FILTER (batch / department / section / semester)
         // ====================================================
+        // Used for the "schedule" and "exam" queries, which both
+        // carry a semester field.
 
-        const scheduleFilter = {
-            cie: cieNumber
-        };
-
+        const commonFilter = {};
 
         if (
             batch &&
@@ -87,7 +75,7 @@ const generateExamReport = async (req, res) => {
             batch.trim() !== ""
         ) {
 
-            scheduleFilter.batch = batch.trim();
+            commonFilter.batch = batch.trim();
 
         }
 
@@ -98,7 +86,7 @@ const generateExamReport = async (req, res) => {
             department.trim() !== ""
         ) {
 
-            scheduleFilter.department = department.trim();
+            commonFilter.department = department.trim();
 
         }
 
@@ -109,229 +97,92 @@ const generateExamReport = async (req, res) => {
             section.trim() !== ""
         ) {
 
-            scheduleFilter.section = section.trim();
+            commonFilter.section = section.trim();
 
         }
 
 
-        console.log("========================================");
-        console.log("SCHEDULE FILTER");
-        console.log("========================================");
-
-        console.log(scheduleFilter);
-
-
-        // ====================================================
-        // GET SCHEDULES
-        //
-        // questionSetId -> testcode
-        // ====================================================
-
-        const schedules = await db
-            .collection("schedule")
-            .find(scheduleFilter)
-            .project({
-                questionSetId: 1,
-                testcode: 1,
-                cie: 1,
-                startTime: 1,
-                endTime: 1
-            })
-            .sort({
-                startTime: 1
-            })
-            .toArray();
-
-
-        console.log("========================================");
-        console.log("SCHEDULES FOUND");
-        console.log("========================================");
-
-        console.log(schedules);
-
-
-        // ====================================================
-        // CHECK TEST COUNT
-        // ====================================================
-
-        // if (schedules.length !== expectedTests) {
-
-        //     return res.status(400).json({
-
-        //         success: false,
-
-        //         message:
-        //             `Expected ${expectedTests} tests for CIE ${cieNumber}, but found ${schedules.length}.`,
-
-        //         expectedTests,
-
-        //         foundTests:
-        //             schedules.length
-
-        //     });
-
-        // }
-
-
-        // ====================================================
-        // CREATE QUESTION SET -> SCHEDULE MAP
-        // ====================================================
-
-        const scheduleMap = new Map();
-
-
-        schedules.forEach(schedule => {
-
-            if (!schedule.questionSetId) {
-                return;
-            }
-
-            scheduleMap.set(
-                schedule.questionSetId.toString(),
-                schedule
-            );
-
-        });
-
-
-        // ====================================================
-        // GET QUESTION SET IDS
-        // ====================================================
-
-        const questionSetIds = schedules
-            .map(schedule =>
-                schedule.questionSetId?.toString()
-            )
-            .filter(Boolean);
-
-
-        // ====================================================
-        // CONVERT QUESTION SET IDS TO OBJECT IDS
-        // ====================================================
-
-        const questionSetObjectIds =
-            questionSetIds
-                .filter(id =>
-                    ObjectId.isValid(id)
-                )
-                .map(id =>
-                    new ObjectId(id)
-                );
-
-
-        if (questionSetObjectIds.length === 0) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "No valid questionSetId found in schedules."
-
-            });
-
-        }
-
-
-        // ====================================================
-        // EXAM FILTER
-        // ====================================================
-
-        const examFilter = {
-
-            questionSetId: {
-                $in: questionSetObjectIds
-            }
-
-        };
-
-
+        // semester is stored as "odd" or "even" — validate against
         if (
-            batch &&
-            typeof batch === "string" &&
-            batch.trim() !== ""
+            semester &&
+            typeof semester === "string" &&
+            ["odd", "even"].includes(semester.trim().toLowerCase())
         ) {
 
-            examFilter.batch = batch.trim();
+            commonFilter.semester = semester.trim().toLowerCase();
 
         }
-
-
-        if (
-            department &&
-            typeof department === "string" &&
-            department.trim() !== ""
-        ) {
-
-            examFilter.department = department.trim();
-
-        }
-
-
-        if (
-            section &&
-            typeof section === "string" &&
-            section.trim() !== ""
-        ) {
-
-            examFilter.section = section.trim();
-
-        }
-
-
-        console.log("========================================");
-        console.log("EXAM FILTER");
-        console.log("========================================");
-
-        console.log(examFilter);
 
 
         // ====================================================
-        // GET EXAM RESULTS
+        // BUILD STUDENT ROSTER FILTER
+        // ====================================================
+        // Same as commonFilter, minus semester — the "student"
+        // collection doesn't carry a semester field.
+
+        const studentFilter = { ...commonFilter };
+
+        delete studentFilter.semester;
+
+
+        // ====================================================
+        // CHECK IF A SPECIFIC CIE WAS REQUESTED
         // ====================================================
 
-        const exams = await db
-            .collection("exam")
-            .find(examFilter)
+        const isCieReport =
+            cie !== undefined &&
+            cie !== null &&
+            cie !== "" &&
+            !isNaN(Number(cie));
+
+        const cieNumber =
+            isCieReport
+                ? Number(cie)
+                : null;
+
+
+        console.log(
+            "isCieReport:",
+            isCieReport
+        );
+
+
+        // ====================================================
+        // FETCH CLASS ROSTER FROM "student"
+        // ====================================================
+        // This is the source of truth for which rows appear in
+        // the report — NOT the exam collection. A student with
+        // zero attempts still gets a row, filled with "AB".
+
+        const studentRoster = await db
+            .collection("students")
+            .find(studentFilter)
             .project({
 
                 _id: 0,
-
                 admissionNo: 1,
-                registerNo: 1,
-                studentName: 1,
-
-                department: 1,
-                batch: 1,
-                section: 1,
-
-                questionSetId: 1,
-
-                obtainedMarks: 1,
-                totalMarks: 1
+                name: 1
 
             })
             .sort({
-
-                admissionNo: 1,
-                createdAt: 1
-
+                name: 1
             })
             .toArray();
 
 
-        // ====================================================
-        // CHECK RESULTS
-        // ====================================================
+        console.log(
+            `Found ${studentRoster.length} student(s) in roster`
+        );
 
-        if (exams.length === 0) {
+
+        if (studentRoster.length === 0) {
 
             return res.status(404).json({
 
                 success: false,
 
                 message:
-                    `No examination records found for CIE ${cieNumber}.`
+                    "No students found for the given filters."
 
             });
 
@@ -339,116 +190,53 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // GROUP BY STUDENT
-        //
-        // ONE STUDENT = ONE ROW
+        // FETCH TEST COLUMNS FROM "schedule"
         // ====================================================
+        // If a cie was requested, restrict to that cie's tests.
+        // Otherwise every scheduled test for this class becomes
+        // a column.
 
-        const studentMap = new Map();
+        const scheduleFilter = {
 
+            ...commonFilter,
 
-        for (const exam of exams) {
+            ...(isCieReport ? { cie: cieNumber } : {})
 
-            if (!exam.admissionNo) {
-                continue;
-            }
+        };
 
+        console.log(
+            "SCHEDULE FILTER:",
+            scheduleFilter
+        );
 
-            const admissionNo =
-                exam.admissionNo.toString();
+        const scheduleTests = await db
+            .collection("schedule")
+            .find(scheduleFilter)
+            .project({
 
+                _id: 1,
+                testcode: 1,
+                title: 1,
+                questionSetId: 1
 
-            // =================================================
-            // CREATE STUDENT
-            // =================================================
-
-            if (!studentMap.has(admissionNo)) {
-
-                studentMap.set(
-                    admissionNo,
-                    {
-
-                        admissionNo,
-
-                        registerNo:
-                            exam.registerNo || "-",
-
-                        studentName:
-                            exam.studentName || "-",
-
-                        department:
-                            exam.department || "-",
-
-                        batch:
-                            exam.batch || "-",
-
-                        section:
-                            exam.section || "-",
-
-                        tests: []
-
-                    }
-                );
-
-            }
+            })
+            .toArray();
 
 
-            // =================================================
-            // QUESTION SET ID
-            // =================================================
-
-            const questionSetId =
-                exam.questionSetId?.toString();
+        console.log(
+            `Found ${scheduleTests.length} schedule test(s)`
+        );
 
 
-            if (!questionSetId) {
-                continue;
-            }
+        if (scheduleTests.length === 0) {
 
+            return res.status(404).json({
 
-            // =================================================
-            // FIND SCHEDULE
-            //
-            // questionSetId
-            //       ↓
-            // schedule
-            //       ↓
-            // testcode
-            // =================================================
+                success: false,
 
-            const schedule =
-                scheduleMap.get(questionSetId);
-
-
-            if (!schedule) {
-                continue;
-            }
-
-
-            // =================================================
-            // GET STUDENT
-            // =================================================
-
-            const student =
-                studentMap.get(admissionNo);
-
-
-            // =================================================
-            // ADD TEST RESULT
-            // =================================================
-
-            student.tests.push({
-
-                questionSetId,
-
-                testcode:
-                    schedule.testcode || "-",
-
-                obtainedMarks:
-                    exam.obtainedMarks ?? 0,
-
-                totalMarks:
-                    exam.totalMarks ?? 0
+                message: isCieReport
+                    ? `No tests found for CIE ${cieNumber} with the given filters.`
+                    : "No tests found for the given filters."
 
             });
 
@@ -456,152 +244,279 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // CONVERT TO ARRAY
+        // ORDER TESTS BY testcode (NATURAL NUMERIC SORT)
         // ====================================================
+        // testcode values look like "test1", "test2", ... "test10".
+        // A plain string sort would put "test10" before "test2",
+        // so pull out the trailing number and sort on that.
 
-        const students =
-            Array.from(
-                studentMap.values()
-            );
+        const extractTestNumber = (testcode) => {
 
+            if (!testcode) {
 
-        // ====================================================
-        // SORT STUDENTS
-        // ====================================================
+                return Number.MAX_SAFE_INTEGER;
 
-        students.sort((a, b) => {
+            }
 
-            return a.admissionNo.localeCompare(
-                b.admissionNo
+            const match =
+                testcode.match(/(\d+)\s*$/);
+
+            return match
+                ? parseInt(match[1], 10)
+                : Number.MAX_SAFE_INTEGER;
+
+        };
+
+        scheduleTests.sort((a, b) => {
+
+            return (
+                extractTestNumber(a.testcode) -
+                extractTestNumber(b.testcode)
             );
 
         });
 
 
-        // ====================================================
-        // GENERATE TEST HEADERS
-        // ====================================================
+        // Column label per test — formatted as "Test-1", "Test-2",
+        // etc. using the number pulled from testcode. Falls back to
+        // the raw testcode/title, then a positional label, if no
+        // number can be extracted. Matching against exam records
+        // is done via questionSetId, which is the field that
+        // actually links a schedule entry to its exam attempts
+        // (schedule._id and exam.testId do NOT match each other).
+        const testColumns = scheduleTests.map((test, index) => {
 
-        const testHeaders =
-            schedules
-                .map((schedule, index) => {
+            const testNumber =
+                extractTestNumber(test.testcode);
 
-                    return `
-                        <th class="test-header">
+            const label =
+                testNumber !== Number.MAX_SAFE_INTEGER
+                    ? `Test-${testNumber}`
+                    : (test.testcode || test.title || `Test-${index + 1}`);
 
-                            Test ${index + 1}
+            return {
 
-                            <small>
-                                ${schedule.testcode || "-"}
-                            </small>
+                questionSetId:
+                    test.questionSetId.toString(),
 
-                        </th>
-                    `;
+                label: label
 
-                })
-                .join("");
+            };
 
-
-        // ====================================================
-        // GENERATE STUDENT ROWS
-        //
-        // ONE STUDENT = ONE ROW
-        // ====================================================
-
-        const rows =
-            students
-                .map((student, index) => {
-
-                    const testCells =
-                        schedules
-                            .map(schedule => {
-
-                                const questionSetId =
-                                    schedule.questionSetId?.toString();
+        });
 
 
-                                const test =
-                                    student.tests.find(
-                                        item =>
-                                            item.questionSetId ===
-                                            questionSetId
-                                    );
-
-
-                                if (!test) {
-
-                                    return `
-                                        <td>-</td>
-                                    `;
-
-                                }
-
-
-                                return `
-                                    <td>
-                                        ${test.obtainedMarks}/${test.totalMarks}
-                                    </td>
-                                `;
-
-                            })
-                            .join("");
-
-
-                    return `
-                        <tr>
-
-                            <td>
-                                ${index + 1}
-                            </td>
-
-                            <td>
-                                ${student.admissionNo}
-                            </td>
-
-                            <td class="name">
-                                ${student.studentName}
-                            </td>
-
-                            <td>
-                                ${student.department}
-                            </td>
-
-                            <td>
-                                ${student.batch}
-                            </td>
-
-                            <td>
-                                ${student.section}
-                            </td>
-
-                            ${testCells}
-
-                        </tr>
-                    `;
-
-                })
-                .join("");
+        const questionSetIds =
+            scheduleTests.map(
+                (test) => new ObjectId(test.questionSetId)
+            );
 
 
         // ====================================================
-        // GET LOCAL HTML TEMPLATE
+        // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
         // ====================================================
+        // Both "normal" and "retest" documents are fetched here —
+        // the preference between them is resolved afterwards.
 
-        const templatePath = path.join(
-            __dirname,
-            "../../templates/examExport.html"
+        const examFilter = {
+
+            ...commonFilter,
+
+            questionSetId: {
+                $in: questionSetIds
+            }
+
+        };
+
+        console.log(
+            "EXAM FILTER:",
+            examFilter
+        );
+
+        const examRecords = await db
+            .collection("exam")
+            .find(examFilter)
+            .project({
+
+                _id: 0,
+                questionSetId: 1,
+                admissionNo: 1,
+                category: 1,
+                obtainedMarks: 1
+
+            })
+            .toArray();
+
+
+        console.log(
+            `Found ${examRecords.length} exam attempt(s)`
         );
 
 
-        let html;
+        // ====================================================
+        // BUILD admissionNo -> questionSetId -> {normal, retest}
+        // ====================================================
 
+        const examMap = new Map();
+
+        examRecords.forEach((record) => {
+
+            if (!record.admissionNo) {
+
+                // Can't attribute this attempt to a roster row
+                // without an admissionNo — skip it.
+                return;
+
+            }
+
+            if (!examMap.has(record.admissionNo)) {
+
+                examMap.set(
+                    record.admissionNo,
+                    new Map()
+                );
+
+            }
+
+            const studentTests =
+                examMap.get(record.admissionNo);
+
+            const testKey =
+                record.questionSetId.toString();
+
+            if (!studentTests.has(testKey)) {
+
+                studentTests.set(testKey, {});
+
+            }
+
+            const entry =
+                studentTests.get(testKey);
+
+            const category =
+                (record.category || "")
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+
+            if (category === "retest") {
+
+                entry.retest = record.obtainedMarks ?? 0;
+
+            } else {
+
+                // Anything that isn't explicitly "retest" is
+                // treated as the normal attempt.
+                entry.normal = record.obtainedMarks ?? 0;
+
+            }
+
+        });
+
+
+        console.log(
+            `Found ${studentRoster.length} student row(s)`
+        );
+
+
+        // ====================================================
+        // GENERATE TABLE HEADER
+        // ====================================================
+
+        const extraHeaderCells = testColumns
+            .map((col) => `<th>${col.label}</th>`)
+            .join("");
+
+
+        // ====================================================
+        // GENERATE TABLE ROWS
+        // ====================================================
+        // One row per roster student. Per test column: retest
+        // mark if it exists, else the normal mark, else "AB" if
+        // the student has neither.
+
+        const rows = studentRoster
+            .map((student, index) => {
+
+                const studentTests =
+                    examMap.get(student.admissionNo);
+
+                const marksCells = testColumns
+                    .map((col) => {
+
+                        const entry =
+                            studentTests
+                                ? studentTests.get(col.questionSetId)
+                                : undefined;
+
+                        let markDisplay = "AB";
+
+                        if (entry) {
+
+                            if (entry.retest !== undefined) {
+
+                                markDisplay = entry.retest;
+
+                            } else if (entry.normal !== undefined) {
+
+                                markDisplay = entry.normal;
+
+                            }
+
+                        }
+
+                        return `
+                            <td>
+                                ${markDisplay}
+                            </td>
+                        `;
+
+                    })
+                    .join("");
+
+                return `
+                    <tr>
+
+                        <td>
+                            ${index + 1}
+                        </td>
+
+                        <td>
+                            ${student.admissionNo || "-"}
+                        </td>
+
+                        <td class="name">
+                            ${student.name || "-"}
+                        </td>
+
+                        ${marksCells}
+
+                    </tr>
+                `;
+
+            })
+            .join("");
+
+
+        // ====================================================
+        // GET HTML TEMPLATE FROM LOCAL FILE
+        // ====================================================
+        // TEMPORARY: reading from disk for now instead of S3.
+        // Adjust this path to wherever examExport.html actually
+        // lives relative to this controller file.
+
+        const templatePath =
+            path.join(
+                __dirname,
+                "../html/examExport.html"
+            );
+
+        let html;
 
         try {
 
-            html = fs.readFileSync(
-                templatePath,
-                "utf8"
-            );
+            html =
+                fs.readFileSync(templatePath, "utf8");
 
         } catch (error) {
 
@@ -615,10 +530,7 @@ const generateExamReport = async (req, res) => {
                 success: false,
 
                 message:
-                    "HTML template not found.",
-
-                error:
-                    error.message
+                    "HTML template not found."
 
             });
 
@@ -632,9 +544,7 @@ const generateExamReport = async (req, res) => {
         const logoKey =
             "english_exam_platform/assets/logo.png";
 
-
         let logoBase64;
-
 
         try {
 
@@ -664,7 +574,7 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // LOGO DATA
+        // CREATE LOGO DATA URI
         // ====================================================
 
         const logoData =
@@ -672,22 +582,30 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // FILTER VALUES
+        // DISPLAY FILTER VALUES
         // ====================================================
 
-        const batchValue =
-            batch?.trim() || "All";
-
-        const departmentValue =
-            department?.trim() || "All";
-
-        const sectionValue =
-            section?.trim() || "All";
+        const batchValue = commonFilter.batch || "All";
+        const departmentValue = commonFilter.department || "All";
+        const sectionValue = commonFilter.section || "All";
+        const semesterValue =
+            commonFilter.semester
+                ? commonFilter.semester.charAt(0).toUpperCase() + commonFilter.semester.slice(1)
+                : "All";
+        const cieValue = isCieReport ? `CIE ${cieNumber}` : "All";
 
 
         // ====================================================
         // REPLACE HTML PLACEHOLDERS
         // ====================================================
+        // NOTE: the template must include a {{MARKS_HEADERS}}
+        // placeholder inside the <thead> row, in place of the
+        // single static "Marks" <th>, and a {{CIE}} placeholder
+        // wherever the CIE filter value should be shown.
+        // {{SEMESTER}} is replaced here too, but the current
+        // template has no {{SEMESTER}} placeholder in it, so
+        // this particular .replace() is a harmless no-op until
+        // one is added to the template.
 
         html = html
 
@@ -712,13 +630,18 @@ const generateExamReport = async (req, res) => {
             )
 
             .replace(
-                "{{CIE}}",
-                cieNumber
+                "{{SEMESTER}}",
+                semesterValue
             )
 
             .replace(
-                "{{TEST_HEADERS}}",
-                testHeaders
+                "{{CIE}}",
+                cieValue
+            )
+
+            .replace(
+                "{{MARKS_HEADERS}}",
+                extraHeaderCells
             )
 
             .replace(
@@ -728,12 +651,12 @@ const generateExamReport = async (req, res) => {
 
             .replace(
                 "{{TOTAL_STUDENTS}}",
-                students.length
+                studentRoster.length
             );
 
 
         // ====================================================
-        // PUPPETEER
+        // LAUNCH PUPPETEER
         // ====================================================
 
         browser = await puppeteer.launch({
@@ -741,9 +664,17 @@ const generateExamReport = async (req, res) => {
         });
 
 
+        // ====================================================
+        // CREATE PAGE
+        // ====================================================
+
         const page =
             await browser.newPage();
 
+
+        // ====================================================
+        // LOAD HTML
+        // ====================================================
 
         await page.setContent(
             html,
@@ -757,25 +688,24 @@ const generateExamReport = async (req, res) => {
         // GENERATE PDF
         // ====================================================
 
-        const pdf =
-            await page.pdf({
+        const pdf = await page.pdf({
 
-                format: "A4",
+            format: "A4",
 
-                landscape: true,
+            landscape: true,
 
-                printBackground: true,
+            printBackground: true,
 
-                margin: {
+            margin: {
 
-                    top: "15mm",
-                    bottom: "15mm",
-                    left: "10mm",
-                    right: "10mm"
+                top: "15mm",
+                bottom: "15mm",
+                left: "10mm",
+                right: "10mm"
 
-                }
+            }
 
-            });
+        });
 
 
         // ====================================================
@@ -788,15 +718,46 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // UPLOAD PDF
+        // UPLOAD GENERATED PDF TO S3
         // ====================================================
+        // Build a meaningful filename from the applied filters,
+        // e.g. "exam-report-AIDS-2024-2028-A-odd-CIE1-1755500000000.pdf"
+        // (falls back to "All" segments when a filter wasn't set).
+
+        const sanitizeForFilename = (value) => {
+
+            return String(value)
+                .trim()
+                .replace(/[^a-zA-Z0-9-]+/g, "")
+                || "All";
+
+        };
+
+        const filenameParts = [
+
+            "exam-report",
+            sanitizeForFilename(departmentValue),
+            sanitizeForFilename(batchValue),
+            sanitizeForFilename(sectionValue),
+            commonFilter.semester
+                ? commonFilter.semester
+                : "AllSem",
+            isCieReport
+                ? `CIE${cieNumber}`
+                : "AllCIE"
+
+        ];
+
+        const meaningfulFilename =
+            `${filenameParts.join("-")}-${Date.now()}.pdf`;
+
 
         const file = {
 
             buffer: pdf,
 
             filename:
-                `cie-${cieNumber}-report-${Date.now()}.pdf`,
+                meaningfulFilename,
 
             mimeType:
                 "application/pdf"
@@ -811,6 +772,12 @@ const generateExamReport = async (req, res) => {
             );
 
 
+        console.log(
+            "PDF uploaded to S3:",
+            uploadResult
+        );
+
+
         // ====================================================
         // RESPONSE
         // ====================================================
@@ -820,37 +787,18 @@ const generateExamReport = async (req, res) => {
             success: true,
 
             message:
-                `CIE ${cieNumber} report generated successfully.`,
+                "Exam report generated and uploaded successfully.",
 
             data: {
-
-                cie:
-                    cieNumber,
-
-                tests:
-                    schedules.map(
-                        (schedule, index) => ({
-
-                            testNo:
-                                index + 1,
-
-                            questionSetId:
-                                schedule.questionSetId,
-
-                            testcode:
-                                schedule.testcode
-
-                        })
-                    ),
-
-                totalStudents:
-                    students.length,
 
                 key:
                     uploadResult.key,
 
                 url:
-                    uploadResult.url
+                    uploadResult.url,
+
+                totalStudents:
+                    studentRoster.length
 
             }
 
@@ -867,14 +815,7 @@ const generateExamReport = async (req, res) => {
 
         if (browser) {
 
-            try {
-                await browser.close();
-            } catch (closeError) {
-                console.error(
-                    "Browser close error:",
-                    closeError
-                );
-            }
+            await browser.close();
 
         }
 

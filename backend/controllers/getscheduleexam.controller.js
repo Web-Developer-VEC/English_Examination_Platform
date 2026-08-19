@@ -3,12 +3,6 @@ const { getDB } = require("../config/db");
 const getScheduleData = async (req, res) => {
     try {
 
-        // ==========================================
-        // Get retest from form-data
-        // ==========================================
-
-        const { retest } = req.body;
-
         const db = getDB();
 
         // ==========================================
@@ -25,36 +19,50 @@ const getScheduleData = async (req, res) => {
                 name: 1
             })
             .toArray();
-            
 
-        // ==========================================
-        // Batch + Department + Section combinations
-        // ==========================================
+        const groupMap = new Map();
 
-        const batchDepartmentSections = [
-            ...new Map(
-                students
-                    .filter(
-                        student =>
-                            student.batch &&
-                            student.department &&
-                            student.section
-                    )
-                    .map(student => [
-                        `${student.batch}_${student.department}_${student.section}`,
-                        {
-                            batch: student.batch,
-                            department: student.department,
-                            section: student.section
-                        }
-                    ])
-            ).values()
-        ];
+        students
+            .filter(
+                student =>
+                    student.batch &&
+                    student.department &&
+                    student.section
+            )
+            .forEach(student => {
 
-        // ==========================================
-        // Get test codes from questions collection
-        // ==========================================
+                const key =
+                    `${student.batch}_${student.department}_${student.section}`;
 
+                if (!groupMap.has(key)) {
+
+                    groupMap.set(key, {
+
+                        batch: student.batch,
+                        department: student.department,
+                        section: student.section,
+                        students: []
+
+                    });
+
+                }
+
+                if (student.username) {
+
+                    groupMap
+                        .get(key)
+                        .students
+                        .push(student.username);
+
+                }
+
+            });
+
+        const batchDepartmentSections =
+            [...groupMap.values()];
+
+
+       
         const questions = await db
             .collection("questions")
             .find(
@@ -62,16 +70,18 @@ const getScheduleData = async (req, res) => {
                 {
                     projection: {
                         _id: 1,
-                        testcode: 1
+                        questionCode: 1
                     }
                 }
             )
             .toArray();
-
+      
         const tests = questions.map(question => ({
             questionSetId: question._id,
             questionCode: question.questionCode,
         }));
+        console.log(tests);
+
 
         // ==========================================
         // Prepare response
@@ -82,20 +92,6 @@ const getScheduleData = async (req, res) => {
             tests
         };
 
-        // ==========================================
-        // Retest
-        // ==========================================
-
-        if (retest === "true") {
-
-            data.admissionNos = [
-                ...new Set(
-                    students
-                        .map(student => student.admissionNo)
-                        .filter(Boolean)
-                )
-            ].sort();
-        }
 
         // ==========================================
         // Response
@@ -116,7 +112,6 @@ const getScheduleData = async (req, res) => {
         });
     }
 };
-
 
 const getScheduledExams = async (req, res) => {
     try {
@@ -156,13 +151,13 @@ const getScheduledExams = async (req, res) => {
                         ? questionSet.testcode
                         : null,
 
-                    department: exam.department,
+                    department: exam.eligibility.department,
 
-                    batch: exam.batch,
+                    batch: exam.eligibility.batch,
 
-                    section: exam.section,
+                    section: exam.eligibility.section,
 
-                    admissionNo: exam.admissionNo || [],
+                    admissionNo: exam.eligibility.admissionNo || [],
 
                     duration: exam.duration,
 
@@ -256,6 +251,6 @@ const getStudentsByDepartmentAndBatch = async (req, res) => {
 
 
 module.exports = {
-    getScheduleData, getScheduledExams,getStudentsByDepartmentAndBatch
+    getScheduleData, getScheduledExams, getStudentsByDepartmentAndBatch
 
 };

@@ -5,13 +5,7 @@ const { getDB } = require("../config/db");
 const studentsUpload = async (req, res) => {
     try {
 
-        // Validate middleware execution
-        if (!req.uploadedData) {
-            return res.status(400).json({
-                success: false,
-                message: "Upload failed. Please upload the student Excel file."
-            });
-        }
+     
 
         // Parse & Validate Excel
         const parsedStudents = parseStudentExcel(
@@ -100,12 +94,7 @@ const studentsUpload = async (req, res) => {
 const updateStudent = async (req, res) => {
     try {
 
-        if (!req.uploadedData) {
-            return res.status(400).json({
-                success: false,
-                message: "Upload failed. Please upload the student Excel file."
-            });
-        }
+    
 
         const parsedStudents = parseStudentExcel(
             req.files.student_data.buffer
