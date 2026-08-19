@@ -1,21 +1,31 @@
 import React, { useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import Register from "../auth/Register"
-import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
-import { Navigate, useNavigate } from "react-router-dom";
-import {saveStudentSession} from "../../utils/helpers";
+import { useNavigate } from "react-router-dom";
+import { saveStudentSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ identifier: "", password: "" });
+  const [formData, setFormData] = useState({
+    identifier: "",
+    password: ""
+  });
+  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+
+    setLoginError("");
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -43,9 +53,9 @@ const StudentLogin = () => {
       console.error("Login error:", error);
 
       if (error.response) {
-        toast.error(error.response.data.message);
+        setLoginError("Wrong username or password");
       } else {
-        toast.error("Unable to connect to server");
+        setLoginError("Unable to connect to server");
       }
     }
   };
@@ -54,8 +64,6 @@ const StudentLogin = () => {
     <div className="flex pt-20 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
-        <ToastContainer position="bottom-right" autoClose={3000} />
-
         <User className="login-heading__icon" size={22} />
 
         <h2>Student Login</h2>
@@ -105,6 +113,11 @@ const StudentLogin = () => {
           </div>
         </div>
 
+        {loginError && (
+          <p className="mt-3 text-center text-red-600 text-sm font-medium">
+            {loginError}
+          </p>
+        )}
         <button type="submit" className="login-submit">
           <LogIn size={18} />
           Login

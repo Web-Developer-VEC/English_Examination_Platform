@@ -23,6 +23,7 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
+import ThemeDropdown from "../../components/common/ThemeDropDown";
 
 import "./StudentDataUpload.css";
 
@@ -299,7 +300,7 @@ const StudentDataUpload = () => {
 
       showExistingError(
         error?.message ||
-          "Unable to load batch, department and section data."
+        "Unable to load batch, department and section data."
       );
     } finally {
       setLoadingScheduleData(false);
@@ -315,8 +316,8 @@ const StudentDataUpload = () => {
   const departmentOptions = useMemo(() => {
     const rows = selectedBatch
       ? batchDepartmentSections.filter(
-          (item) => item.batch === selectedBatch
-        )
+        (item) => item.batch === selectedBatch
+      )
       : batchDepartmentSections;
 
     return [...new Set(rows.map((item) => item.department))].sort();
@@ -352,7 +353,7 @@ const StudentDataUpload = () => {
     try {
       const formData = new FormData();
 
-      // Backend expects the uploaded Excel file under "student_data".
+
       formData.append("student_data", selectedFile);
 
       const response = await fetch(STUDENT_DATA_URL, {
@@ -379,8 +380,7 @@ const StudentDataUpload = () => {
         fileInputRef.current.value = "";
       }
 
-      // If the user has already selected a group, immediately refresh it
-      // so the newly uploaded Excel records appear in Existing Data.
+
       if (selectedBatch && selectedDepartment && selectedSection) {
         await fetchExistingStudents({
           keepMessage: true,
@@ -529,9 +529,7 @@ const StudentDataUpload = () => {
     link.remove();
   };
 
-  const handleBatchChange = (event) => {
-    const batch = event.target.value;
-
+  const handleBatchChange = (batch) => {
     setSelectedBatch(batch);
     setSelectedDepartment("");
     setSelectedSection("");
@@ -542,8 +540,7 @@ const StudentDataUpload = () => {
     setExistingMessageType("");
   };
 
-  const handleDepartmentChange = (event) => {
-    const department = event.target.value;
+  const handleDepartmentChange = (department) => {
 
     setSelectedDepartment(department);
     setSelectedSection("");
@@ -554,8 +551,8 @@ const StudentDataUpload = () => {
     setExistingMessageType("");
   };
 
-  const handleSectionChange = (event) => {
-    setSelectedSection(event.target.value);
+  const handleSectionChange = (section) => {
+    setSelectedSection(section);
     setStudents([]);
     setCurrentPage(1);
     setStudentSearch("");
@@ -690,10 +687,7 @@ const StudentDataUpload = () => {
 
                     <p>{formatFileSize(selectedFile.size)}</p>
 
-                    {/* <div className="file-valid">
-                      <CheckCircle2 size={15} />
-                      Valid Excel file
-                    </div> */}
+
                   </div>
 
                   <button
@@ -784,91 +778,47 @@ const StudentDataUpload = () => {
                 <div className="filter-field">
                   <label htmlFor="student-batch">Batch</label>
 
-                  <div className="select-wrapper">
-                    <GraduationCap size={17} />
-
-                    <select
-                      id="student-batch"
-                      value={selectedBatch}
-                      onChange={handleBatchChange}
-                      disabled={loadingScheduleData}
-                    >
-                      <option value="">
-                        {loadingScheduleData ? "Loading..." : "Select Batch"}
-                      </option>
-
-                      {batchOptions.map((batch) => (
-                        <option key={batch} value={batch}>
-                          {batch}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      className="select-chevron"
-                      size={16}
-                    />
-                  </div>
+                  <ThemeDropdown
+                    icon={GraduationCap}
+                    value={selectedBatch}
+                    options={batchOptions}
+                    onChange={handleBatchChange}
+                    placeholder="Select Batch"
+                    loading={loadingScheduleData}
+                    disabled={loadingScheduleData}
+                  />
                 </div>
 
                 <div className="filter-field">
                   <label htmlFor="student-department">Department</label>
 
-                  <div className="select-wrapper">
-                    <Building2 size={17} />
-
-                    <select
-                      id="student-department"
-                      value={selectedDepartment}
-                      onChange={handleDepartmentChange}
-                      disabled={!selectedBatch || loadingScheduleData}
-                    >
-                      <option value="">Select Department</option>
-
-                      {departmentOptions.map((department) => (
-                        <option key={department} value={department}>
-                          {department}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      className="select-chevron"
-                      size={16}
-                    />
-                  </div>
+                  <ThemeDropdown
+                    icon={Building2}
+                    value={selectedDepartment}
+                    options={departmentOptions}
+                    onChange={handleDepartmentChange}
+                    placeholder="Select Department"
+                    disabled={!selectedBatch || loadingScheduleData}
+                    loading={loadingScheduleData}
+                  />
                 </div>
 
                 <div className="filter-field">
                   <label htmlFor="student-section">Section</label>
 
-                  <div className="select-wrapper">
-                    <Users size={17} />
-
-                    <select
-                      id="student-section"
-                      value={selectedSection}
-                      onChange={handleSectionChange}
-                      disabled={
-                        !selectedBatch ||
-                        !selectedDepartment ||
-                        loadingScheduleData
-                      }
-                    >
-                      <option value="">Select Section</option>
-
-                      {sectionOptions.map((section) => (
-                        <option key={section} value={section}>
-                          {section}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      className="select-chevron"
-                      size={16}
-                    />
-                  </div>
+                  <ThemeDropdown
+                    icon={Users}
+                    value={selectedSection}
+                    options={sectionOptions}
+                    onChange={handleSectionChange}
+                    placeholder="Select Section"
+                    disabled={
+                      !selectedBatch ||
+                      !selectedDepartment ||
+                      loadingScheduleData
+                    }
+                    loading={loadingScheduleData}
+                  />
                 </div>
 
                 <button
