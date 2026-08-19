@@ -1,7 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
-const staffAuth = require("../../middleware/roleby.access.middleware");
+const {staffAuth} = require("../../middleware/roleby.access.middleware");
 const {
   getScheduleData,
   getScheduledExams,
