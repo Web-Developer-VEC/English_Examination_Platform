@@ -36,8 +36,9 @@ export default function AudioTest() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [countdown, setCountdown] = useState(5);
     const [violations, setViolations] = useState(0);
-    const [showWarning, setShowWarning] = useState(false);
     const [warningMessage, setWarningMessage] = useState("");
+    const [showWarning, setShowWarning] = useState(false);
+    const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
     const location = useLocation();
     const examData = location.state;
     const MAX_PLAYS = 2;
@@ -49,6 +50,26 @@ export default function AudioTest() {
         totalExamTime > 0
             ? (examRemaining / totalExamTime) * 100
             : 0;
+
+    const enterExamFullscreen = async () => {
+        try {
+
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+            }
+
+            return true;
+
+        } catch (error) {
+
+            console.error(
+                "Exam fullscreen request failed:",
+                error
+            );
+
+            return false;
+        }
+    };
 
     const handleViolation = async (reason) => {
 
@@ -377,6 +398,38 @@ export default function AudioTest() {
         navigate("/");
     }
 
+    useEffect(() => {
+
+        const handleFullscreenChange = () => {
+
+            if (!document.fullscreenElement) {
+
+                console.log(
+                    "⚠️ Exam fullscreen exited."
+                );
+
+                setShowFullscreenPopup(true);
+
+            }
+
+        };
+
+        document.addEventListener(
+            "fullscreenchange",
+            handleFullscreenChange
+        );
+
+        return () => {
+
+            document.removeEventListener(
+                "fullscreenchange",
+                handleFullscreenChange
+            );
+
+        };
+
+    }, []);
+
 
     useEffect(() => {
 
@@ -563,6 +616,50 @@ export default function AudioTest() {
 
     return (
         <>
+            {
+                showFullscreenPopup && (
+                    <div
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
+                    >
+
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-[450px] text-center">
+
+                            <h2 className="text-2xl font-bold text-red-600">
+                                Fullscreen Required
+                            </h2>
+
+                            <p className="mt-4 text-gray-600">
+                                The examination must be conducted in fullscreen mode.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+
+                                    console.log(
+                                        "🔥 RETURN TO FULLSCREEN CLICKED"
+                                    );
+
+                                    const success =
+                                        await enterExamFullscreen();
+
+                                    if (success) {
+
+                                        setShowFullscreenPopup(false);
+
+                                    }
+
+                                }}
+                                className="mt-6 bg-[#800000] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#600000]"
+                            >
+                                Return to Fullscreen
+                            </button>
+
+                        </div>
+
+                    </div>
+                )
+            }
             {
                 showWarning && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

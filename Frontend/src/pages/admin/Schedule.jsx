@@ -352,7 +352,7 @@ export default function Schedule() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ---------------- REFERENCE DATA (batches, dept/section, tests) ----------------
+  // ---------------- REFERENCE DATA (batches, dept/section, tests)
   const [scheduleData, setScheduleData] = useState({
     batchDepartmentSections: [],
     tests: [],
