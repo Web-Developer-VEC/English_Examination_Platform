@@ -1,122 +1,99 @@
-import React, { useMemo, useState } from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 export default function AdminDashboard() {
 
-    // ==========================================================
-    // DUMMY BACKEND DATA
-    // ==========================================================
-
-    const [tests] = useState([
-        {
-            id: 1,
-            department: "Artificial Intelligence & Data Science",
-            section: "A",
-            students: 62,
-            date: "2026-08-07",
-            time: "09:00 AM",
-            testCode: "ENG001",
-            status: "Completed",
-        },
-        {
-            id: 2,
-            department: "Computer Science Engineering",
-            section: "B",
-            students: 58,
-            date: "2026-08-07",
-            time: "10:00 AM",
-            testCode: "ENG002",
-            status: "Ongoing",
-        },
-        {
-            id: 3,
-            department: "Information Technology",
-            section: "A",
-            students: 54,
-            date: "2026-08-08",
-            time: "09:30 AM",
-            testCode: "ENG003",
-            status: "Upcoming",
-        },
-        {
-            id: 4,
-            department: "Electronics & Communication Engineering",
-            section: "C",
-            students: 60,
-            date: "2026-08-08",
-            time: "11:00 AM",
-            testCode: "ENG004",
-            status: "Upcoming",
-        },
-        {
-            id: 5,
-            department: "Electrical & Electronics Engineering",
-            section: "A",
-            students: 57,
-            date: "2026-08-09",
-            time: "09:00 AM",
-            testCode: "ENG005",
-            status: "Completed",
-        },
-        {
-            id: 6,
-            department: "Mechanical Engineering",
-            section: "B",
-            students: 59,
-            date: "2026-08-09",
-            time: "11:00 AM",
-            testCode: "ENG006",
-            status: "Completed",
-        },
-        {
-            id: 7,
-            department: "Civil Engineering",
-            section: "A",
-            students: 61,
-            date: "2026-08-10",
-            time: "09:30 AM",
-            testCode: "ENG007",
-            status: "Upcoming",
-        },
-        {
-            id: 8,
-            department: "Biomedical Engineering",
-            section: "A",
-            students: 48,
-            date: "2026-08-10",
-            time: "02:00 PM",
-            testCode: "ENG008",
-            status: "Upcoming",
-        },
-    ]);
-
-    // ==========================================================
-    // STATES
-    // ==========================================================
-
+    const [tests, setTests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All");
+    const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
     const [selectedDate, setSelectedDate] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchTests = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const response = await fetch("http://localhost:5000/api/staff/schedule/getscheduleexams");
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error("Failed to fetch exam data");
+                }
+
+                const formattedTests = result.data.map((exam) => ({
+                    id: exam.examId,
+
+                    department: exam.department || "N/A",
+
+                    category: exam.category || "N/A",
+
+                    section: exam.section || "N/A",
+
+                    date: exam.startTime
+                        ? new Date(exam.startTime).toLocaleDateString("en-CA")
+                        : "N/A",
+
+                    time: exam.startTime
+                        ? new Date(exam.startTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })
+                        : "N/A",
+
+                    duration: exam.duration || 0,
+
+                    testCode: exam.testcode || "N/A",
+
+                    status: exam.status || "N/A",
+
+                    questionSetId: exam.questionSetId,
+
+                    startTime: exam.startTime,
+
+                    endTime: exam.endTime,
+
+                    admissionNo: exam.admissionNo || [],
+                }));
+
+                setTests(formattedTests);
+
+            } catch (err) {
+                console.error("Error fetching tests:", err);
+                setError("Unable to load tests.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTests();
+    }, []);
 
     // ==========================================================
     // SUMMARY
     // ==========================================================
 
-    const totalDepartments = new Set(
-        tests.map((t) => t.department)
-    ).size;
-
-    const totalStudents = tests.reduce(
-        (sum, t) => sum + t.students,
-        0
-    );
+    const totalExams = tests.length;
 
     const todaysTests = tests.filter(
-        (t) => t.date === "2026-08-07"
+        (t) => t.date === new Date().toLocaleDateString("en-CA")
     ).length;
 
     const activeTests = tests.filter(
         (t) => t.status === "Ongoing"
+    ).length;
+
+    const completedTests = tests.filter(
+        (t) => t.status === "Completed"
     ).length;
 
     // ==========================================================
@@ -125,13 +102,18 @@ export default function AdminDashboard() {
 
     const filteredTests = useMemo(() => {
         return tests.filter((test) => {
-            const matchSearch = test.testCode
+
+            const matchSearch = (test.testCode || "")
                 .toLowerCase()
                 .includes(search.toLowerCase());
 
             const matchDepartment =
                 department === "All" ||
                 test.department === department;
+
+            const matchCategory =
+                category === "All" ||
+                test.category === category;
 
             const matchStatus =
                 status === "All" ||
@@ -144,29 +126,35 @@ export default function AdminDashboard() {
             return (
                 matchSearch &&
                 matchDepartment &&
+                matchCategory &&
                 matchStatus &&
                 matchDate
             );
         });
-    }, [tests, search, department, status, selectedDate]);
+    }, [tests, search, department, category, status, selectedDate]);
 
     const handleDownload = (test) => {
         const content = `
-Test Code: ${test.testCode}
-Department: ${test.department}
+Exam ID: ${test.id}
+Category: ${test.category}
 Section: ${test.section}
-Students: ${test.students}
+Test Code: ${test.testCode}
+Duration: ${test.duration} minutes
 Date: ${test.date}
 Time: ${test.time}
 Status: ${test.status}
 `;
 
-        const blob = new Blob([content], { type: "text/plain" });
+        const blob = new Blob([content], {
+            type: "text/plain"
+        });
+
         const url = URL.createObjectURL(blob);
 
         const link = document.createElement("a");
+
         link.href = url;
-        link.download = `${test.testCode}.txt`;
+        link.download = `${test.testCode || test.id}.txt`;
 
         document.body.appendChild(link);
         link.click();
@@ -175,10 +163,38 @@ Status: ${test.status}
         URL.revokeObjectURL(url);
     };
 
+    const handleCancel = async (test) => {
+        const confirmed = window.confirm(
+            "Are you sure you want to cancel this exam?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        console.log("Cancel exam:", test.id);
+    };
+
     return (
         <div className="w-full min-h-screen bg-gray-100">
 
             <main className="flex-1 px-6 py-8">
+
+                {loading && (
+                    <div className="mt-8 bg-white rounded-xl border border-gray-200 p-12 text-center">
+                        <p className="text-gray-500">
+                            Loading tests...
+                        </p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mt-8 bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <p className="text-red-600 font-semibold">
+                            {error}
+                        </p>
+                    </div>
+                )}
 
                 {/* HEADER */}
 
@@ -196,10 +212,12 @@ Status: ${test.status}
 
                     </div>
 
-                    <button className="px-6 py-3 rounded-lg bg-[#FDCC03] hover:bg-yellow-400 font-semibold transition">
-
+                    <button
+                        type="button"
+                        onClick={() => navigate("/admin/schedule")}
+                        className="px-6 py-3 rounded-lg bg-[#FDCC03] hover:bg-[#7a1f2b] hover:text-white font-semibold transition"
+                    >
                         + Schedule Test
-
                     </button>
 
                 </div>
@@ -209,13 +227,8 @@ Status: ${test.status}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
 
                     <SummaryCard
-                        title="Total Departments"
-                        value={totalDepartments}
-                    />
-
-                    <SummaryCard
-                        title="Total Students"
-                        value={totalStudents}
+                        title="Total Exams"
+                        value={totalExams}
                     />
 
                     <SummaryCard
@@ -228,6 +241,11 @@ Status: ${test.status}
                         value={activeTests}
                     />
 
+                    <SummaryCard
+                        title="Completed Tests"
+                        value={completedTests}
+                    />
+
                 </div>
 
                 {/* ==========================================================
@@ -236,19 +254,17 @@ Status: ${test.status}
 
                 <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
 
                         {/* SEARCH */}
 
                         <div>
 
-                            <label className="block mb-2 text-sm font-semibold text-gray-600">
-                                Search Test Code
-                            </label>
+                            
 
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder="Search Test Code..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="
@@ -271,46 +287,82 @@ Status: ${test.status}
 
                         <div>
 
-                            <label className="block mb-2 text-sm font-semibold text-gray-600">
-                                Department
-                            </label>
+                            
 
                             <select
                                 value={department}
                                 onChange={(e) => setDepartment(e.target.value)}
                                 className="
-                w-full
-                h-11
-                px-3
-                rounded-lg
-                border
-                border-gray-300
-                focus:outline-none
-                focus:ring-2
-                focus:ring-yellow-300
-                focus:border-[#FDCC03]
-                "
+            w-full
+            h-11
+            px-3
+            rounded-lg
+            border
+            border-gray-300
+            focus:outline-none
+            focus:ring-2
+            focus:ring-yellow-300
+            focus:border-[#FDCC03]
+        "
                             >
 
                                 <option value="All">
                                     All Departments
                                 </option>
 
-                                {[
-                                    ...new Set(
-                                        tests.map((item) => item.department)
-                                    ),
-                                ].map((dept) => (
+                                {[...new Set(tests.map((item) => item.department))]
+                                    .filter(Boolean)
+                                    .map((item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    ))}
 
-                                    <option
-                                        key={dept}
-                                        value={dept}
-                                    >
-                                        {dept}
-                                    </option>
+                            </select>
 
-                                ))}
+                        </div>
 
+                        {/* CATEGORY */}
+
+                        <div>
+
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="
+        w-full
+        h-11
+        px-3
+        rounded-lg
+        border
+        border-gray-300
+        focus:outline-none
+        focus:ring-2
+        focus:ring-yellow-300
+        focus:border-[#FDCC03]
+    "
+                            >
+                                <option value="All">
+                                    All Categories
+                                </option>
+
+                                <option value="All">
+                                    Re-Test
+                                </option>
+
+                                {[...new Set(tests.map((item) => item.category))]
+                                    .filter(Boolean)
+                                    .map((item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    ))}
                             </select>
 
                         </div>
@@ -319,9 +371,6 @@ Status: ${test.status}
 
                         <div>
 
-                            <label className="block mb-2 text-sm font-semibold text-gray-600">
-                                Date
-                            </label>
 
                             <input
                                 type="date"
@@ -348,10 +397,6 @@ Status: ${test.status}
                         {/* STATUS */}
 
                         <div>
-
-                            <label className="block mb-2 text-sm font-semibold text-gray-600">
-                                Status
-                            </label>
 
                             <select
                                 value={status}
@@ -402,18 +447,18 @@ Status: ${test.status}
 
                     {/* TABLE HEADER */}
 
-                    <div className="hidden lg:grid grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr_0.9fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
+                    <div className="hidden lg:grid grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
 
                         <TableHeading>
                             Department
                         </TableHeading>
 
                         <TableHeading>
-                            Section
+                            Category
                         </TableHeading>
 
                         <TableHeading>
-                            Students
+                            Section
                         </TableHeading>
 
                         <TableHeading>
@@ -425,21 +470,16 @@ Status: ${test.status}
                         </TableHeading>
 
                         <TableHeading>
+                            Duration
+                        </TableHeading>
+
+                        <TableHeading>
                             Test Code
                         </TableHeading>
 
                         <TableHeading>
                             Status
                         </TableHeading>
-
-                        <TableHeading>
-                            Actions
-                        </TableHeading>
-
-                        <TableHeading>
-                            Download
-                        </TableHeading>
-
 
                     </div>
 
@@ -467,7 +507,7 @@ Status: ${test.status}
                                 key={test.id}
                                 className="
                 grid
-                lg:grid-cols-[3fr_0.7fr_0.8fr_1.1fr_1.1fr_1fr_1.2fr_0.9fr_0.9fr]
+                lg:grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr]
                 items-center
                 px-6
                 gap-4
@@ -481,40 +521,22 @@ Status: ${test.status}
 
                                 {/* DEPARTMENT */}
 
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-center">
+                                    <span className="font-semibold text-gray-900">
+                                        {test.department}
+                                    </span>
+                                </div>
 
-                                    <div
-                                        className="
-                        w-12
-                        h-12
-                        rounded-xl
-                        bg-yellow-50
-                        text-black
-                        font-bold
-                        flex
-                        items-center
-                        justify-center
-                    "
-                                    >
-                                        {test.department
-                                            .split(" ")
-                                            .map((word) => word[0])
-                                            .join("")
-                                            .substring(0, 3)}
-                                    </div>
+                                {/* CATEGORY */}
 
+                                <div className="flex items-center justify-center">
                                     <div>
-
                                         <h3 className="font-semibold text-gray-900">
-                                            {test.department}
+                                            {test.category}
                                         </h3>
 
-                                        <p className="text-sm text-gray-400">
-                                            Department
-                                        </p>
-
+                                        
                                     </div>
-
                                 </div>
 
 
@@ -529,12 +551,6 @@ Status: ${test.status}
                                 </div>
 
 
-                                {/* STUDENTS */}
-
-                                <div className="flex items-center justify-center">
-                                    {test.students}
-                                </div>
-
 
                                 {/* DATE */}
 
@@ -547,6 +563,10 @@ Status: ${test.status}
 
                                 <div className="flex items-center justify-center text-gray-600">
                                     {test.time}
+                                </div>
+
+                                <div className="flex items-center justify-center text-gray-600">
+                                    {test.duration} min
                                 </div>
 
 
@@ -581,37 +601,8 @@ Status: ${test.status}
                                 </div>
 
 
-                                {/* ACTIONS */}
 
-                                <div className="flex items-center justify-center">
-
-                                    {(test.status === "Upcoming" || test.status === "Ongoing") && (
-
-                                        <button
-                                            type="button"
-                                            className="
-                            px-4
-                            py-2
-                            text-xs
-                            font-semibold
-                            text-red-600
-                            bg-red-50
-                            border
-                            border-red-100
-                            rounded-lg
-                            hover:bg-red-100
-                            transition
-                        "
-                                        >
-                                            Cancel
-                                        </button>
-
-                                    )}
-
-                                </div>
-
-
-                                {/* DOWNLOAD */}
+                                {/* DOWNLOAD
 
                                 <div className="flex items-center justify-center">
 
@@ -654,7 +645,7 @@ Status: ${test.status}
                                         </button>
                                     )}
 
-                                </div>
+                                </div> */}
 
                             </div>
 
@@ -678,19 +669,22 @@ Status: ${test.status}
 
                     <div className="flex gap-3">
 
-                        <button
-                            className="
-              px-4
-              py-2
-              rounded-lg
-              border
-              border-gray-300
-              hover:bg-gray-100
-              transition
-              "
-                        >
-                            Previous
-                        </button>
+                        {currentPage > 1 && (
+                            <button
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                className="
+            px-4
+            py-2
+            rounded-lg
+            border
+            border-gray-300
+            hover:bg-gray-100
+            transition
+        "
+                            >
+                                Previous
+                            </button>
+                        )}
 
                         <button
                             className="
