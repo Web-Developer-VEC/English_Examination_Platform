@@ -15,7 +15,7 @@ export default function Questionupload() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
   const [questionCode, setQuestionCode] = useState("");
-  const [cie, setCie] = useState("");
+  //const [cie, setCie] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
 
@@ -91,10 +91,10 @@ export default function Questionupload() {
       alert("Please enter a Question Code.");
       return;
     }
-    if (!cie) {
-      alert("Please select a CIE.");
-      return;
-    }
+    //if (!cie) {
+      //alert("Please select a CIE.");
+      //return;
+    //}
     if (!audioFile) {
       alert("Please upload an MP3 audio file.");
       return;
@@ -108,7 +108,7 @@ export default function Questionupload() {
       const formData = new FormData();
 
       formData.append("questionCode", questionCode.trim());
-      formData.append("cie", cie);
+      //formData.append("cie", cie);
       formData.append("audio", audioFile);
       formData.append("questions", questionFile);
 
@@ -134,7 +134,7 @@ export default function Questionupload() {
       alert("Questions uploaded successfully.");
 
       setQuestionCode("");
-      setCie("");
+      //setCie("");
       setAudioFile(null);
       setQuestionFile(null);
 
@@ -215,6 +215,7 @@ export default function Questionupload() {
         />
 
         {/* CIE */}
+        {/*
         <label className={fieldLabel}>
           <ClipboardCheck size={18} className="shrink-0" />
           CIE
@@ -229,7 +230,7 @@ export default function Questionupload() {
           <option value="cie1">CIE1</option>
           <option value="cie2">CIE2</option>
           <option value="cie3">CIE3</option>
-        </select>
+        </select>*/}
 
         {/* Audio */}
         <label className={fieldLabel}>
