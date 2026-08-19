@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { startExam } from "../../services/studentService";
+import { getStudentSession } from "../../utils/helpers";
 
 export default function InstructionsPage() {
     const [accepted, setAccepted] = useState(false);
@@ -10,6 +11,7 @@ export default function InstructionsPage() {
 
     const navigate = useNavigate();
     const isValidTestCode = /^[A-Z0-9]+$/.test(testCode);
+    const testCodeRef = useRef(null);
     const handleAccept = (event) => {
         const checked = event.target.checked;
         setAccepted(checked);
@@ -27,34 +29,66 @@ export default function InstructionsPage() {
 
     // START TEST
     const handleStartTest = async () => {
-        if (!accepted || !isValidTestCode) {
-            return;
-        }
+        console.log("🔥 START TEST BUTTON CLICKED");
+        console.log("Test Code:", testCode);
+
         try {
-            setIsStarting(true);
-            setError("");
-            // Get the logged-in student
-            const savedUser = sessionStorage.getItem("user");
-            if (!savedUser) {
-                setError("Student login session not found.");
+
+            // Get logged-in student session
+            const session = getStudentSession();
+
+            if (!session?.user?.admissionNo) {
+                console.error("Student session not found.");
+                navigate("/");
                 return;
             }
-            const user = JSON.parse(savedUser);
-            // Call backend
-            const data = await startExam(
+
+            // Get actual student's admission number
+            const admissionNo = session.user.admissionNo;
+
+            console.log("Student Admission No:", admissionNo);
+
+            // Start exam
+            const response = await startExam(
                 testCode,
-                user.admissionNo
+                admissionNo
             );
+
+            console.log("🔥 BACKEND RESPONSE:", response);
+
+            // Send exam data to AudioTest
+            navigate("/student/exam", {
+                state: {
+                    ...response,
+                    admissionNo
+                }
+            });
+
         } catch (error) {
-            console.error("Start exam failed:", error);
-            setError(
-                error.response?.data?.message ||
-                "Unable to start the test."
+
+            console.error(
+                "🔥 START EXAM FAILED:",
+                error
             );
-        } finally {
-            setIsStarting(false);
+
+            console.error(
+                "🔥 SERVER RESPONSE:",
+                error.response?.data
+            );
+
+            console.error(
+                "🔥 STATUS:",
+                error.response?.status
+            );
         }
     };
+    useEffect(() => {
+        if (accepted) {
+            setTimeout(() => {
+                testCodeRef.current?.focus();
+            }, 500);
+        }
+    }, [accepted]);
 
     return (
         <div className="min-h-screen bg-gray-100 px-4 py-10">
@@ -193,6 +227,7 @@ export default function InstructionsPage() {
                         {/* Test Code Input */}
                         <input
                             id="testCode"
+                            ref={testCodeRef}
                             type="text"
                             value={testCode}
                             onChange={handleTestCodeChange}

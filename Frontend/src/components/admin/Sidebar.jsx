@@ -28,11 +28,11 @@ const NAV_ITEMS = [
     icon: Users,
     children: [
       {
-        key: "createtest",
-        label: "Create-Test",
+        key: "Questionupload",
+        label: "Create Test",
         icon: ClipboardPlus,
-        location: "/admin/createtest",
-    },
+        location: "/admin/Questionupload",
+      },
       {
         key: "schedule-test",
         label: "Schedule Test",
