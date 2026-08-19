@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Register from "../components/auth/Register";
 import AdminLogin from "../components/admin/AdminLogin";
 import StudentLogin from "../components/student/StudentLogin";
+import StudentProtectedRoute from "../components/auth/StudentProtectedRoute";
 
 import StudentLayout from "../layouts/StudentLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -30,9 +31,11 @@ export default function AppRoutes() {
       <Route path="/" element={<StudentLogin />} />
 
       {/* Student */}
-      <Route path="/student" element={<StudentLayout />}>
-        <Route path="start-test" element={<StartTest />} />
-        <Route path="audio" element={<AudioTest />} />
+      <Route element={<StudentProtectedRoute />}>
+        <Route path="/student" element={<StudentLayout />}>
+          <Route path="start-test" element={<StartTest />} />
+          <Route path="exam" element={<AudioTest />} />
+        </Route>
       </Route>
 
       {/* admin */}

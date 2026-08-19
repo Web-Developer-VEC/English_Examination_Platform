@@ -21,7 +21,7 @@ router.put("/studentsupdate", student_upload_Middleware, updateStudent);
 router.post("/questionsupload", questions_upload_Middleware, questionsupload);
 
 router.get("/exam-results", generateExamReport);
-router.get("/student-data",getStudentsByDepartmentAndBatch);
+router.post("/student-data",getStudentsByDepartmentAndBatch);
 
 router.use("/schedule", scheduleRoutes);
 

@@ -8,8 +8,8 @@ const {
 } = require("../../controllers/getscheduleexam.controller");
 const { scheduleExam } = require("../../controllers/schedule.controller");
 // const {uploadHTMLToS3}=require("../../controllers/upload")
-router.get("/getscheduledata", staffAuth, getScheduleData);
+router.get("/getscheduledata", getScheduleData);
 router.get("/getscheduleexams", getScheduledExams);
-router.post("/scheduleexam", staffAuth, scheduleExam);
+router.post("/scheduleexam", scheduleExam);
 // router.post("/upload",uploadHTMLToS3)
 module.exports = router;
