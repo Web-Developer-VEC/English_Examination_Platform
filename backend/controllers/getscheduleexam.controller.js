@@ -70,7 +70,7 @@ const getScheduleData = async (req, res) => {
                 {
                     projection: {
                         _id: 1,
-                        testcode: 1
+                        questionCode: 1
                     }
                 }
             )
