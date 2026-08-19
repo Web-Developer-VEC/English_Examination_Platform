@@ -5,16 +5,10 @@ const questionsupload = async (req, res) => {
 
     try {
 
-        const { questionCode, cie } = req.body;
+        const { questionCode } = req.body;
         const { audio } = req.uploadedData;
 
-        // Validate CIE
-        if (!cie || !cie.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "cie is required."
-            });
-        }
+        
 
         // Validate questionCode
         if (!questionCode || !questionCode.trim()) {
@@ -34,7 +28,7 @@ const questionsupload = async (req, res) => {
 
             questionCode: questionCode.trim(),
 
-            cie: cie.trim(),
+            
 
             audioUrl: audio.url,
 
