@@ -10,12 +10,15 @@ import {
   AlertTriangle,
   Download,
 } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Questionupload() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
   const [questionCode, setQuestionCode] = useState("");
   //const [cie, setCie] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
 
@@ -88,27 +91,29 @@ export default function Questionupload() {
 
   const handleSubmit = async () => {
     if (!questionCode.trim()) {
-      alert("Please enter a Question Code.");
+      toast.error("Please enter a Question Code.");
       return;
     }
-    //if (!cie) {
-      //alert("Please select a CIE.");
-      //return;
-    //}
+
     if (!audioFile) {
-      alert("Please upload an MP3 audio file.");
+      toast.error("Please upload an MP3 audio file.");
       return;
     }
+
     if (!questionFile) {
-      alert("Please upload the questions Excel file.");
+      toast.error("Please upload the questions Excel file.");
       return;
     }
+
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     try {
       const formData = new FormData();
 
       formData.append("questionCode", questionCode.trim());
-      //formData.append("cie", cie);
       formData.append("audio", audioFile);
       formData.append("questions", questionFile);
 
@@ -131,10 +136,9 @@ export default function Questionupload() {
         throw new Error(data.message || "Failed to create test.");
       }
 
-      alert("Questions uploaded successfully.");
+      toast.success("Submitted successful");
 
       setQuestionCode("");
-      //setCie("");
       setAudioFile(null);
       setQuestionFile(null);
 
@@ -142,7 +146,10 @@ export default function Questionupload() {
       document.getElementById("excel-upload").value = "";
     } catch (error) {
       console.error("Create Test Error:", error);
-      alert(error.message || "Something went wrong while creating the test.");
+      toast.error(error.message || "Something went wrong while creating the test.");
+    } finally {
+      // Always enable button again
+      setIsSubmitting(false);
     }
   };
 
@@ -281,14 +288,28 @@ export default function Questionupload() {
         </label>
 
         {/* Submit */}
-        <div className="flex justify-center mt-[clamp(8px,1.8vh,16px)]">
+        <div className="w-full flex items-center justify-center mt-[clamp(8px,1.8vh,16px)]">
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex items-center gap-2 bg-[#FDCC03] hover:bg-[#5e0000] text-white px-6 sm:px-7 py-[clamp(6px,1.3vh,10px)] rounded-full text-sm shadow-md transition"
+            disabled={isSubmitting}
+            className={`w-[160px] h-[48px] flex items-center justify-center gap-2 rounded-full text-sm shadow-md transition ${
+              isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#FDCC03] hover:bg-[#5e0000] cursor-pointer"
+            } text-white`}
           >
-            <Send size={18} />
-            Create Test
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                <span>Create Test</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -401,6 +422,14 @@ export default function Questionupload() {
           </div>
         </div>
       )}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+      />
     </div>
   );
 }
