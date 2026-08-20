@@ -8,13 +8,17 @@ import {
   Info,
   ClipboardCheck,
   AlertTriangle,
+  Download,
 } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-export default function CreateTest() {
+export default function Questionupload() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
   const [questionCode, setQuestionCode] = useState("");
-  const [cie, setCie] = useState("");
+  //const [cie, setCie] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
 
@@ -72,30 +76,44 @@ export default function CreateTest() {
 
     setAudioFile(file);
   };
+  const handleTemplateDownload = () => {
+    const link = document.createElement("a");
+
+    link.href =
+      "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/QUESTION_BANK_TEMPLATE.xlsx";
+
+    link.download = "QUESTION_BANK_TEMPLATE.xlsx";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleSubmit = async () => {
     if (!questionCode.trim()) {
-      alert("Please enter a Question Code.");
+      toast.error("Please enter a Question Code.");
       return;
     }
-    if (!cie) {
-      alert("Please select a CIE.");
-      return;
-    }
+
     if (!audioFile) {
-      alert("Please upload an MP3 audio file.");
+      toast.error("Please upload an MP3 audio file.");
       return;
     }
+
     if (!questionFile) {
-      alert("Please upload the questions Excel file.");
+      toast.error("Please upload the questions Excel file.");
       return;
     }
+
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     try {
       const formData = new FormData();
 
       formData.append("questionCode", questionCode.trim());
-      formData.append("cie", cie);
       formData.append("audio", audioFile);
       formData.append("questions", questionFile);
 
@@ -118,10 +136,9 @@ export default function CreateTest() {
         throw new Error(data.message || "Failed to create test.");
       }
 
-      alert("Questions uploaded successfully.");
+      toast.success("Submitted successful");
 
       setQuestionCode("");
-      setCie("");
       setAudioFile(null);
       setQuestionFile(null);
 
@@ -129,7 +146,10 @@ export default function CreateTest() {
       document.getElementById("excel-upload").value = "";
     } catch (error) {
       console.error("Create Test Error:", error);
-      alert(error.message || "Something went wrong while creating the test.");
+      toast.error(error.message || "Something went wrong while creating the test.");
+    } finally {
+      // Always enable button again
+      setIsSubmitting(false);
     }
   };
 
@@ -152,21 +172,39 @@ export default function CreateTest() {
     >
       <div className="w-full max-w-[640px] bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.12)] p-[clamp(12px,2.5vh,20px)]">
         {/* Header */}
-        <div className="relative flex items-center justify-center mb-[clamp(8px,1.8vh,20px)] pb-[clamp(6px,1.4vh,16px)] border-b">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center justify-between gap-3 mb-[clamp(8px,1.8vh,20px)] pb-[clamp(6px,1.4vh,16px)] border-b">
+          {/* Title */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Upload size={22} className="text-[#800000] shrink-0" />
-            <h1 className="text-[clamp(1.1rem,2.6vh,1.875rem)] font-sans font-bold text-[#800000] text-center">
+
+            <h1 className="text-[clamp(1.1rem,2.6vh,1.875rem)] font-sans font-bold text-[#800000] text-center whitespace-nowrap">
               Question Upload
             </h1>
           </div>
 
-        <button
-  onClick={() => setShowInstructions(true)}
-  className="absolute cursor-pointer right-0 w-7 h-7 rounded-full border-2 border-black bg-transparent text-black flex items-center justify-center text-sm font-bold hover:bg-gray-100 transition shadow-sm shrink-0"
-  title="Instructions"
->
-  !
-</button>
+          {/* Buttons */}
+          <div className="flex items-center gap-5 shrink-0">
+            {/* Download Template */}
+            <button
+              type="button"
+              onClick={handleTemplateDownload}
+              className="flex items-center gap-1.5 border-2 border-black bg-transparent text-black px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-100 transition shadow-sm cursor-pointer whitespace-nowrap"
+              title="Download Template"
+            >
+              <span>Download Template</span>
+              <Download size={15} />
+            </button>
+
+            {/* Instructions */}
+            <button
+              type="button"
+              onClick={() => setShowInstructions(true)}
+              className="w-7 h-7 rounded-full border-2 border-black bg-transparent text-black flex items-center justify-center text-sm font-bold hover:bg-gray-100 transition shadow-sm shrink-0 cursor-pointer"
+              title="Instructions"
+            >
+              !
+            </button>
+          </div>
         </div>
 
         {/* Question Code */}
@@ -184,6 +222,7 @@ export default function CreateTest() {
         />
 
         {/* CIE */}
+        {/*
         <label className={fieldLabel}>
           <ClipboardCheck size={18} className="shrink-0" />
           CIE
@@ -198,7 +237,7 @@ export default function CreateTest() {
           <option value="cie1">CIE1</option>
           <option value="cie2">CIE2</option>
           <option value="cie3">CIE3</option>
-        </select>
+        </select>*/}
 
         {/* Audio */}
         <label className={fieldLabel}>
@@ -249,14 +288,28 @@ export default function CreateTest() {
         </label>
 
         {/* Submit */}
-        <div className="flex justify-center mt-[clamp(8px,1.8vh,16px)]">
+        <div className="w-full flex items-center justify-center mt-[clamp(8px,1.8vh,16px)]">
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex items-center gap-2 bg-[#FDCC03] hover:bg-[#5e0000] text-white px-6 sm:px-7 py-[clamp(6px,1.3vh,10px)] rounded-full text-sm shadow-md transition"
+            disabled={isSubmitting}
+            className={`w-[160px] h-[48px] flex items-center justify-center gap-2 rounded-full text-sm shadow-md transition ${
+              isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#FDCC03] hover:bg-[#5e0000] cursor-pointer"
+            } text-white`}
           >
-            <Send size={18} />
-            Create Test
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                <span>Create Test</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -312,34 +365,44 @@ export default function CreateTest() {
 
               <ol className="space-y-5 sm:space-y-6 text-gray-700 text-sm sm:text-base">
                 <li className="flex gap-3 sm:gap-4">
-                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">1.</span>
+                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">
+                    1.
+                  </span>
                   <span>
                     Enter a clear and meaningful <b>Test Code</b> for the
                     English test.
                   </span>
                 </li>
                 <li className="flex gap-3 sm:gap-4">
-                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">2.</span>
+                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">
+                    2.
+                  </span>
                   <span>
                     Upload the <b>audio file in MP3 format only</b>.
                   </span>
                 </li>
                 <li className="flex gap-3 sm:gap-4">
-                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">3.</span>
+                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">
+                    3.
+                  </span>
                   <span>
                     Upload the questions file in the required
                     <b> Excel (.xlsx) format</b>.
                   </span>
                 </li>
                 <li className="flex gap-3 sm:gap-4">
-                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">4.</span>
+                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">
+                    4.
+                  </span>
                   <span>
                     Make sure the audio is clear and the questions file follows
                     the correct format.
                   </span>
                 </li>
                 <li className="flex gap-3 sm:gap-4">
-                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">5.</span>
+                  <span className="font-bold text-[#800000] text-base sm:text-lg shrink-0">
+                    5.
+                  </span>
                   <span>
                     Check all test details and uploaded files before clicking
                     <b> Create Test</b>.
@@ -359,6 +422,14 @@ export default function CreateTest() {
           </div>
         </div>
       )}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+      />
     </div>
   );
 }

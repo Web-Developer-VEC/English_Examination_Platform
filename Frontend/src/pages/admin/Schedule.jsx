@@ -20,22 +20,17 @@ import {
   Loader2,
 } from "lucide-react";
 
-// -----------------------------------------------------
 // API CONFIG
-// -----------------------------------------------------
-const API_BASE_URL = "http://localhost:5000";
-const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/scheduleexam`;
-// NOTE: this route is registered as GET on the backend but its controller
-// reads a "retest" flag from req.body. Browsers cannot send a body on a
-// GET request (fetch/XHR strips or rejects it), so retest === "true" can
-// never be true from this client — admissionNos will never be included
-// in the response as the backend is currently written. Flag this to the
-// backend team; until fixed, admission numbers fall back to a static list.
-const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/getscheduledata`;
 
-// -----------------------------------------------------
+const API_BASE_URL = "http://localhost:5000";
+
+const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
+
+const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+console.log("GET URL:", GET_SCHEDULE_DATA_ENDPOINT);
+
+
 // PROJECT COLOR TOKENS
-// -----------------------------------------------------
 export const colors = {
   primary: "#FFFFFF",
   secondary: "#FDCC03",
@@ -51,12 +46,6 @@ export const colors = {
   darkBorder: "#1A202C",
 };
 
-// -----------------------------------------------------
-// STATIC OPTIONS
-// (batch, department, section, and test/questionSetId now come from
-// GET /api/staff/getscheduledata — see fetchScheduleData in the
-// component. These remain static because the backend doesn't provide them.)
-// -----------------------------------------------------
 const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 
 const ACADEMIC_YEAR_OPTIONS = [
@@ -66,35 +55,14 @@ const ACADEMIC_YEAR_OPTIONS = [
   "2026-2027",
   "2027-2028",
 ];
-
-// Backend requires semester as an integer 1-8, not "Odd"/"Even".
 const SEMESTER_OPTIONS = [1, 2];
-// const SEMESTER_OPTIONS = useMemo(
-//   () => scheduleData.semesters || [],
-//   [scheduleData.semesters]
-// );
-
-
-// CIE is a separate field from category, required only when
-// category === "Normal". Backend accepts "I" | "II" | "III".
 const CIE_OPTIONS = ["I", "II", "III"];
-
-
-const ADMISSION_NO_OPTIONS = [
-  "113224072054",
-  "113224072087",
-  "113224072060",
-  "113224072005",
-];
-
 // 12-hour clock face values
 const HOUR_VALUES = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
 const MINUTE_VALUES = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,...,55
 const PERIOD_OPTIONS = ["AM", "PM"];
 
-// -----------------------------------------------------
 // SHARED STYLES
-// -----------------------------------------------------
 const labelClasses =
   "mb-1.5 block text-sm font-semibold text-[#000000]";
 
@@ -103,16 +71,9 @@ const boxClasses =
 
 const iconLeftClasses =
   "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]";
-
-// Card container: light grey surface + soft shadow (screen bg is also grey,
-// so cards get a hairline border to stay legible against it). Inner
-// controls (inputs/selects/buttons) keep their own bg-white.
 const cardClasses =
-  "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-md shadow-gray-300/40 p-5";
-
-// -----------------------------------------------------
+  "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-[0_4px_20px_rgba(0,0,0,0.15)] p-5";
 // ANALOG CLOCK TIME PICKER
-// -----------------------------------------------------
 function polarPoint(index, radius, cx, cy) {
   const angle = ((index % 12) * 30 - 90) * (Math.PI / 180);
   return {
@@ -311,9 +272,7 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
   );
 }
 
-// -----------------------------------------------------
 // SCHEDULE COMPONENT
-// -----------------------------------------------------
 export default function Schedule() {
   // ---------------- STATE ----------------
   const [category, setCategory] = useState("Normal");
@@ -321,7 +280,7 @@ export default function Schedule() {
   const [semester, setSemester] = useState("");
   const [cie, setCie] = useState("");
   const [batch, setBatch] = useState("");
-  const [testCode, setTestCode] = useState("");
+  const [questionCode, setquestionCode] = useState("");
 
   // Department & Section (multi-select combo picker)
   const [selectedCombos, setSelectedCombos] = useState([]);
@@ -333,7 +292,6 @@ export default function Schedule() {
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
   const admissionPickerRef = useRef(null);
 
-  // Range picker: pick a "from" and "to" admission number and select
   // everything in between (inclusive), based on ADMISSION_NO_OPTIONS order.
   const [rangeFrom, setRangeFrom] = useState("");
   const [rangeTo, setRangeTo] = useState("");
@@ -352,11 +310,10 @@ export default function Schedule() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ---------------- REFERENCE DATA (batches, dept/section, tests) ----------------
+  // ---------------- REFERENCE DATA (batches, dept/section, tests)
   const [scheduleData, setScheduleData] = useState({
     batchDepartmentSections: [],
     tests: [],
-    admissionNos: [],
   });
   const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
   const [scheduleDataError, setScheduleDataError] = useState("");
@@ -369,8 +326,6 @@ export default function Schedule() {
       setIsLoadingScheduleData(true);
       setScheduleDataError("");
       try {
-        // GET request — no body sent (browsers can't send one on GET),
-        // so the backend's retest-flag/admissionNos branch never fires.
         const res = await fetch(GET_SCHEDULE_DATA_ENDPOINT, {
           method: "GET",
           headers: {
@@ -378,6 +333,13 @@ export default function Schedule() {
           },
         });
         const body = await res.json();
+        console.log("GET SCHEDULE DATA STATUS:", res.status);
+console.log("GET SCHEDULE DATA RESPONSE:", body);
+console.log(
+  "BATCH DEPARTMENT SECTIONS:",
+  body?.data?.batchDepartmentSections
+);
+
         if (!res.ok || !body.success) {
           throw new Error(body.message || `Request failed (${res.status})`);
         }
@@ -385,7 +347,6 @@ export default function Schedule() {
           setScheduleData({
             batchDepartmentSections: body.data.batchDepartmentSections || [],
             tests: body.data.tests || [],
-            admissionNos: body.data.admissionNos || [],
           });
         }
       } catch (err) {
@@ -405,15 +366,10 @@ export default function Schedule() {
     };
   }, []);
 
-  // Unique batches, in the order they first appear.
   const BATCH_OPTIONS = useMemo(
     () => [...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch))],
     [scheduleData.batchDepartmentSections]
   );
-
-  // Department + Section combos, filtered to the currently selected batch —
-  // a section only shows up here if a student in that batch/dept/section
-  // actually exists, matching how getScheduleData builds the list server-side.
   const DEPT_SECTION_OPTIONS = useMemo(() => {
     return scheduleData.batchDepartmentSections
       .filter((c) => !batch || c.batch === batch)
@@ -424,22 +380,32 @@ export default function Schedule() {
         label: `${c.department} - Section ${c.section}`,
       }));
   }, [scheduleData.batchDepartmentSections, batch]);
-  const ADMISSION_NO_OPTIONS = useMemo(
-    () => scheduleData.admissionNos || [],
-    [scheduleData.admissionNos]
-  );
+  const ADMISSION_NO_OPTIONS = useMemo(() => {
+    if (!batch) return [];
 
-  // Test code -> questionSetId lookup, built from the real questions
-  // collection instead of a hardcoded stub.
+    const selectedOptions =
+      scheduleData.batchDepartmentSections.filter(
+        (item) =>
+          item.batch === batch &&
+          selectedCombos.includes(
+            `${item.department}__${item.section}`
+          )
+      );
+
+    const admissionNumbers = selectedOptions.flatMap(
+      (item) => item.students || []
+    );
+
+    return [...new Set(admissionNumbers)];
+  }, [
+    scheduleData.batchDepartmentSections,
+    batch,
+    selectedCombos,
+  ]);
   const TEST_CODE_OPTIONS = useMemo(
     () => scheduleData.tests,
     [scheduleData.tests]
   );
-  // Per-category drafts: each category (Normal / Retest) keeps its own
-  // in-progress field values. Switching category never wipes anything —
-  // it just saves what's currently on screen under the OLD category and
-  // loads back whatever was last saved under the NEW category (blank the
-  // first time). This keeps them independent without losing pending work.
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
   const captureCurrentFields = () => ({
@@ -447,7 +413,7 @@ export default function Schedule() {
     semester,
     cie,
     batch,
-    testCode,
+    questionCode,
     selectedCombos,
     selectedAdmissionNos,
     rangeFrom,
@@ -468,7 +434,7 @@ export default function Schedule() {
     setSemester(d.semester || "");
     setCie(d.cie || "");
     setBatch(d.batch || "");
-    setTestCode(d.testCode || "");
+    setquestionCode(d.questionCode || "");
     setSelectedCombos(d.selectedCombos || []);
     setIsPickerOpen(false);
     setSelectedAdmissionNos(d.selectedAdmissionNos || []);
@@ -484,9 +450,6 @@ export default function Schedule() {
     setEndPeriod(d.endPeriod || "AM");
   };
 
-  // Clears every field EXCEPT category — used after a successful submit
-  // (fresh form for the next schedule) and also clears that category's
-  // saved draft so it doesn't reappear later.
   const resetFormFields = () => {
     applyFields(null);
     draftsRef.current[category] = null;
@@ -501,9 +464,6 @@ export default function Schedule() {
     setCategory(nextCategory);
   };
 
-  // Department & Section options depend on the selected batch. If the
-  // batch changes, drop any selected combos that no longer belong to it
-  // rather than silently submitting a stale department/section.
   useEffect(() => {
     setSelectedCombos((prev) => {
       const validKeys = new Set(DEPT_SECTION_OPTIONS.map((o) => o.key));
@@ -593,10 +553,6 @@ export default function Schedule() {
 
   // Clears everything, and doubles as "undo" for the whole selection
   const handleClearAllAdmission = () => setSelectedAdmissionNos([]);
-
-  // Selects every admission number between rangeFrom and rangeTo
-  // (inclusive), based on their order in ADMISSION_NO_OPTIONS. Works
-  // regardless of which one the user picked first (from/to auto-swap).
   const handleApplyAdmissionRange = () => {
     if (!rangeFrom || !rangeTo) return;
 
@@ -614,9 +570,6 @@ export default function Schedule() {
       return ADMISSION_NO_OPTIONS.filter((no) => merged.has(no));
     });
   };
-
-  // ---------------- SUBMIT HELPERS ----------------
-
   // Converts 12-hour hour/minute/period into 24-hour {h, m}.
   const to24Hour = (hour, minute, period) => {
     let h = parseInt(hour, 10) % 12;
@@ -624,27 +577,17 @@ export default function Schedule() {
     return { h, m: parseInt(minute, 10) };
   };
 
-  // Combines the date input (YYYY-MM-DD) with a 12-hour time selection
-  // into an ISO datetime string, e.g. "2026-08-04T09:00:00".
-  // NOTE: built as local time, no explicit timezone offset — matches the
-  // "Z"-less/"Z" ambiguity seen in the sample payloads. If the backend
-  // expects UTC specifically, convert here before sending.
   const buildIsoDateTime = (dateStr, hour, minute, period) => {
     if (!dateStr || !hour || !minute) return null;
     const { h, m } = to24Hour(hour, minute, period);
     const pad2 = (n) => String(n).padStart(2, "0");
     return `${dateStr}T${pad2(h)}:${pad2(m)}:00`;
   };
-
-  // Minutes-since-midnight, for comparing/validating start vs end and for
-  // computing duration.
   const toMinutesSinceMidnight = (hour, minute, period) => {
     const { h, m } = to24Hour(hour, minute, period);
     return h * 60 + m;
   };
 
-  // Checks every required field and returns a list of human-readable
-  // problems. An empty list means the form is ready to submit.
   const validateForm = () => {
     const problems = [];
 
@@ -655,7 +598,7 @@ export default function Schedule() {
     if (!batch) problems.push("Batch is required");
     if (selectedCombos.length === 0)
       problems.push("Select at least one Department & Section");
-    if (!testCode) problems.push("Test Code is required");
+    if (!questionCode) problems.push("Test Code is required");
     if (!date) problems.push("Date is required");
 
     const hasStartTime = startHour && startMinute && startPeriod;
@@ -671,8 +614,6 @@ export default function Schedule() {
       }
     }
 
-    // Admission Number is mandatory for Retest (matches backend rule);
-    // optional for Normal.
     if (category === "Retest" && selectedAdmissionNos.length === 0) {
       problems.push("Select at least one Admission Number for Retest");
     }
@@ -690,7 +631,7 @@ export default function Schedule() {
       setErrorMessage(problems.join(" • "));
       return;
     }
-    const questionSetId = testCode;
+    const questionSetId = questionCode;
 
     if (!questionSetId) {
       setStatusMessage("");
@@ -703,9 +644,6 @@ export default function Schedule() {
     const duration =
       toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
       toMinutesSinceMidnight(startHour, startMinute, startPeriod);
-
-    // The backend only accepts one department + one section per request,
-    // so a multi-combo selection becomes one POST per combo.
     const combosToSubmit = selectedCombos
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
@@ -719,9 +657,7 @@ export default function Schedule() {
     const results = await Promise.allSettled(
       combosToSubmit.map((combo) => {
         const payload = {
-          // testcode is NOT sent — the backend generates it itself via a
-          // cron job (stored as null at creation time). The frontend's
-          // testCode dropdown is only used locally to look up questionSetId.
+
           category: category.toLowerCase(),
           questionSetId,
           department: combo.dept,
@@ -734,9 +670,7 @@ export default function Schedule() {
           startTime,
           endTime,
         };
-        // CIE is a separate field from category, required only for
-        // "normal" — omit entirely for Retest/University so the backend's
-        // "cie must be I/II/III" check isn't triggered on an empty value.
+     
         if (category === "Normal") {
           payload.cie = cie;
         }
@@ -781,8 +715,6 @@ export default function Schedule() {
       setStatusMessage(
         `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
       );
-      // Clear the form after a fully successful submit so leftover data
-      // never carries into the next schedule (or the other category).
       resetFormFields();
     } else if (successCount > 0) {
       setStatusMessage(`${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`);
@@ -798,8 +730,7 @@ export default function Schedule() {
 
   // ---------------- RENDER ----------------
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#EEF0F2] px-4 py-10 md:px-10">
-      {/* ---------------- PAGE CONTENT ---------------- */}
+<div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
       <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
@@ -1170,12 +1101,12 @@ export default function Schedule() {
 
               {/* Test Code */}
               <div>
-                <label className={labelClasses}>Test Code</label>
+                <label className={labelClasses}>Question Code</label>
                 <div className="relative">
                   <BookOpenCheck className={iconLeftClasses} />
                   <select
-                    value={testCode}
-                    onChange={(e) => setTestCode(e.target.value)}
+                    value={questionCode}
+                    onChange={(e) => setquestionCode(e.target.value)}
                     className={boxClasses + " appearance-none"}
                   >
                     <option value="">Select Test Code</option>
