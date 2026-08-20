@@ -29,7 +29,7 @@ const NAV_ITEMS = [
     children: [
       {
         key: "Questionupload",
-        label: "Create Test",
+        label: "Question Upload",
         icon: ClipboardPlus,
         location: "/admin/Questionupload",
       },
