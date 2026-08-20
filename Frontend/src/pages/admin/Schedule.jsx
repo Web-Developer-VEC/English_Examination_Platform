@@ -12,6 +12,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
   X,
   Undo2,
   CalendarRange,
@@ -19,6 +20,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import ThemeDropdown from "../../components/common/ThemeDropDown"
 
 // API CONFIG
 
@@ -55,7 +57,7 @@ const ACADEMIC_YEAR_OPTIONS = [
   "2026-2027",
   "2027-2028",
 ];
-const SEMESTER_OPTIONS = [1, 2];
+const SEMESTER_OPTIONS = ["Odd", "Even"];
 const CIE_OPTIONS = ["I", "II", "III"];
 // 12-hour clock face values
 const HOUR_VALUES = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
@@ -73,6 +75,39 @@ const iconLeftClasses =
   "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]";
 const cardClasses =
   "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-[0_4px_20px_rgba(0,0,0,0.15)] p-5";
+
+// Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
+// so they read as the same family of control as ThemeDropdown itself.
+const dropdownTriggerClasses = (isOpen, disabled) =>
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${
+    isOpen
+      ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+      : "border-black/15 hover:border-black/30"
+  } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
+
+const dropdownIconClasses = (isOpen) =>
+  `shrink-0 transition-colors duration-200 ${
+    isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  }`;
+
+const dropdownArrowClasses = (isOpen) =>
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${
+    isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  }`;
+
+const dropdownPanelClasses =
+  "absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]";
+
+const dropdownAllRowClasses =
+  "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
+
+const dropdownOptionRowClasses = (isSelected) =>
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
+    isSelected
+      ? "bg-[#fdcc03]/15 font-semibold text-black"
+      : "font-medium text-black hover:bg-[#fff8d6]"
+  }`;
+
 // ANALOG CLOCK TIME PICKER
 function polarPoint(index, radius, cx, cy) {
   const angle = ((index % 12) * 30 - 90) * (Math.PI / 180);
@@ -122,27 +157,36 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
     <div ref={wrapperRef} className="relative">
       <label className={labelClasses}>{label}</label>
       <div className="relative">
-        <IconComponent className={iconLeftClasses} />
         <button
           type="button"
           onClick={() => {
             setIsOpen((prev) => !prev);
             setMode("hour");
           }}
-          className={boxClasses + " flex items-center justify-between text-left"}
+          className={dropdownTriggerClasses(isOpen, false)}
         >
-          <span className={displayValue ? "" : "text-[#9CA3AF]"}>
+          {IconComponent && (
+            <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
+          )}
+          <span
+            className={`flex-1 truncate text-[15px] font-medium ${
+              displayValue ? "text-black" : "text-black/45"
+            }`}
+          >
             {displayValue || "Select time"}
           </span>
+          <span className={dropdownArrowClasses(isOpen)}>
+            {isOpen ? (
+              <ChevronUp size={18} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={18} strokeWidth={2} />
+            )}
+          </span>
         </button>
-        <ChevronDown
-          className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isOpen ? "rotate-180" : ""
-            }`}
-        />
       </div>
 
       {isOpen && (
-        <div className="absolute z-30 bottom-full mb-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute z-30 bottom-full mb-2 w-56 overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]">
           {/* Header: big time readout + AM/PM toggle */}
           <div className="flex items-center justify-between border-b border-gray-100 bg-[#FAFAFA] px-3 py-2">
             <div className="flex items-center gap-0.5 text-base font-bold text-[#000000]">
@@ -280,6 +324,8 @@ export default function Schedule() {
   const [semester, setSemester] = useState("");
   const [cie, setCie] = useState("");
   const [batch, setBatch] = useState("");
+  // Holds the selected test's display label (questionCode); the matching
+  // questionSetId is looked up from TEST_CODE_OPTIONS at submit time.
   const [questionCode, setquestionCode] = useState("");
 
   // Department & Section (multi-select combo picker)
@@ -406,6 +452,10 @@ console.log(
     () => scheduleData.tests,
     [scheduleData.tests]
   );
+  const TEST_CODE_LABELS = useMemo(
+    () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
+    [TEST_CODE_OPTIONS]
+  );
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
   const captureCurrentFields = () => ({
@@ -455,8 +505,8 @@ console.log(
     draftsRef.current[category] = null;
   };
 
-  const handleCategoryChange = (e) => {
-    const nextCategory = e.target.value;
+  // ThemeDropdown hands back the picked value directly (not an event).
+  const handleCategoryChange = (nextCategory) => {
     // Save whatever is currently on screen under the category we're leaving
     draftsRef.current[category] = captureCurrentFields();
     // Restore whatever was previously saved for the category we're entering
@@ -631,7 +681,11 @@ console.log(
       setErrorMessage(problems.join(" • "));
       return;
     }
-    const questionSetId = questionCode;
+
+    const selectedTest = TEST_CODE_OPTIONS.find(
+      (t) => t.questionCode === questionCode
+    );
+    const questionSetId = selectedTest?.questionSetId;
 
     if (!questionSetId) {
       setStatusMessage("");
@@ -759,21 +813,13 @@ console.log(
           {/* Category */}
           <div className={"mb-6 " + cardClasses}>
             <label className={labelClasses}>Category</label>
-            <div className="relative">
-              <BadgeCheck className={iconLeftClasses} />
-              <select
-                value={category}
-                onChange={handleCategoryChange}
-                className={boxClasses + " appearance-none font-medium"}
-              >
-                {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-            </div>
+            <ThemeDropdown
+              icon={BadgeCheck}
+              value={category}
+              options={CATEGORY_OPTIONS}
+              onChange={handleCategoryChange}
+              placeholder="Select Category"
+            />
           </div>
 
           {/* Main card — same fields always, including Admission Number */}
@@ -790,114 +836,85 @@ console.log(
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClasses}>Academic Year</label>
-                  <div className="relative">
-                    <CalendarRange className={iconLeftClasses} />
-                    <select
-                      value={academicYear}
-                      onChange={(e) => setAcademicYear(e.target.value)}
-                      className={boxClasses + " appearance-none"}
-                    >
-                      <option value="">Select Academic Year</option>
-                      {ACADEMIC_YEAR_OPTIONS.map((yr) => (
-                        <option key={yr} value={yr}>
-                          {yr}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                  </div>
+                  <ThemeDropdown
+                    icon={CalendarRange}
+                    value={academicYear}
+                    options={ACADEMIC_YEAR_OPTIONS}
+                    onChange={setAcademicYear}
+                    placeholder="Select Academic Year"
+                  />
                 </div>
 
                 <div>
                   <label className={labelClasses}>Semester</label>
-                  <div className="relative">
-                    <Layers className={iconLeftClasses} />
-                    <select
-                      value={semester}
-                      onChange={(e) => setSemester(e.target.value)}
-                      className={boxClasses + " appearance-none"}
-                    >
-                      <option value="">Select Semester</option>
-                      {SEMESTER_OPTIONS.map((sem) => (
-                        <option key={sem} value={sem}>
-                          Semester {sem}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                  </div>
+                  <ThemeDropdown
+                    icon={Layers}
+                    value={semester}
+                    options={SEMESTER_OPTIONS}
+                    onChange={setSemester}
+                    placeholder="Select Semester"
+                  />
                 </div>
               </div>
 
               {/* Batch */}
               <div>
                 <label className={labelClasses}>Batch</label>
-                <div className="relative">
-                  <GraduationCap className={iconLeftClasses} />
-                  <select
-                    value={batch}
-                    onChange={(e) => setBatch(e.target.value)}
-                    className={boxClasses + " appearance-none"}
-                  >
-                    <option value="">Select Batch</option>
-                    {BATCH_OPTIONS.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                </div>
+                <ThemeDropdown
+                  icon={GraduationCap}
+                  value={batch}
+                  options={BATCH_OPTIONS}
+                  onChange={setBatch}
+                  placeholder="Select Batch"
+                  loading={isLoadingScheduleData}
+                />
               </div>
 
               {/* CIE — required by backend only for Normal category */}
               {category === "Normal" && (
                 <div>
                   <label className={labelClasses}>CIE</label>
-                  <div className="relative">
-                    <BadgeCheck className={iconLeftClasses} />
-                    <select
-                      value={cie}
-                      onChange={(e) => setCie(e.target.value)}
-                      className={boxClasses + " appearance-none"}
-                    >
-                      <option value="">Select CIE</option>
-                      {CIE_OPTIONS.map((c) => (
-                        <option key={c} value={c}>
-                          CIE {c}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                  </div>
+                  <ThemeDropdown
+                    icon={BadgeCheck}
+                    value={cie}
+                    options={CIE_OPTIONS}
+                    onChange={setCie}
+                    placeholder="Select CIE"
+                  />
                 </div>
               )}
 
               {/* Department & Section */}
               <div ref={pickerRef} className="relative">
                 <label className={labelClasses}>Department &amp; Section</label>
-                <div className="relative">
-                  <Building2 className={iconLeftClasses} />
-                  <button
-                    type="button"
-                    onClick={() => setIsPickerOpen((prev) => !prev)}
-                    className={boxClasses + " flex items-center justify-between text-left"}
+                <button
+                  type="button"
+                  disabled={isLoadingScheduleData}
+                  onClick={() => setIsPickerOpen((prev) => !prev)}
+                  className={dropdownTriggerClasses(isPickerOpen, isLoadingScheduleData)}
+                >
+                  <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
+                  <span
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedCombos.length ? "text-black" : "text-black/45"
+                    }`}
                   >
-                    <span className={selectedCombos.length ? "" : "text-[#9CA3AF]"}>
-                      {selectedCombos.length
-                        ? `${selectedCombos.length} Selected`
-                        : "Select department & section"}
-                    </span>
-                  </button>
-                  <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isPickerOpen ? "rotate-180" : ""
-                      }`}
-                  />
-                </div>
+                    {selectedCombos.length
+                      ? `${selectedCombos.length} Selected`
+                      : "Select department & section"}
+                  </span>
+                  <span className={dropdownArrowClasses(isPickerOpen)}>
+                    {isPickerOpen ? (
+                      <ChevronUp size={18} strokeWidth={2} />
+                    ) : (
+                      <ChevronDown size={18} strokeWidth={2} />
+                    )}
+                  </span>
+                </button>
 
                 {isPickerOpen && (
-                  <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                    <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-[#800000] transition hover:bg-[#FDCC03]/10">
+                  <div className={dropdownPanelClasses}>
+                    <label className={dropdownAllRowClasses}>
                       <input
                         type="checkbox"
                         checked={isAllCombosSelected}
@@ -906,20 +923,22 @@ console.log(
                       />
                       All
                     </label>
-                    {DEPT_SECTION_OPTIONS.map((option) => (
-                      <label
-                        key={option.key}
-                        className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[#000000] transition hover:bg-[#FDCC03]/10"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCombos.includes(option.key)}
-                          onChange={() => handleComboToggle(option.key)}
-                          className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
+                    <div className="max-h-60 overflow-y-auto">
+                      {DEPT_SECTION_OPTIONS.map((option) => (
+                        <label
+                          key={option.key}
+                          className={dropdownOptionRowClasses(selectedCombos.includes(option.key))}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCombos.includes(option.key)}
+                            onChange={() => handleComboToggle(option.key)}
+                            className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                          />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -966,60 +985,57 @@ console.log(
               {/* Admission Number — now rendered for BOTH Normal and Retest */}
               <div ref={admissionPickerRef} className="relative">
                 <label className={labelClasses}>Admission Number</label>
-                <div className="relative">
-                  <BadgeCheck className={iconLeftClasses} />
-                  <button
-                    type="button"
-                    onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                    className={boxClasses + " flex items-center justify-between text-left"}
+                <button
+                  type="button"
+                  onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
+                  className={dropdownTriggerClasses(isAdmissionPickerOpen, false)}
+                >
+                  <BadgeCheck size={18} strokeWidth={2} className={dropdownIconClasses(isAdmissionPickerOpen)} />
+                  <span
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedAdmissionNos.length ? "text-black" : "text-black/45"
+                    }`}
                   >
-                    <span className={selectedAdmissionNos.length ? "" : "text-[#9CA3AF]"}>
-                      {selectedAdmissionNos.length
-                        ? `${selectedAdmissionNos.length} Selected`
-                        : "Select admission number(s)"}
-                    </span>
-                  </button>
-                  <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${isAdmissionPickerOpen ? "rotate-180" : ""
-                      }`}
-                  />
-                </div>
+                    {selectedAdmissionNos.length
+                      ? `${selectedAdmissionNos.length} Selected`
+                      : "Select admission number(s)"}
+                  </span>
+                  <span className={dropdownArrowClasses(isAdmissionPickerOpen)}>
+                    {isAdmissionPickerOpen ? (
+                      <ChevronUp size={18} strokeWidth={2} />
+                    ) : (
+                      <ChevronDown size={18} strokeWidth={2} />
+                    )}
+                  </span>
+                </button>
 
                 {isAdmissionPickerOpen && (
-                  <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className={dropdownPanelClasses + " p-0"}>
                     {/* Range picker: select from-number to-number */}
-                    <div className="border-b border-gray-100 bg-[#FAFAFA] p-3">
+                    <div className="border-b border-black/5 bg-[#FAFAFA] p-3">
                       <p className="mb-2 text-xs font-semibold text-[#000000]">
                         Select Range
                       </p>
                       <div className="flex items-center gap-2">
-                        <select
-                          value={rangeFrom}
-                          onChange={(e) => setRangeFrom(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-[#000000] outline-none focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40"
-                        >
-                          <option value="">From</option>
-                          {ADMISSION_NO_OPTIONS.map((no) => (
-                            <option key={no} value={no}>
-                              {no}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex-1">
+                          <ThemeDropdown
+                            value={rangeFrom}
+                            options={ADMISSION_NO_OPTIONS}
+                            onChange={setRangeFrom}
+                            placeholder="From"
+                          />
+                        </div>
                         <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
                           to
                         </span>
-                        <select
-                          value={rangeTo}
-                          onChange={(e) => setRangeTo(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-[#000000] outline-none focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40"
-                        >
-                          <option value="">To</option>
-                          {ADMISSION_NO_OPTIONS.map((no) => (
-                            <option key={no} value={no}>
-                              {no}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex-1">
+                          <ThemeDropdown
+                            value={rangeTo}
+                            options={ADMISSION_NO_OPTIONS}
+                            onChange={setRangeTo}
+                            placeholder="To"
+                          />
+                        </div>
                       </div>
                       <button
                         type="button"
@@ -1031,8 +1047,8 @@ console.log(
                       </button>
                     </div>
 
-                    <div className="max-h-56 overflow-y-auto">
-                      <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-[#800000] transition hover:bg-[#FDCC03]/10">
+                    <div className="max-h-56 overflow-y-auto p-1.5">
+                      <label className={dropdownAllRowClasses}>
                         <input
                           type="checkbox"
                           checked={isAllAdmissionSelected}
@@ -1044,7 +1060,7 @@ console.log(
                       {ADMISSION_NO_OPTIONS.map((no) => (
                         <label
                           key={no}
-                          className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[#000000] transition hover:bg-[#FDCC03]/10"
+                          className={dropdownOptionRowClasses(selectedAdmissionNos.includes(no))}
                         >
                           <input
                             type="checkbox"
@@ -1102,25 +1118,14 @@ console.log(
               {/* Test Code */}
               <div>
                 <label className={labelClasses}>Question Code</label>
-                <div className="relative">
-                  <BookOpenCheck className={iconLeftClasses} />
-                  <select
-                    value={questionCode}
-                    onChange={(e) => setquestionCode(e.target.value)}
-                    className={boxClasses + " appearance-none"}
-                  >
-                    <option value="">Select Test Code</option>
-                    {TEST_CODE_OPTIONS.map((test) => (
-                      <option
-                        key={test.questionSetId}
-                        value={test.questionSetId}
-                      >
-                        {test.questionCode}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                </div>
+                <ThemeDropdown
+                  icon={BookOpenCheck}
+                  value={questionCode}
+                  options={TEST_CODE_LABELS}
+                  onChange={setquestionCode}
+                  placeholder="Select Test Code"
+                  loading={isLoadingScheduleData}
+                />
               </div>
 
               {/* Date / Start Time / End Time — single row, analog clock pickers */}
