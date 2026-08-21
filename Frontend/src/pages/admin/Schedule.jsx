@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   ClipboardClock,
   GraduationCap,
@@ -79,20 +81,17 @@ const cardClasses =
 // Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
 // so they read as the same family of control as ThemeDropdown itself.
 const dropdownTriggerClasses = (isOpen, disabled) =>
-  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${
-    isOpen
-      ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
-      : "border-black/15 hover:border-black/30"
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${isOpen
+    ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+    : "border-black/15 hover:border-black/30"
   } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
 
 const dropdownIconClasses = (isOpen) =>
-  `shrink-0 transition-colors duration-200 ${
-    isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  `shrink-0 transition-colors duration-200 ${isOpen ? "text-black" : "text-black/60 group-hover:text-black"
   }`;
 
 const dropdownArrowClasses = (isOpen) =>
-  `flex shrink-0 items-center justify-center transition-all duration-200 ${
-    isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
   }`;
 
 const dropdownPanelClasses =
@@ -102,10 +101,9 @@ const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
 
 const dropdownOptionRowClasses = (isSelected) =>
-  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
-    isSelected
-      ? "bg-[#fdcc03]/15 font-semibold text-black"
-      : "font-medium text-black hover:bg-[#fff8d6]"
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
+    ? "bg-[#fdcc03]/15 font-semibold text-black"
+    : "font-medium text-black hover:bg-[#fff8d6]"
   }`;
 
 // ANALOG CLOCK TIME PICKER
@@ -169,9 +167,8 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
             <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
           )}
           <span
-            className={`flex-1 truncate text-[15px] font-medium ${
-              displayValue ? "text-black" : "text-black/45"
-            }`}
+            className={`flex-1 truncate text-[15px] font-medium ${displayValue ? "text-black" : "text-black/45"
+              }`}
           >
             {displayValue || "Select time"}
           </span>
@@ -380,11 +377,11 @@ export default function Schedule() {
         });
         const body = await res.json();
         console.log("GET SCHEDULE DATA STATUS:", res.status);
-console.log("GET SCHEDULE DATA RESPONSE:", body);
-console.log(
-  "BATCH DEPARTMENT SECTIONS:",
-  body?.data?.batchDepartmentSections
-);
+        console.log("GET SCHEDULE DATA RESPONSE:", body);
+        console.log(
+          "BATCH DEPARTMENT SECTIONS:",
+          body?.data?.batchDepartmentSections
+        );
 
         if (!res.ok || !body.success) {
           throw new Error(body.message || `Request failed (${res.status})`);
@@ -717,18 +714,18 @@ console.log(
           department: combo.dept,
           batch,
           academicYear,
-          semester: Number(semester),
+          semester: semester.toLowerCase(),
           section: combo.section,
           admissionNo: selectedAdmissionNos,
           duration,
           startTime,
           endTime,
         };
-     
+
         if (category === "Normal") {
           payload.cie = cie;
         }
-
+        console.log(payload);
         return fetch(SCHEDULE_EXAM_ENDPOINT, {
           method: "POST",
           headers: {
@@ -766,12 +763,14 @@ console.log(
           : category === "University"
             ? "University exam scheduled"
             : "Schedule created";
-      setStatusMessage(
+      toast.success(
         `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
       );
       resetFormFields();
     } else if (successCount > 0) {
-      setStatusMessage(`${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`);
+      toast.success(
+        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
+      );
       setErrorMessage(
         failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
       );
@@ -780,11 +779,12 @@ console.log(
         failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
       );
     }
+
   };
 
   // ---------------- RENDER ----------------
   return (
-<div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
       <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
@@ -895,9 +895,8 @@ console.log(
                 >
                   <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedCombos.length ? "text-black" : "text-black/45"
-                    }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedCombos.length ? "text-black" : "text-black/45"
+                      }`}
                   >
                     {selectedCombos.length
                       ? `${selectedCombos.length} Selected`
@@ -992,9 +991,8 @@ console.log(
                 >
                   <BadgeCheck size={18} strokeWidth={2} className={dropdownIconClasses(isAdmissionPickerOpen)} />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedAdmissionNos.length ? "text-black" : "text-black/45"
-                    }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length ? "text-black" : "text-black/45"
+                      }`}
                   >
                     {selectedAdmissionNos.length
                       ? `${selectedAdmissionNos.length} Selected`
@@ -1175,7 +1173,7 @@ console.log(
             <button
               type="submit"
               disabled={isSubmitting || isLoadingScheduleData}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] shadow-md shadow-[#FDCC03]/30 transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -1216,6 +1214,15 @@ console.log(
           </div>
         </form>
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+      />
+
     </div>
   );
 }
