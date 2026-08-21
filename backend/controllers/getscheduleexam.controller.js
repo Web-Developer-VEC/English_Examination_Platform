@@ -147,8 +147,7 @@ const getScheduledExams = async (req, res) => {
 
                     questionSetId: exam.questionSetId,
 
-                    testcode: questionSet
-                        ? questionSet.testcode
+                    testcode: exam?.testcode !== undefined ? exam.testcode
                         : null,
 
                     department: exam.eligibility.department,
