@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { startExam } from "../../services/studentService";
 import { getStudentSession } from "../../utils/helpers";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 export default function InstructionsPage() {
     const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
+    const [statusPopup, setStatusPopup] = useState({
+        show: false,
+        type: "error",
+        message: ""
+    });
     const [accepted, setAccepted] = useState(false);
     const [isStarting, setIsStarting] = useState(false);
     const [error, setError] = useState("");
@@ -31,6 +34,14 @@ export default function InstructionsPage() {
             console.error("Fullscreen request failed:", error);
             return false;
         }
+    };
+
+    const showStatusPopup = (message, type = "error") => {
+        setStatusPopup({
+            show: true,
+            type,
+            message
+        });
     };
 
     const handleAccept = async (event) => {
@@ -77,7 +88,7 @@ export default function InstructionsPage() {
 
             if (!session?.user?.admissionNo) {
 
-                toast.error(
+                showStatusPopup(
                     "Student session not found. Please login again."
                 );
 
@@ -116,8 +127,9 @@ export default function InstructionsPage() {
 
             if (response?.success) {
 
-                toast.success(
-                    "Test started successfully!"
+                showStatusPopup(
+                    "Test started successfully!",
+                    "success"
                 );
 
                 navigate("/student/exam", {
@@ -149,9 +161,8 @@ export default function InstructionsPage() {
 
             if (status === 400) {
 
-                toast.error(
-                    message ||
-                    "Invalid request. Please check the test code."
+                showStatusPopup(
+                    message || "Invalid request. Please check the test code."  
                 );
 
             }
@@ -163,9 +174,8 @@ export default function InstructionsPage() {
 
             else if (status === 403) {
 
-                toast.error(
-                    message ||
-                    "You have already taken this test."
+                showStatusPopup(
+                    message || "You have already taken this test." 
                 );
 
             }
@@ -177,9 +187,8 @@ export default function InstructionsPage() {
 
             else if (status === 404) {
 
-                toast.error(
-                    message ||
-                    "Invalid test code or student not found."
+                showStatusPopup(
+                   message || "Invalid test code or student not found."
                 );
 
             }
@@ -191,7 +200,7 @@ export default function InstructionsPage() {
 
             else if (status === 500) {
 
-                toast.error(
+                showStatusPopup(
                     "Server error. Please try again later."
                 );
 
@@ -204,7 +213,7 @@ export default function InstructionsPage() {
 
             else if (!error.response) {
 
-                toast.error(
+                showStatusPopup(
                     "Unable to connect to server."
                 );
 
@@ -217,9 +226,8 @@ export default function InstructionsPage() {
 
             else {
 
-                toast.error(
-                    message ||
-                    "Something went wrong. Please try again."
+                showStatusPopup(
+                    message || "Something went wrong. Please try again."
                 );
 
             }
@@ -290,37 +298,37 @@ export default function InstructionsPage() {
 
     }, [accepted]);
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        const handleKeyDown = (e) => {
+    //     const handleKeyDown = (e) => {
 
-            if (e.key === "F12") {
+    //         if (e.key === "F12") {
 
-                e.preventDefault();
-                e.stopPropagation();
+    //             e.preventDefault();
+    //             e.stopPropagation();
 
-                console.log("F12 blocked on Start Test page");
-            }
+    //             console.log("F12 blocked on Start Test page");
+    //         }
 
-        };
+    //     };
 
-        window.addEventListener(
-            "keydown",
-            handleKeyDown,
-            true
-        );
+    //     window.addEventListener(
+    //         "keydown",
+    //         handleKeyDown,
+    //         true
+    //     );
 
-        return () => {
+    //     return () => {
 
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown,
-                true
-            );
+    //         window.removeEventListener(
+    //             "keydown",
+    //             handleKeyDown,
+    //             true
+    //         );
 
-        };
+    //     };
 
-    }, []);
+    // }, []);
 
     return (
         <>
@@ -368,7 +376,74 @@ export default function InstructionsPage() {
 
                 </div>
             )}
-            <ToastContainer position="bottom-right" autoClose={3000} />
+            {statusPopup.show && (
+                <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60">
+
+                    <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-8 text-center">
+
+                        {/* Icon */}
+                        <div
+                            className={`
+                    mx-auto
+                    w-14
+                    h-14
+                    rounded-full
+                    flex
+                    items-center
+                    justify-center
+                    text-2xl
+                    font-bold
+                    ${statusPopup.type === "success"
+                                    ? "bg-green-100 text-green-600"
+                                    : "bg-red-100 text-red-600"
+                                }
+                `}
+                        >
+                            {statusPopup.type === "success" ? "✓" : "!"}
+                        </div>
+
+                        {/* Title */}
+                        <h2
+                            className={`
+                    mt-4
+                    text-xl
+                    font-bold
+                    ${statusPopup.type === "success"
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                `}
+                        >
+                            {statusPopup.type === "success"
+                                ? "Success"
+                                : "Unable to Start Test"
+                            }
+                        </h2>
+
+                        {/* Message */}
+                        <p className="mt-3 text-gray-600">
+                            {statusPopup.message}
+                        </p>
+
+                        {/* Close */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setStatusPopup({
+                                    show: false,
+                                    type: "error",
+                                    message: ""
+                                });
+                            }}
+                            className="mt-6 px-7 py-2.5 rounded-lg bg-[#800000] text-white font-semibold hover:bg-[#600000]"
+                        >
+                            OK
+                        </button>
+
+                    </div>
+
+                </div>
+            )}
             <div className="min-h-screen bg-gray-100 px-4 py-10">
                 {/* MAIN CONTAINER */}
                 <div
