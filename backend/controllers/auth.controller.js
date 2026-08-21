@@ -98,7 +98,16 @@ const login = async (req, res) => {
 
     try {
 
-        const { username, password, role } = req.body;
+        const {
+            username,
+            password,
+            role
+        } = req.body;
+
+        // =====================================================
+        // VALIDATION
+        // =====================================================
+
         if (!username || !password || !role) {
             return res.status(400).json({
                 success: false,
@@ -115,11 +124,23 @@ const login = async (req, res) => {
 
         const db = getDB();
 
-        const collection = role === "student"
-            ? db.collection("students")
-            : db.collection("staff");
+        // =====================================================
+        // COLLECTION
+        // =====================================================
 
-        const user = await collection.findOne({ username });
+        const collection =
+            role === "student"
+                ? db.collection("students")
+                : db.collection("staff");
+
+        // =====================================================
+        // FIND USER
+        // =====================================================
+
+        const user = await collection.findOne({
+            username: username.trim()
+        });
+
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -127,75 +148,172 @@ const login = async (req, res) => {
             });
         }
 
-        if (role == "student") {
-            if (password === user.password && user.password == user.dob) {
-                // Generate JWT
-                const token = jwt.sign(
-                    {
-                        id: user._id,
-                        username: user.username,
-                        role: user.role
-                    },
-                    process.env.JWT_SECRET,
-                    { expiresIn: "1d" }
+        // =====================================================
+        // PASSWORD CHECK
+        // =====================================================
+
+        let resetPass = false;
+
+        // -----------------------------------------------------
+        // STUDENT FIRST LOGIN
+        // Password = DOB
+        // -----------------------------------------------------
+
+        if (role === "student") {
+
+            if (
+                password === user.password &&
+                user.password === user.dob
+            ) {
+
+                resetPass = true;
+
+            } else {
+
+                // Student has already changed password
+                const isMatch = await bcrypt.compare(
+                    password,
+                    user.password
                 );
 
-                res.status(200).json({
-                    success: true,
-                    message: "Login successful",
-                    token,
-                    resetPass: true,
-                    user: {
-                        id: user._id,
-                        username: user.username,
-                        admissionNo: user.admissionNo,
-                        role: user.role
-                    }
-                });
+                if (!isMatch) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Invalid username or password"
+                    });
+                }
+            }
 
+        }
+
+        // =====================================================
+        // STAFF PASSWORD
+        // =====================================================
+
+        else {
+
+            const isMatch = await bcrypt.compare(
+                password,
+                user.password
+            );
+
+            if (!isMatch) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Invalid username or password"
+                });
             }
         }
 
-        // Compare hashed password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid username or password"
-            });
-        }
+        // =====================================================
+        // SESSION TIMES
+        // =====================================================
 
-        // Generate JWT
-        const token = jwt.sign(
-            {
-                id: user._id,
-                username: user.username,
-                role: user.role
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
+        const loginAt = new Date();
+
+        const expiresAt = new Date(
+            loginAt.getTime() + 24 * 60 * 60 * 1000
         );
 
-        res.status(200).json({
-            success: true,
-            message: "Login successful",
-            token,
-            user: {
-                id: user._id,
+        // =====================================================
+        // JWT
+        // =====================================================
+
+        const token = jwt.sign(
+            {
+                id: user._id.toString(),
                 username: user.username,
-                role: user.role
+                role: role
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1d"
             }
+        );
+
+        // =====================================================
+        // STORE SESSION
+        // =====================================================
+
+        const session = {
+
+            userId: user._id,
+
+            username: user.username,
+
+            role: role,
+
+            token: token,
+
+            loginAt: loginAt,
+
+            expiresAt: expiresAt,
+
+            active: true,
+
+            logoutAt: null,
+
+            createdAt: loginAt,
+
+            updatedAt: loginAt
+
+        };
+
+        const sessionResult =
+            await db.collection("sessions").insertOne(session);
+
+        // =====================================================
+        // RESPONSE
+        // =====================================================
+
+        const userData = {
+            id: user._id,
+            username: user.username,
+            role: role
+        };
+
+        if (role === "student") {
+
+            userData.admissionNo =
+                user.admissionNo;
+
+            userData.registerNo =
+                user.registerNo;
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Login successful",
+
+            token,
+
+            sessionId: sessionResult.insertedId,
+
+            resetPass,
+
+            expiresAt,
+
+            user: userData
+
         });
 
     } catch (error) {
 
+        console.error(
+            "LOGIN ERROR:",
+            error
+        );
+
         return res.status(500).json({
+
             success: false,
+
             message: error.message
+
         });
-
     }
-
 };
 
 module.exports = {

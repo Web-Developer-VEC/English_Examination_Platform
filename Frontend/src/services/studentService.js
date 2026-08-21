@@ -1,11 +1,13 @@
-import axios from "axios";
+import api from "./api";
 
-const API_URL = "http://localhost:5000/api/exam";
+const API_URL = "/exam";
 
 export const startExam = async (testcode, admissionNo) => {
-    const response = await axios.post(
+    
+    const response = await api.post(
         `${API_URL}/startexam`,
         {
+
             testcode,
             admissionNo,
         }
@@ -21,7 +23,7 @@ export const syncExam = async ({
     studentAnswer
 }) => {
 
-    const response = await axios.post(
+    const response = await api.post(
         `${API_URL}/examsync`,
         {
             testId,
@@ -39,7 +41,7 @@ export const submitExam = async ({
     testId,
     admissionNo,
 }) => {
-    const response = await axios.post(
+    const response = await api.post(
         `${API_URL}/submit`,
         {
             testId,
@@ -56,7 +58,7 @@ export const reportMalpractice = async ({
     reason
 }) => {
 
-    const response = await axios.post(
+    const response = await api.post(
         `${API_URL}/malpractice`,
         {
             testId,
