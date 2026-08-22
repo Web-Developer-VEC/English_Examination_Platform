@@ -620,30 +620,6 @@ export default function InstructionsPage() {
                                     }
                             `}
                             />
-                            {/* TEST CODE VALIDATION MESSAGE */}
-                            {testCode && (
-                                <p
-                                    className={`
-                                    mt-2
-                                    text-sm
-                                    font-medium
-                                    ${isValidTestCode
-                                            ? "text-green-600"
-                                            : "text-red-500"
-                                        }
-                                `}
-                                >
-                                    {
-                                        isValidTestCode
-                                            ? "✓ Valid test code format"
-                                            : "Test code can contain only capital letters and numbers."
-                                    }
-                                </p>
-                            )}
-                            {/* Character Counter */}
-                            <p className="text-xs text-gray-400 mt-2">
-                                {testCode.length}/10 characters
-                            </p>
                         </div>
                         {/* START TEST BUTTON */}
                         <div className="flex justify-end mt-10">

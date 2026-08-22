@@ -13,7 +13,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function Questionupload() {
+export default function QuestionUpload() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
   const [questionCode, setQuestionCode] = useState("");

@@ -174,6 +174,9 @@ export function saveStudentSession(session) {
         "studentSession",
         JSON.stringify(session)
     );
+
+    // Tell React components that the session changed
+    window.dispatchEvent(new Event("studentSessionChanged"));
 }
 
 export function getStudentSession() {
