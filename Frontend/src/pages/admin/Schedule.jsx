@@ -360,6 +360,8 @@ export default function Schedule() {
   });
   const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
   const [scheduleDataError, setScheduleDataError] = useState("");
+  const [questionCodeSpace, setQuestionCodeSpace] = useState(false);
+  const questionCodeRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -378,6 +380,7 @@ export default function Schedule() {
         const body = await res.json();
         console.log("GET SCHEDULE DATA STATUS:", res.status);
         console.log("GET SCHEDULE DATA RESPONSE:", body);
+        console.log("TESTS FROM BACKEND:", body?.data?.tests);
         console.log(
           "BATCH DEPARTMENT SECTIONS:",
           body?.data?.batchDepartmentSections
@@ -446,7 +449,10 @@ export default function Schedule() {
     selectedCombos,
   ]);
   const TEST_CODE_OPTIONS = useMemo(
-    () => scheduleData.tests,
+    () =>
+      [...scheduleData.tests].sort((a, b) =>
+        b.questionSetId.localeCompare(a.questionSetId)
+      ),
     [scheduleData.tests]
   );
   const TEST_CODE_LABELS = useMemo(
@@ -535,6 +541,27 @@ export default function Schedule() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  // Question Code dropdown - control main page extra space
+  useEffect(() => {
+    const handleQuestionCodeClick = (event) => {
+      if (!questionCodeRef.current) return;
+
+      if (questionCodeRef.current.contains(event.target)) {
+        setQuestionCodeSpace(true);
+      } else {
+        setQuestionCodeSpace(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleQuestionCodeClick);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleQuestionCodeClick
+      );
+    };
   }, []);
 
   // Auto-clear the confirmation banner
@@ -784,8 +811,10 @@ export default function Schedule() {
 
   // ---------------- RENDER ----------------
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
-      <div className="relative mx-auto max-w-3xl">
+    <div
+      className={`relative min-h-screen w-full bg-white px-4 pt-10 md:px-10 ${questionCodeSpace ? "pb-96" : "pb-10"
+        }`}
+    >      <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#FDCC03]/40 bg-[#800000] shadow-md shadow-[#800000]/20">
@@ -1114,13 +1143,17 @@ export default function Schedule() {
               </div>
 
               {/* Test Code */}
-              <div>
+              <div ref={questionCodeRef} className="relative">
                 <label className={labelClasses}>Question Code</label>
+
                 <ThemeDropdown
                   icon={BookOpenCheck}
                   value={questionCode}
                   options={TEST_CODE_LABELS}
-                  onChange={setquestionCode}
+                  onChange={(value) => {
+                    setquestionCode(value);
+                    setQuestionCodeSpace(false);
+                  }}
                   placeholder="Select Test Code"
                   loading={isLoadingScheduleData}
                 />
