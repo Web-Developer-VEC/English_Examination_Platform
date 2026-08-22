@@ -24,7 +24,6 @@
 /* ---------- Sidebar ---------- */
 .vec-sidebar {
   width: 280px;
-  height: 100vh;
   position: sticky;
   top: 0;
   background: var(--panel);
