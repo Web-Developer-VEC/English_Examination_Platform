@@ -175,8 +175,9 @@ export function saveStudentSession(session) {
         JSON.stringify(session)
     );
 
-    // Tell React components that the session changed
-    window.dispatchEvent(new Event("studentSessionChanged"));
+    window.dispatchEvent(
+        new Event("studentSessionChanged")
+    );
 }
 
 export function getStudentSession() {
@@ -192,5 +193,40 @@ export function getStudentSession() {
 export function clearStudentSession() {
     sessionStorage.removeItem(
         "studentSession"
+    );
+
+    window.dispatchEvent(
+        new Event("studentSessionChanged")
+    );
+}
+
+export function saveAdminSession(session) {
+    sessionStorage.setItem(
+        "adminSession",
+        JSON.stringify(session)
+    );
+
+    window.dispatchEvent(
+        new Event("adminSessionChanged")
+    );
+}
+
+export function getAdminSession() {
+    const saved = sessionStorage.getItem(
+        "adminSession"
+    );
+
+    return saved
+        ? JSON.parse(saved)
+        : null;
+}
+
+export function clearAdminSession() {
+    sessionStorage.removeItem(
+        "adminSession"
+    );
+
+    window.dispatchEvent(
+        new Event("adminSessionChanged")
     );
 }

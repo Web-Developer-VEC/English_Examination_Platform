@@ -236,7 +236,7 @@ export default function AudioTest() {
     const handlePlay = () => {
         if (isPlaying || isAudioLocked(playCount, MAX_PLAYS)) return;
         setIsPlaying(true);
-    audioRef.current.play();
+        audioRef.current.play();
     }
 
     const handleAudioEnd = () => {
@@ -626,17 +626,6 @@ export default function AudioTest() {
         return () => clearInterval(timer);
     }, [examData?.endTime, navigate]);
 
-    // UI Helper from New Code
-    const scrollToQuestion = (id) => {
-        const element = document.getElementById(`question-${id}`);
-        if (element) {
-            const yOffset = -100;
-            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-            window.scrollTo({ top: y, behavior: "smooth" });
-        }
-    };
-
-    // NEW UI RENDER BLOCK
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-[#800000]/10 flex flex-col">
             {/* OVERLAYS */}
@@ -764,8 +753,8 @@ export default function AudioTest() {
 
                         <span
                             className={`ml-2 text-lg font-semibold ${examRemainingPercentage < 10
-                                    ? "text-red-600"
-                                    : "text-green-600"
+                                ? "text-red-600"
+                                : "text-green-600"
                                 }`}
                         >
                             {formatTime(examRemaining)}
@@ -775,9 +764,9 @@ export default function AudioTest() {
             </div>
 
             {/* MAIN CONTENT LAYOUT */}
-            <main className="max-w-[1600px] mx-auto w-full px-4 md:px-6 py-6 flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1">
+            <main className="max-w-[1200px] mx-auto w-full px-4 md:px-6 py-6 flex-1">
                 {/* LEFT COLUMN: Player & Questions */}
-                <div className="flex-1 w-full flex flex-col gap-6">
+                <div className="w-full flex flex-col gap-6">
                     {/* MODERN AUDIO PLAYER */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col sm:flex-row items-center gap-5">
                         <audio
@@ -798,10 +787,10 @@ export default function AudioTest() {
                             onClick={handlePlay}
                             disabled={isPlaying || isAudioLocked(playCount, MAX_PLAYS)}
                             className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${isAudioLocked(playCount, MAX_PLAYS)
-                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                                    : isPlaying
-                                        ? "bg-[#800000] text-white shadow-lg shadow-red-900/20 scale-105"
-                                        : "bg-[#800000] text-white shadow-md hover:bg-[#6b0000] hover:scale-105"
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                                : isPlaying
+                                    ? "bg-[#800000] text-white shadow-lg shadow-red-900/20 scale-105"
+                                    : "bg-[#800000] text-white shadow-md hover:bg-[#6b0000] hover:scale-105"
                                 }`}
                         >
                             {isAudioLocked(playCount, MAX_PLAYS) ? (
@@ -944,8 +933,8 @@ export default function AudioTest() {
                                                     {/* Radio Circle */}
                                                     <div
                                                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected
-                                                                ? "border-[#800000]"
-                                                                : "border-slate-300 group-hover:border-slate-400"
+                                                            ? "border-[#800000]"
+                                                            : "border-slate-300 group-hover:border-slate-400"
                                                             }`}
                                                     >
                                                         {isSelected && (
@@ -956,8 +945,8 @@ export default function AudioTest() {
                                                     {/* Option Letter */}
                                                     <span
                                                         className={`w-5 text-sm font-semibold ${isSelected
-                                                                ? "text-[#800000]"
-                                                                : "text-slate-400"
+                                                            ? "text-[#800000]"
+                                                            : "text-slate-400"
                                                             }`}
                                                     >
                                                         {serialLabel}.
@@ -966,8 +955,8 @@ export default function AudioTest() {
                                                     {/* Option Text */}
                                                     <span
                                                         className={`text-[15px] leading-snug ${isSelected
-                                                                ? "text-slate-900 font-medium"
-                                                                : "text-slate-600 group-hover:text-slate-900"
+                                                            ? "text-slate-900 font-medium"
+                                                            : "text-slate-600 group-hover:text-slate-900"
                                                             }`}
                                                     >
                                                         {option.value}
@@ -980,105 +969,77 @@ export default function AudioTest() {
                             </div>
                         ))}
                     </div>
-                </div>
+                    {/* ANSWERED COUNT + SUBMIT */}
+                    <div className="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
 
-                {/* RIGHT COLUMN: MODERN SIDEBAR PALETTE */}
-                <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-[90px] flex flex-col gap-6 pb-6">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-slate-100">
-                            <h2 className="text-[15px] font-bold text-slate-800 flex items-center gap-2">
-                                <svg
-                                    className="w-5 h-5 text-slate-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                                    ></path>
-                                </svg>
-                                Question Map
-                            </h2>
+                        {/* Answered Count */}
+                        <div className="flex items-center justify-between mb-5">
+
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">
+                                    Assessment Progress
+                                </p>
+
+                                <p className="text-xl font-bold text-slate-800 mt-1">
+                                    {answeredCount(answers)} / {questions.length}
+                                    <span className="ml-2 text-sm font-medium text-slate-500">
+                                        Questions Answered
+                                    </span>
+                                </p>
+                            </div>
+
+                            {/* Progress */}
+                            <div className="text-right">
+                                <p className="text-sm font-semibold text-green-600">
+                                    {questions.length > 0
+                                        ? Math.round(
+                                            (answeredCount(answers) / questions.length) * 100
+                                        )
+                                        : 0
+                                    }%
+                                </p>
+                            </div>
+
                         </div>
 
-                        {/* Progress Overview */}
-                        <div className="px-6 py-5 border-b border-slate-100 flex gap-4">
-                            <div className="flex-1 bg-green-50 rounded-xl p-3 border border-green-100/50">
-                                <div className="text-2xl font-bold text-green-600 leading-none">
-                                    {answeredCount(answers)}
-                                </div>
-                                <div className="text-[11px] font-semibold text-green-700 uppercase tracking-wide mt-1">
-                                    Answered
-                                </div>
-                            </div>
-                            <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                <div className="text-2xl font-bold text-slate-700 leading-none">
-                                    {questions.length - answeredCount(answers)}
-                                </div>
-                                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mt-1">
-                                    Pending
-                                </div>
-                            </div>
+                        {/* Progress Bar */}
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
+
+                            <div
+                                className="h-full bg-green-500 rounded-full transition-all duration-300"
+                                style={{
+                                    width: `${questions.length > 0
+                                            ? (answeredCount(answers) / questions.length) * 100
+                                            : 0
+                                        }%`
+                                }}
+                            />
+
                         </div>
 
-                        {/* Grid */}
-                        <div className="p-6 flex-1 overflow-y-auto max-h-[300px] lg:max-h-none">
-                            <div className="grid grid-cols-5 gap-2.5">
-                                {questions.map((q, i) => {
-                                    const isAnswered = !!answers[q.id];
-                                    return (
-                                        <button
-                                            key={q.id}
-                                            onClick={() => scrollToQuestion(q.id)}
-                                            className={`h-[42px] w-full rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200 ${isAnswered
-                                                    ? "bg-green-500 text-white shadow-sm shadow-green-500/20 hover:bg-green-600"
-                                                    : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                                                }`}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleSubmit}
+                            disabled={
+                                isSubmitting ||
+                                !isAllQuestionsAnswered(answers, questions)
+                            }
+                            className={`w-25 py-4 ml-auto rounded-xl font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting ||
+                                    !isAllQuestionsAnswered(answers, questions)
+                                    ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                    : "bg-[#800000] text-white hover:bg-[#6b0000] shadow-md hover:shadow-lg shadow-red-900/20 transform hover:-translate-y-0.5"
+                                }`}
+                        >
 
-                        {/* Submit Section */}
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 mt-auto">
-                            <button
-                                onClick={handleSubmit}
-                                disabled={
-                                    isSubmitting || !isAllQuestionsAnswered(answers, questions)
-                                }
-                                className={`w-full py-3.5 rounded-xl font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting || !isAllQuestionsAnswered(answers, questions)
-                                        ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                                        : "bg-[#800000] text-white hover:bg-[#6b0000] shadow-md hover:shadow-lg shadow-red-900/20 transform hover:-translate-y-0.5"
-                                    }`}
-                            >
-                                {isSubmitting ? "Processing..." : "Submit Assessment"}
-                                {!isSubmitting &&
-                                    isAllQuestionsAnswered(answers, questions) && (
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                                            ></path>
-                                        </svg>
-                                    )}
-                            </button>
-                            {!isAllQuestionsAnswered(answers, questions) && (
-                                <p className="text-[11px] text-center mt-3 text-slate-500 font-medium flex items-center justify-center gap-1.5">
+                            {isSubmitting
+                                ? "Processing..."
+                                : "Submit"
+                            }
+
+                            {!isSubmitting &&
+                                isAllQuestionsAnswered(answers, questions) && (
                                     <svg
-                                        className="w-3.5 h-3.5 text-amber-500"
+                                        className="w-5 h-5"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -1087,13 +1048,20 @@ export default function AudioTest() {
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeWidth="2"
-                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                        ></path>
+                                            d="M14 5l7 7m0 0l-7 7m7-7H3"
+                                        />
                                     </svg>
-                                    Answer all questions to submit
-                                </p>
-                            )}
-                        </div>
+                                )
+                            }
+
+                        </button>
+
+                        {!isAllQuestionsAnswered(answers, questions) && (
+                            <p className="text-[11px] text-center mt-3 text-slate-500 font-medium">
+                                Answer all questions to submit
+                            </p>
+                        )}
+
                     </div>
                 </div>
             </main>

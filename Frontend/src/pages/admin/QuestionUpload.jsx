@@ -22,44 +22,6 @@ export default function QuestionUpload() {
   const [audioFile, setAudioFile] = useState(null);
   const [questionFile, setQuestionFile] = useState(null);
 
-  // Measure exactly how much vertical space is left below this component in
-  // the real viewport, live. This — not a fixed height — is what makes the
-  // card actually shrink to match each screen; clamp() below then compresses
-  // the internal spacing to fit inside whatever this comes out to.
-  const wrapperRef = useRef(null);
-  const [availableHeight, setAvailableHeight] = useState(null);
-
-  useEffect(() => {
-    function recalc() {
-      if (!wrapperRef.current) return;
-      const top = wrapperRef.current.getBoundingClientRect().top;
-      const bottomBreathingRoom = 8;
-      const height = Math.max(
-        280,
-        window.innerHeight - top - bottomBreathingRoom,
-      );
-      setAvailableHeight(height);
-    }
-
-    recalc();
-    window.addEventListener("resize", recalc);
-    return () => window.removeEventListener("resize", recalc);
-  }, []);
-
-  // Document-level scroll stays locked — the measured height + clamp()
-  // sizing below keep the card inside the visible area on their own.
-  useEffect(() => {
-    const prevHtml = document.documentElement.style.overflow;
-    const prevBody = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
-    };
-  }, []);
-
   const handleAudioChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -166,10 +128,8 @@ export default function QuestionUpload() {
 
   return (
     <div
-      ref={wrapperRef}
-      style={availableHeight ? { height: `${availableHeight}px` } : undefined}
-      className="w-full min-h-[300px] flex items-center justify-center p-[clamp(8px,2vh,16px)] overflow-hidden"
-    >
+      className="w-full min-h-[300px] flex items-center justify-center p-[clamp(8px,2vh,16px)]"
+>
       <div className="w-full max-w-[640px] bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.12)] p-[clamp(12px,2.5vh,20px)]">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-[clamp(8px,1.8vh,20px)] pb-[clamp(6px,1.4vh,16px)] border-b">

@@ -1,33 +1,59 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/admin/Sidebar";
-import Boot from "../components/common/boot"; // adjust path if you placed it elsewhere
+import Footer from "../components/common/footer";
+import Boot from "../components/common/boot";
 
 export default function AdminLayout() {
-  const location = useLocation();
-  const [showBoot, setShowBoot] = useState(true);
-  const [isLoaded, setIsLoaded] = useState(false);
+    const location = useLocation();
 
-  useEffect(() => {
-    setShowBoot(true);
-    setIsLoaded(false);
+    const [showBoot, setShowBoot] = useState(true);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    const loadTimer = setTimeout(() => setIsLoaded(true), 300);
-    const removeTimer = setTimeout(() => setShowBoot(false), 3000);
+    useEffect(() => {
+        setShowBoot(true);
+        setIsLoaded(false);
 
-    return () => {
-      clearTimeout(loadTimer);
-      clearTimeout(removeTimer);
-    };
-  }, [location.pathname]);
+        const loadTimer = setTimeout(
+            () => setIsLoaded(true),
+            300
+        );
 
-  return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
-      <main style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        {showBoot && <Boot isAuth={true} isLoaded={isLoaded} />}
-        <Outlet />
-      </main>
-    </div>
-  );
+        const removeTimer = setTimeout(
+            () => setShowBoot(false),
+            3000
+        );
+
+        return () => {
+            clearTimeout(loadTimer);
+            clearTimeout(removeTimer);
+        };
+    }, [location.pathname]);
+
+    return (
+        <div className="bg-gray-100">
+
+            <div className="flex">
+
+                <Sidebar />
+
+                <main
+                    className="flex-1 relative bg-gray-100"
+                >
+                    {showBoot && (
+                        <Boot
+                            isAuth={true}
+                            isLoaded={isLoaded}
+                        />
+                    )}
+
+                    <Outlet />
+                </main>
+
+            </div>
+
+            <Footer />
+
+        </div>
+    );
 }

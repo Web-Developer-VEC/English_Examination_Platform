@@ -2,7 +2,7 @@ import { React, useState, useEffect } from "react";
 import { BookOpenCheck } from "lucide-react";
 import "./Header.css";
 import collegeLogo from "../../assets/logo/college-logo.png";
-import { getStudentSession } from "../../utils/helpers";
+import { getAdminSession, getStudentSession } from "../../utils/helpers";
 
 const Header = ({ portalTitle = "English Examination Portal" }) => {
 
@@ -12,29 +12,45 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
 
         const loadSession = () => {
 
-            const session = getStudentSession();
+            const studentSession = getStudentSession();
+            const adminSession = getAdminSession();
 
-            console.log("HEADER SESSION:", session);
+            if (studentSession?.user) {
 
-            if (session?.user) {
-                setUser(session.user);
+                setUser(studentSession.user);
+
+            } else if (adminSession?.user) {
+
+                setUser(adminSession.user);
+
             } else {
+
                 setUser(null);
+
             }
         };
 
-        // Load session when Header opens
         loadSession();
 
-        // Listen for login/session changes
         window.addEventListener(
             "studentSessionChanged",
             loadSession
         );
 
+        window.addEventListener(
+            "adminSessionChanged",
+            loadSession
+        );
+
         return () => {
+
             window.removeEventListener(
                 "studentSessionChanged",
+                loadSession
+            );
+
+            window.removeEventListener(
+                "adminSessionChanged",
                 loadSession
             );
         };

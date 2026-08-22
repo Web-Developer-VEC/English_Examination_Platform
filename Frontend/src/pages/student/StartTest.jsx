@@ -74,15 +74,14 @@ export default function InstructionsPage() {
 
     // START TEST
     const handleStartTest = async () => {
-
         console.log("🔥 START TEST BUTTON CLICKED");
         console.log("Test Code:", testCode);
 
         try {
 
-            // ==========================================
-            // GET STUDENT SESSION
-            // ==========================================
+                // ==========================================
+                // GET STUDENT SESSION
+                // ==========================================
 
             const session = getStudentSession();
 
@@ -92,7 +91,8 @@ export default function InstructionsPage() {
                     "Student session not found. Please login again."
                 );
 
-                navigate("/student-login");
+
+                navigate("/studentlogin");
 
                 return;
             }
@@ -132,7 +132,7 @@ export default function InstructionsPage() {
                     "success"
                 );
 
-                navigate("/student/exam", {
+                navigate("/exam/audiotest", {
                     state: {
                         ...response,
                         admissionNo
@@ -162,7 +162,7 @@ export default function InstructionsPage() {
             if (status === 400) {
 
                 showStatusPopup(
-                    message || "Invalid request. Please check the test code."  
+                    message || "Invalid request. Please check the test code."
                 );
 
             }
@@ -175,7 +175,7 @@ export default function InstructionsPage() {
             else if (status === 403) {
 
                 showStatusPopup(
-                    message || "You have already taken this test." 
+                    message || "You have already taken this test."
                 );
 
             }
@@ -188,7 +188,7 @@ export default function InstructionsPage() {
             else if (status === 404) {
 
                 showStatusPopup(
-                   message || "Invalid test code or student not found."
+                    message || "Invalid test code or student not found."
                 );
 
             }
@@ -298,37 +298,37 @@ export default function InstructionsPage() {
 
     }, [accepted]);
 
-    // useEffect(() => {
+    useEffect(() => {
 
-    //     const handleKeyDown = (e) => {
+        const handleKeyDown = (e) => {
 
-    //         if (e.key === "F12") {
+            if (e.key === "F12") {
 
-    //             e.preventDefault();
-    //             e.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation();
 
-    //             console.log("F12 blocked on Start Test page");
-    //         }
+                console.log("F12 blocked on Start Test page");
+            }
 
-    //     };
+        };
 
-    //     window.addEventListener(
-    //         "keydown",
-    //         handleKeyDown,
-    //         true
-    //     );
+        window.addEventListener(
+            "keydown",
+            handleKeyDown,
+            true
+        );
 
-    //     return () => {
+        return () => {
 
-    //         window.removeEventListener(
-    //             "keydown",
-    //             handleKeyDown,
-    //             true
-    //         );
+            window.removeEventListener(
+                "keydown",
+                handleKeyDown,
+                true
+            );
 
-    //     };
+        };
 
-    // }, []);
+    }, []);
 
     return (
         <>

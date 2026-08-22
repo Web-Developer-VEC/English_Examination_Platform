@@ -42,7 +42,7 @@ const StudentLogin = () => {
           user: response.user
         });
 
-navigate("/student/start-test");
+navigate("/student/dashboard");
       }
 
     } catch (error) {
