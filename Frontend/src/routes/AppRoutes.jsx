@@ -13,7 +13,7 @@ import AudioTest from "../pages/student/AudioTest";
 
 import Dashboard from "../pages/admin/Dashboard";
 import Admins from "../pages/admin/Admins";
-import Questionupload from "../pages/admin/Questionupload";
+import Questionupload from "../pages/admin/QuestionUpload";
 import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/StudentResult";
 import Students from "../pages/admin/Students";
