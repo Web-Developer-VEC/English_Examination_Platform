@@ -307,7 +307,7 @@ export default function Questionupload() {
             ) : (
               <>
                 <Send size={18} />
-                <span>Create Test</span>
+                <span>Submit</span>
               </>
             )}
           </button>
