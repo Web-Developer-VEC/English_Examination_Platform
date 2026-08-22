@@ -405,7 +405,7 @@ export default function Questionupload() {
                   </span>
                   <span>
                     Check all test details and uploaded files before clicking
-                    <b> Create Test</b>.
+                    <b> Submit</b>.
                   </span>
                 </li>
               </ol>
