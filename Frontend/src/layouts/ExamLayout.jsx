@@ -1,8 +1,8 @@
 import { Outlet } from "react-router-dom";
 
-export default function StudentLayout() {
+export default function ExamLayout() {
     return (
-        <main className="min-h-screen bg-gray-100">
+        <main className="min-h-screen">
             <Outlet />
         </main>
     );

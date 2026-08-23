@@ -42,7 +42,7 @@ const StudentLogin = () => {
           user: response.user
         });
 
-navigate("/student/start-test");
+navigate("/student/dashboard");
       }
 
     } catch (error) {
@@ -120,7 +120,7 @@ return (<>
         Login
       </button>
 
-      {/*<div className="login-footer">
+      <div className="login-footer">
           <>
             <p className="login-footer__link">Forgot your password?</p>
             <p className="login-footer__link">Contact your mentor</p>
@@ -128,7 +128,7 @@ return (<>
               New Student? Sign Up
             </button>
           </>
-        </div>*/}
+        </div>
     </form>
   </div>
   </div>
