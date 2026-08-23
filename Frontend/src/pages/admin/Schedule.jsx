@@ -1,5 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
+  ClipboardClock,
   GraduationCap,
   ShieldCheck,
   Building2,
@@ -11,13 +14,27 @@ import {
   BadgeCheck,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
   X,
   Undo2,
+  CalendarRange,
+  Layers,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
+import ThemeDropdown from "../../components/common/ThemeDropDown"
 
-// -----------------------------------------------------
+// API CONFIG
+
+const API_BASE_URL = "http://localhost:5000";
+
+const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
+
+const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+console.log("GET URL:", GET_SCHEDULE_DATA_ENDPOINT);
+
+
 // PROJECT COLOR TOKENS
-// -----------------------------------------------------
 export const colors = {
   primary: "#FFFFFF",
   secondary: "#FDCC03",
@@ -33,56 +50,23 @@ export const colors = {
   darkBorder: "#1A202C",
 };
 
-// -----------------------------------------------------
-// DUMMY BACKEND DATA
-// -----------------------------------------------------
-const CATEGORY_OPTIONS = ["Normal", "Retest"];
+const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 
-const BATCH_OPTIONS = ["2023-2027", "2024-2028", "2025-2029"];
-
-const DEPARTMENT_OPTIONS = ["AI & DS", "CSE", "IT", "ECE", "EEE"];
-
-const SECTION_MAP = {
-  "AI & DS": ["A", "B"],
-  CSE: ["A", "B", "C"],
-  IT: ["A"],
-  ECE: ["A", "B"],
-  EEE: ["A"],
-};
-
-const TEST_CODE_OPTIONS = ["ENG001", "ENG002", "ENG003", "ENG004"];
-
-const ADMISSION_NO_OPTIONS = [
-  "113224072054",
-  "113224072087",
-  "113224072060",
-  "113224072005",
+const ACADEMIC_YEAR_OPTIONS = [
+  "2023-2024",
+  "2024-2025",
+  "2025-2026",
+  "2026-2027",
+  "2027-2028",
 ];
-
-// Flat list of every Department + Section combination — built from
-// whatever DEPARTMENT_OPTIONS / SECTION_MAP contain, so it keeps working
-// no matter how many departments/sections a real backend sends.
-const DEPT_SECTION_OPTIONS = DEPARTMENT_OPTIONS.flatMap((dept) => {
-  const sections = SECTION_MAP[dept] || [];
-  if (sections.length === 0) {
-    return [{ key: dept, dept, section: null, label: dept }];
-  }
-  return sections.map((sec) => ({
-    key: `${dept}__${sec}`,
-    dept,
-    section: sec,
-    label: `${dept} - Section ${sec}`,
-  }));
-});
-
+const SEMESTER_OPTIONS = ["Odd", "Even"];
+const CIE_OPTIONS = ["I", "II", "III"];
 // 12-hour clock face values
 const HOUR_VALUES = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
 const MINUTE_VALUES = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,...,55
 const PERIOD_OPTIONS = ["AM", "PM"];
 
-// -----------------------------------------------------
 // SHARED STYLES
-// -----------------------------------------------------
 const labelClasses =
   "mb-1.5 block text-sm font-semibold text-[#000000]";
 
@@ -91,16 +75,38 @@ const boxClasses =
 
 const iconLeftClasses =
   "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]";
-
-// Card container: light grey surface + soft shadow (screen bg is also grey,
-// so cards get a hairline border to stay legible against it). Inner
-// controls (inputs/selects/buttons) keep their own bg-white.
 const cardClasses =
-  "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-md shadow-gray-300/40 p-5";
+  "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-[0_4px_20px_rgba(0,0,0,0.15)] p-5";
 
-// -----------------------------------------------------
+// Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
+// so they read as the same family of control as ThemeDropdown itself.
+const dropdownTriggerClasses = (isOpen, disabled) =>
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${isOpen
+    ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+    : "border-black/15 hover:border-black/30"
+  } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
+
+const dropdownIconClasses = (isOpen) =>
+  `shrink-0 transition-colors duration-200 ${isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  }`;
+
+const dropdownArrowClasses = (isOpen) =>
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  }`;
+
+const dropdownPanelClasses =
+  "absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]";
+
+const dropdownAllRowClasses =
+  "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
+
+const dropdownOptionRowClasses = (isSelected) =>
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
+    ? "bg-[#fdcc03]/15 font-semibold text-black"
+    : "font-medium text-black hover:bg-[#fff8d6]"
+  }`;
+
 // ANALOG CLOCK TIME PICKER
-// -----------------------------------------------------
 function polarPoint(index, radius, cx, cy) {
   const angle = ((index % 12) * 30 - 90) * (Math.PI / 180);
   return {
@@ -149,28 +155,35 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
     <div ref={wrapperRef} className="relative">
       <label className={labelClasses}>{label}</label>
       <div className="relative">
-        <IconComponent className={iconLeftClasses} />
         <button
           type="button"
           onClick={() => {
             setIsOpen((prev) => !prev);
             setMode("hour");
           }}
-          className={boxClasses + " flex items-center justify-between text-left"}
+          className={dropdownTriggerClasses(isOpen, false)}
         >
-          <span className={displayValue ? "" : "text-[#9CA3AF]"}>
+          {IconComponent && (
+            <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
+          )}
+          <span
+            className={`flex-1 truncate text-[15px] font-medium ${displayValue ? "text-black" : "text-black/45"
+              }`}
+          >
             {displayValue || "Select time"}
           </span>
+          <span className={dropdownArrowClasses(isOpen)}>
+            {isOpen ? (
+              <ChevronUp size={18} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={18} strokeWidth={2} />
+            )}
+          </span>
         </button>
-        <ChevronDown
-          className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
       </div>
 
       {isOpen && (
-        <div className="absolute z-30 bottom-full mb-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute z-30 bottom-full mb-2 w-56 overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]">
           {/* Header: big time readout + AM/PM toggle */}
           <div className="flex items-center justify-between border-b border-gray-100 bg-[#FAFAFA] px-3 py-2">
             <div className="flex items-center gap-0.5 text-base font-bold text-[#000000]">
@@ -217,20 +230,20 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
           {/* Analog clock face */}
           <div className="px-3 pb-3 pt-2">
-          <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
-            <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
-            <circle
-              cx={cx}
-              cy={cy}
-              r={outerRadius + 14}
-              fill="none"
-              stroke="#E5E7EB"
-              strokeWidth="1"
-            />
-            <circle cx={cx} cy={cy} r="3" fill="#800000" />
+            <svg viewBox="0 0 180 180" className="mx-auto block h-36 w-36">
+              <circle cx={cx} cy={cy} r={outerRadius + 14} fill="#F4F5F7" />
+              <circle
+                cx={cx}
+                cy={cy}
+                r={outerRadius + 14}
+                fill="none"
+                stroke="#E5E7EB"
+                strokeWidth="1"
+              />
+              <circle cx={cx} cy={cy} r="3" fill="#800000" />
 
-            {mode === "hour"
-              ? HOUR_VALUES.map((h) => {
+              {mode === "hour"
+                ? HOUR_VALUES.map((h) => {
                   const { x, y } = polarPoint(h, outerRadius, cx, cy);
                   const isSelected = hour === pad2(h);
                   return (
@@ -259,7 +272,7 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })
-              : MINUTE_VALUES.map((m, idx) => {
+                : MINUTE_VALUES.map((m, idx) => {
                   const { x, y } = polarPoint(idx, outerRadius, cx, cy);
                   const isSelected = minute === pad2(m);
                   return (
@@ -288,11 +301,11 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
                     </g>
                   );
                 })}
-          </svg>
+            </svg>
 
-          <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
-            {mode === "hour" ? "Select hour, then minute" : "Select minute"}
-          </p>
+            <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
+              {mode === "hour" ? "Select hour, then minute" : "Select minute"}
+            </p>
           </div>
         </div>
       )}
@@ -300,25 +313,31 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
   );
 }
 
-// -----------------------------------------------------
 // SCHEDULE COMPONENT
-// -----------------------------------------------------
 export default function Schedule() {
   // ---------------- STATE ----------------
   const [category, setCategory] = useState("Normal");
+  const [academicYear, setAcademicYear] = useState("");
+  const [semester, setSemester] = useState("");
+  const [cie, setCie] = useState("");
   const [batch, setBatch] = useState("");
-  const [testCode, setTestCode] = useState("");
+  // Holds the selected test's display label (questionCode); the matching
+  // questionSetId is looked up from TEST_CODE_OPTIONS at submit time.
+  const [questionCode, setquestionCode] = useState("");
 
   // Department & Section (multi-select combo picker)
   const [selectedCombos, setSelectedCombos] = useState([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const pickerRef = useRef(null);
 
-  // Admission Numbers (multi-select, only relevant when category = Retest,
-  // but lives in the SAME form as everything else)
+  // Admission Numbers (multi-select) — now shown for BOTH Normal and Retest
   const [selectedAdmissionNos, setSelectedAdmissionNos] = useState([]);
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
   const admissionPickerRef = useRef(null);
+
+  // everything in between (inclusive), based on ADMISSION_NO_OPTIONS order.
+  const [rangeFrom, setRangeFrom] = useState("");
+  const [rangeTo, setRangeTo] = useState("");
 
   const [date, setDate] = useState("");
 
@@ -331,6 +350,175 @@ export default function Schedule() {
   const [endPeriod, setEndPeriod] = useState("AM");
 
   const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ---------------- REFERENCE DATA (batches, dept/section, tests)
+  const [scheduleData, setScheduleData] = useState({
+    batchDepartmentSections: [],
+    tests: [],
+  });
+  const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
+  const [scheduleDataError, setScheduleDataError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    let cancelled = false;
+
+    async function fetchScheduleData() {
+      setIsLoadingScheduleData(true);
+      setScheduleDataError("");
+      try {
+        const res = await fetch(GET_SCHEDULE_DATA_ENDPOINT, {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const body = await res.json();
+        console.log("GET SCHEDULE DATA STATUS:", res.status);
+        console.log("GET SCHEDULE DATA RESPONSE:", body);
+        console.log(
+          "BATCH DEPARTMENT SECTIONS:",
+          body?.data?.batchDepartmentSections
+        );
+
+        if (!res.ok || !body.success) {
+          throw new Error(body.message || `Request failed (${res.status})`);
+        }
+        if (!cancelled) {
+          setScheduleData({
+            batchDepartmentSections: body.data.batchDepartmentSections || [],
+            tests: body.data.tests || [],
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setScheduleDataError(
+            err.message || "Failed to load batches/departments/test codes."
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingScheduleData(false);
+      }
+    }
+
+    fetchScheduleData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const BATCH_OPTIONS = useMemo(
+    () => [...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch))],
+    [scheduleData.batchDepartmentSections]
+  );
+  const DEPT_SECTION_OPTIONS = useMemo(() => {
+    return scheduleData.batchDepartmentSections
+      .filter((c) => !batch || c.batch === batch)
+      .map((c) => ({
+        key: `${c.department}__${c.section}`,
+        dept: c.department,
+        section: c.section,
+        label: `${c.department} - Section ${c.section}`,
+      }));
+  }, [scheduleData.batchDepartmentSections, batch]);
+  const ADMISSION_NO_OPTIONS = useMemo(() => {
+    if (!batch) return [];
+
+    const selectedOptions =
+      scheduleData.batchDepartmentSections.filter(
+        (item) =>
+          item.batch === batch &&
+          selectedCombos.includes(
+            `${item.department}__${item.section}`
+          )
+      );
+
+    const admissionNumbers = selectedOptions.flatMap(
+      (item) => item.students || []
+    );
+
+    return [...new Set(admissionNumbers)];
+  }, [
+    scheduleData.batchDepartmentSections,
+    batch,
+    selectedCombos,
+  ]);
+  const TEST_CODE_OPTIONS = useMemo(
+    () => scheduleData.tests,
+    [scheduleData.tests]
+  );
+  const TEST_CODE_LABELS = useMemo(
+    () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
+    [TEST_CODE_OPTIONS]
+  );
+  const draftsRef = useRef({ Normal: null, Retest: null, University: null });
+
+  const captureCurrentFields = () => ({
+    academicYear,
+    semester,
+    cie,
+    batch,
+    questionCode,
+    selectedCombos,
+    selectedAdmissionNos,
+    rangeFrom,
+    rangeTo,
+    date,
+    startHour,
+    startMinute,
+    startPeriod,
+    endHour,
+    endMinute,
+    endPeriod,
+  });
+
+  // Applies a saved draft (or blanks everything if none was saved yet)
+  const applyFields = (draft) => {
+    const d = draft || {};
+    setAcademicYear(d.academicYear || "");
+    setSemester(d.semester || "");
+    setCie(d.cie || "");
+    setBatch(d.batch || "");
+    setquestionCode(d.questionCode || "");
+    setSelectedCombos(d.selectedCombos || []);
+    setIsPickerOpen(false);
+    setSelectedAdmissionNos(d.selectedAdmissionNos || []);
+    setIsAdmissionPickerOpen(false);
+    setRangeFrom(d.rangeFrom || "");
+    setRangeTo(d.rangeTo || "");
+    setDate(d.date || "");
+    setStartHour(d.startHour || "");
+    setStartMinute(d.startMinute || "");
+    setStartPeriod(d.startPeriod || "AM");
+    setEndHour(d.endHour || "");
+    setEndMinute(d.endMinute || "");
+    setEndPeriod(d.endPeriod || "AM");
+  };
+
+  const resetFormFields = () => {
+    applyFields(null);
+    draftsRef.current[category] = null;
+  };
+
+  // ThemeDropdown hands back the picked value directly (not an event).
+  const handleCategoryChange = (nextCategory) => {
+    // Save whatever is currently on screen under the category we're leaving
+    draftsRef.current[category] = captureCurrentFields();
+    // Restore whatever was previously saved for the category we're entering
+    applyFields(draftsRef.current[nextCategory]);
+    setCategory(nextCategory);
+  };
+
+  useEffect(() => {
+    setSelectedCombos((prev) => {
+      const validKeys = new Set(DEPT_SECTION_OPTIONS.map((o) => o.key));
+      const next = prev.filter((k) => validKeys.has(k));
+      return next.length === prev.length ? prev : next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batch]);
 
   // Close dropdowns when clicking outside them
   useEffect(() => {
@@ -355,6 +543,13 @@ export default function Schedule() {
     const timer = setTimeout(() => setStatusMessage(""), 4000);
     return () => clearTimeout(timer);
   }, [statusMessage]);
+
+  // Auto-clear the validation error banner
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => setErrorMessage(""), 6000);
+    return () => clearTimeout(timer);
+  }, [errorMessage]);
 
   // ---------------- DEPARTMENT & SECTION FUNCTIONS ----------------
   const isAllCombosSelected =
@@ -405,48 +600,200 @@ export default function Schedule() {
 
   // Clears everything, and doubles as "undo" for the whole selection
   const handleClearAllAdmission = () => setSelectedAdmissionNos([]);
+  const handleApplyAdmissionRange = () => {
+    if (!rangeFrom || !rangeTo) return;
+
+    const fromIndex = ADMISSION_NO_OPTIONS.indexOf(rangeFrom);
+    const toIndex = ADMISSION_NO_OPTIONS.indexOf(rangeTo);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
+    const rangeNos = ADMISSION_NO_OPTIONS.slice(start, end + 1);
+
+    setSelectedAdmissionNos((prev) => {
+      const merged = new Set(prev);
+      rangeNos.forEach((no) => merged.add(no));
+      return ADMISSION_NO_OPTIONS.filter((no) => merged.has(no));
+    });
+  };
+  // Converts 12-hour hour/minute/period into 24-hour {h, m}.
+  const to24Hour = (hour, minute, period) => {
+    let h = parseInt(hour, 10) % 12;
+    if (period === "PM") h += 12;
+    return { h, m: parseInt(minute, 10) };
+  };
+
+  const buildIsoDateTime = (dateStr, hour, minute, period) => {
+    if (!dateStr || !hour || !minute) return null;
+    const { h, m } = to24Hour(hour, minute, period);
+    const pad2 = (n) => String(n).padStart(2, "0");
+    return `${dateStr}T${pad2(h)}:${pad2(m)}:00`;
+  };
+  const toMinutesSinceMidnight = (hour, minute, period) => {
+    const { h, m } = to24Hour(hour, minute, period);
+    return h * 60 + m;
+  };
+
+  const validateForm = () => {
+    const problems = [];
+
+    if (!academicYear) problems.push("Academic Year is required");
+    if (!semester) problems.push("Semester is required");
+    if (category === "Normal" && !cie)
+      problems.push("CIE (I, II, or III) is required for Normal category");
+    if (!batch) problems.push("Batch is required");
+    if (selectedCombos.length === 0)
+      problems.push("Select at least one Department & Section");
+    if (!questionCode) problems.push("Test Code is required");
+    if (!date) problems.push("Date is required");
+
+    const hasStartTime = startHour && startMinute && startPeriod;
+    const hasEndTime = endHour && endMinute && endPeriod;
+    if (!hasStartTime) problems.push("Start Time is required");
+    if (!hasEndTime) problems.push("End Time is required");
+
+    if (hasStartTime && hasEndTime) {
+      const startMinutes = toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+      const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
+      if (endMinutes <= startMinutes) {
+        problems.push("End Time must be after Start Time");
+      }
+    }
+
+    if (category === "Retest" && selectedAdmissionNos.length === 0) {
+      problems.push("Select at least one Admission Number for Retest");
+    }
+
+    return problems;
+  };
 
   // ---------------- SUBMIT ----------------
-  const buildTimeString = (hour, minute, period) =>
-    hour && minute && period ? `${hour}:${minute} ${period}` : "";
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const departmentPayload = selectedCombos.map((key) => {
-      const option = DEPT_SECTION_OPTIONS.find((o) => o.key === key);
-      return { department: option?.dept, section: option?.section };
-    });
+    const problems = validateForm();
+    if (problems.length > 0) {
+      setStatusMessage("");
+      setErrorMessage(problems.join(" • "));
+      return;
+    }
 
-    const payload = {
-      category,
-      batch,
-      departments: departmentPayload,
-      testCode,
-      date,
-      startTime: buildTimeString(startHour, startMinute, startPeriod),
-      endTime: buildTimeString(endHour, endMinute, endPeriod),
-      ...(category === "Retest" && { admissionNumbers: selectedAdmissionNos }),
-    };
-
-    console.log(payload);
-    setStatusMessage(
-      category === "Normal" ? "Dummy Schedule Created" : "Dummy Retest Assigned"
+    const selectedTest = TEST_CODE_OPTIONS.find(
+      (t) => t.questionCode === questionCode
     );
+    const questionSetId = selectedTest?.questionSetId;
+
+    if (!questionSetId) {
+      setStatusMessage("");
+      setErrorMessage("Test Code is required");
+      return;
+    }
+
+    const startTime = buildIsoDateTime(date, startHour, startMinute, startPeriod);
+    const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
+    const duration =
+      toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
+      toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+    const combosToSubmit = selectedCombos
+      .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
+      .filter(Boolean);
+
+    const token = localStorage.getItem("token");
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+    setStatusMessage("");
+
+    const results = await Promise.allSettled(
+      combosToSubmit.map((combo) => {
+        const payload = {
+
+          category: category.toLowerCase(),
+          questionSetId,
+          department: combo.dept,
+          batch,
+          academicYear,
+          semester: semester.toLowerCase(),
+          section: combo.section,
+          admissionNo: selectedAdmissionNos,
+          duration,
+          startTime,
+          endTime,
+        };
+
+        if (category === "Normal") {
+          payload.cie = cie;
+        }
+        console.log(payload);
+        return fetch(SCHEDULE_EXAM_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        }).then(async (res) => {
+          let body = null;
+          try {
+            body = await res.json();
+          } catch {
+            // no JSON body — leave as null
+          }
+          if (!res.ok) {
+            const message =
+              (body && (body.message || body.error)) ||
+              `Request failed (${res.status})`;
+            throw new Error(`${combo.label}: ${message}`);
+          }
+          return body;
+        });
+      })
+    );
+
+    setIsSubmitting(false);
+
+    const failures = results.filter((r) => r.status === "rejected");
+    const successCount = results.length - failures.length;
+
+    if (failures.length === 0) {
+      const verb =
+        category === "Retest"
+          ? "Retest assigned"
+          : category === "University"
+            ? "University exam scheduled"
+            : "Schedule created";
+      toast.success(
+        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
+      );
+      resetFormFields();
+    } else if (successCount > 0) {
+      toast.success(
+        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
+      );
+      setErrorMessage(
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+      );
+    } else {
+      setErrorMessage(
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+      );
+    }
+
   };
 
   // ---------------- RENDER ----------------
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#EEF0F2] px-4 py-10 md:px-10">
-      {/* ---------------- PAGE CONTENT ---------------- */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
       <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#FDCC03]/40 bg-[#800000] shadow-md shadow-[#800000]/20">
-            <GraduationCap className="h-7 w-7 text-[#FDCC03]" strokeWidth={2} />
-            <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FDCC03] shadow-sm">
-              <ShieldCheck className="h-3 w-3 text-[#800000]" strokeWidth={3} />
-            </span>
+            <ClipboardClock
+              className="h-7 w-7 text-[#FDCC03]"
+              strokeWidth={2}
+            />
+
           </div>
           <div>
             <h3
@@ -466,24 +813,16 @@ export default function Schedule() {
           {/* Category */}
           <div className={"mb-6 " + cardClasses}>
             <label className={labelClasses}>Category</label>
-            <div className="relative">
-              <BadgeCheck className={iconLeftClasses} />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className={boxClasses + " appearance-none font-medium"}
-              >
-                {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-            </div>
+            <ThemeDropdown
+              icon={BadgeCheck}
+              value={category}
+              options={CATEGORY_OPTIONS}
+              onChange={handleCategoryChange}
+              placeholder="Select Category"
+            />
           </div>
 
-          {/* Main card — same fields always; Retest only ADDS Admission Number */}
+          {/* Main card — same fields always, including Admission Number */}
           <div className={cardClasses + " md:p-6"}>
             <h2
               className="mb-5 text-center text-lg font-bold"
@@ -493,53 +832,88 @@ export default function Schedule() {
             </h2>
 
             <div className="flex flex-col gap-5">
+              {/* Academic Year & Semester — single row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClasses}>Academic Year</label>
+                  <ThemeDropdown
+                    icon={CalendarRange}
+                    value={academicYear}
+                    options={ACADEMIC_YEAR_OPTIONS}
+                    onChange={setAcademicYear}
+                    placeholder="Select Academic Year"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClasses}>Semester</label>
+                  <ThemeDropdown
+                    icon={Layers}
+                    value={semester}
+                    options={SEMESTER_OPTIONS}
+                    onChange={setSemester}
+                    placeholder="Select Semester"
+                  />
+                </div>
+              </div>
+
               {/* Batch */}
               <div>
                 <label className={labelClasses}>Batch</label>
-                <div className="relative">
-                  <GraduationCap className={iconLeftClasses} />
-                  <select
-                    value={batch}
-                    onChange={(e) => setBatch(e.target.value)}
-                    className={boxClasses + " appearance-none"}
-                  >
-                    <option value="">Select Batch</option>
-                    {BATCH_OPTIONS.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                </div>
+                <ThemeDropdown
+                  icon={GraduationCap}
+                  value={batch}
+                  options={BATCH_OPTIONS}
+                  onChange={setBatch}
+                  placeholder="Select Batch"
+                  loading={isLoadingScheduleData}
+                />
               </div>
+
+              {/* CIE — required by backend only for Normal category */}
+              {category === "Normal" && (
+                <div>
+                  <label className={labelClasses}>CIE</label>
+                  <ThemeDropdown
+                    icon={BadgeCheck}
+                    value={cie}
+                    options={CIE_OPTIONS}
+                    onChange={setCie}
+                    placeholder="Select CIE"
+                  />
+                </div>
+              )}
 
               {/* Department & Section */}
               <div ref={pickerRef} className="relative">
                 <label className={labelClasses}>Department &amp; Section</label>
-                <div className="relative">
-                  <Building2 className={iconLeftClasses} />
-                  <button
-                    type="button"
-                    onClick={() => setIsPickerOpen((prev) => !prev)}
-                    className={boxClasses + " flex items-center justify-between text-left"}
+                <button
+                  type="button"
+                  disabled={isLoadingScheduleData}
+                  onClick={() => setIsPickerOpen((prev) => !prev)}
+                  className={dropdownTriggerClasses(isPickerOpen, isLoadingScheduleData)}
+                >
+                  <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
+                  <span
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedCombos.length ? "text-black" : "text-black/45"
+                      }`}
                   >
-                    <span className={selectedCombos.length ? "" : "text-[#9CA3AF]"}>
-                      {selectedCombos.length
-                        ? `${selectedCombos.length} Selected`
-                        : "Select department & section"}
-                    </span>
-                  </button>
-                  <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-                      isPickerOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
+                    {selectedCombos.length
+                      ? `${selectedCombos.length} Selected`
+                      : "Select department & section"}
+                  </span>
+                  <span className={dropdownArrowClasses(isPickerOpen)}>
+                    {isPickerOpen ? (
+                      <ChevronUp size={18} strokeWidth={2} />
+                    ) : (
+                      <ChevronDown size={18} strokeWidth={2} />
+                    )}
+                  </span>
+                </button>
 
                 {isPickerOpen && (
-                  <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                    <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-[#800000] transition hover:bg-[#FDCC03]/10">
+                  <div className={dropdownPanelClasses}>
+                    <label className={dropdownAllRowClasses}>
                       <input
                         type="checkbox"
                         checked={isAllCombosSelected}
@@ -548,20 +922,22 @@ export default function Schedule() {
                       />
                       All
                     </label>
-                    {DEPT_SECTION_OPTIONS.map((option) => (
-                      <label
-                        key={option.key}
-                        className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[#000000] transition hover:bg-[#FDCC03]/10"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCombos.includes(option.key)}
-                          onChange={() => handleComboToggle(option.key)}
-                          className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
+                    <div className="max-h-60 overflow-y-auto">
+                      {DEPT_SECTION_OPTIONS.map((option) => (
+                        <label
+                          key={option.key}
+                          className={dropdownOptionRowClasses(selectedCombos.includes(option.key))}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCombos.includes(option.key)}
+                            onChange={() => handleComboToggle(option.key)}
+                            className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                          />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -605,33 +981,72 @@ export default function Schedule() {
                 )}
               </div>
 
-              {/* Admission Number — added into the SAME form only for Retest */}
-              {category === "Retest" && (
-                <div ref={admissionPickerRef} className="relative">
-                  <label className={labelClasses}>Admission Number</label>
-                  <div className="relative">
-                    <BadgeCheck className={iconLeftClasses} />
-                    <button
-                      type="button"
-                      onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                      className={boxClasses + " flex items-center justify-between text-left"}
-                    >
-                      <span className={selectedAdmissionNos.length ? "" : "text-[#9CA3AF]"}>
-                        {selectedAdmissionNos.length
-                          ? `${selectedAdmissionNos.length} Selected`
-                          : "Select admission number(s)"}
-                      </span>
-                    </button>
-                    <ChevronDown
-                      className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF] transition-transform ${
-                        isAdmissionPickerOpen ? "rotate-180" : ""
+              {/* Admission Number — now rendered for BOTH Normal and Retest */}
+              <div ref={admissionPickerRef} className="relative">
+                <label className={labelClasses}>Admission Number</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
+                  className={dropdownTriggerClasses(isAdmissionPickerOpen, false)}
+                >
+                  <BadgeCheck size={18} strokeWidth={2} className={dropdownIconClasses(isAdmissionPickerOpen)} />
+                  <span
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length ? "text-black" : "text-black/45"
                       }`}
-                    />
-                  </div>
+                  >
+                    {selectedAdmissionNos.length
+                      ? `${selectedAdmissionNos.length} Selected`
+                      : "Select admission number(s)"}
+                  </span>
+                  <span className={dropdownArrowClasses(isAdmissionPickerOpen)}>
+                    {isAdmissionPickerOpen ? (
+                      <ChevronUp size={18} strokeWidth={2} />
+                    ) : (
+                      <ChevronDown size={18} strokeWidth={2} />
+                    )}
+                  </span>
+                </button>
 
-                  {isAdmissionPickerOpen && (
-                    <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                      <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-[#800000] transition hover:bg-[#FDCC03]/10">
+                {isAdmissionPickerOpen && (
+                  <div className={dropdownPanelClasses + " p-0"}>
+                    {/* Range picker: select from-number to-number */}
+                    <div className="border-b border-black/5 bg-[#FAFAFA] p-3">
+                      <p className="mb-2 text-xs font-semibold text-[#000000]">
+                        Select Range
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <ThemeDropdown
+                            value={rangeFrom}
+                            options={ADMISSION_NO_OPTIONS}
+                            onChange={setRangeFrom}
+                            placeholder="From"
+                          />
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
+                          to
+                        </span>
+                        <div className="flex-1">
+                          <ThemeDropdown
+                            value={rangeTo}
+                            options={ADMISSION_NO_OPTIONS}
+                            onChange={setRangeTo}
+                            placeholder="To"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleApplyAdmissionRange}
+                        disabled={!rangeFrom || !rangeTo}
+                        className="mt-2 w-full rounded-md bg-[#800000] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#690000] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Add Range
+                      </button>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto p-1.5">
+                      <label className={dropdownAllRowClasses}>
                         <input
                           type="checkbox"
                           checked={isAllAdmissionSelected}
@@ -643,7 +1058,7 @@ export default function Schedule() {
                       {ADMISSION_NO_OPTIONS.map((no) => (
                         <label
                           key={no}
-                          className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[#000000] transition hover:bg-[#FDCC03]/10"
+                          className={dropdownOptionRowClasses(selectedAdmissionNos.includes(no))}
                         >
                           <input
                             type="checkbox"
@@ -655,68 +1070,60 @@ export default function Schedule() {
                         </label>
                       ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {selectedAdmissionNos.length > 0 && (
-                    <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-[#000000]">
-                          Selected ({selectedAdmissionNos.length})
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleClearAllAdmission}
-                          className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-                        >
-                          <Undo2 className="h-3 w-3" />
-                          Clear All
-                        </button>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        {selectedAdmissionNos.map((no) => (
-                          <div
-                            key={no}
-                            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-                          >
-                            <span className="flex items-center gap-2">
-                              <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
-                              {no}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAdmission(no)}
-                              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                              aria-label={`Remove ${no}`}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                {selectedAdmissionNos.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#000000]">
+                        Selected ({selectedAdmissionNos.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearAllAdmission}
+                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        Clear All
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
+                    <div className="flex flex-col gap-1.5">
+                      {selectedAdmissionNos.map((no) => (
+                        <div
+                          key={no}
+                          className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
+                        >
+                          <span className="flex items-center gap-2">
+                            <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
+                            {no}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAdmission(no)}
+                            className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+                            aria-label={`Remove ${no}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Test Code */}
               <div>
-                <label className={labelClasses}>Test Code</label>
-                <div className="relative">
-                  <BookOpenCheck className={iconLeftClasses} />
-                  <select
-                    value={testCode}
-                    onChange={(e) => setTestCode(e.target.value)}
-                    className={boxClasses + " appearance-none"}
-                  >
-                    <option value="">Select Test Code</option>
-                    {TEST_CODE_OPTIONS.map((code) => (
-                      <option key={code} value={code}>
-                        {code}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                </div>
+                <label className={labelClasses}>Question Code</label>
+                <ThemeDropdown
+                  icon={BookOpenCheck}
+                  value={questionCode}
+                  options={TEST_CODE_LABELS}
+                  onChange={setquestionCode}
+                  placeholder="Select Test Code"
+                  loading={isLoadingScheduleData}
+                />
               </div>
 
               {/* Date / Start Time / End Time — single row, analog clock pickers */}
@@ -765,11 +1172,38 @@ export default function Schedule() {
             {/* Submit */}
             <button
               type="submit"
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] shadow-md shadow-[#FDCC03]/30 transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99]"
+              disabled={isSubmitting || isLoadingScheduleData}
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FDCC03] px-6 py-3.5 text-sm font-bold text-[#000000] transition-colors duration-200 hover:bg-[#800000] hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <CheckCircle2 className="h-5 w-5" />
-              {category === "Normal" ? "Confirm Schedule" : "Assign Retest"}
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5" />
+              )}
+              {isSubmitting
+                ? "Submitting..."
+                : isLoadingScheduleData
+                  ? "Loading options..."
+                  : category === "Retest"
+                    ? "Assign Retest"
+                    : "Confirm Schedule"}
             </button>
+
+            {scheduleDataError && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  Couldn't load batches/departments/test codes: {scheduleDataError}
+                </span>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             {statusMessage && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-[#800000]/20 bg-[#800000]/3 px-4 py-3 text-sm font-medium text-[#800000]">
@@ -780,6 +1214,15 @@ export default function Schedule() {
           </div>
         </form>
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+      />
+
     </div>
   );
 }

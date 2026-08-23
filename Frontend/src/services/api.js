@@ -4,4 +4,29 @@ const api = axios.create({
     baseURL: "http://localhost:5000/api",
 });
 
+api.interceptors.request.use(
+    (config) => {
+
+        const savedSession =
+            sessionStorage.getItem("studentSession");
+
+        if (savedSession) {
+
+            const session =
+                JSON.parse(savedSession);
+
+            if (session?.token) {
+
+                config.headers.Authorization =
+                    `Bearer ${session.token}`;
+            }
+        }
+
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 export default api;

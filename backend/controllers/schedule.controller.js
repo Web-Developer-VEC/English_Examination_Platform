@@ -1,13 +1,18 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
-const {toIST} = require("../helper/ist_converter");
+const { toIST } = require("../helper/ist_converter");
+
 const scheduleExam = async (req, res) => {
     try {
+
         const {
             category,
+            cie,
             questionSetId,
             department,
             batch,
+            academicYear,
+            semester,
             section,
             admissionNo,
             duration,
@@ -15,15 +20,17 @@ const scheduleExam = async (req, res) => {
             endTime
         } = req.body;
 
-        // ==========================
-        // Required Fields Validation
-        // ==========================
+        // =====================================================
+        // REQUIRED FIELD VALIDATION
+        // =====================================================
+
         if (
-           
             !category ||
             !questionSetId ||
             !department ||
             !batch ||
+            !academicYear ||
+            !semester ||
             !section ||
             !duration ||
             !startTime ||
@@ -31,29 +38,88 @@ const scheduleExam = async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "All required fields are mandatory."
+                message:
+                    "category, questionSetId, department, batch, academicYear, semester, section, duration, startTime and endTime are required."
             });
         }
 
-        // ==========================
-        // Category Validation
-        // ==========================
+        // =====================================================
+        // CATEGORY VALIDATION
+        // =====================================================
+
         const allowedCategories = [
             "university",
             "normal",
             "retest"
         ];
 
-        if (!allowedCategories.includes(category.toLowerCase())) {
+        const normalizedCategory =
+            String(category).trim().toLowerCase();
+
+        if (!allowedCategories.includes(normalizedCategory)) {
+
             return res.status(400).json({
                 success: false,
-                message: "Category must be university, cie or retest."
+                message:
+                    "Category must be university, normal or retest."
             });
         }
 
-        // ==========================
-        // Section Validation
-        // ==========================
+        // =====================================================
+        // CIE VALIDATION
+        //
+        // CIE is a SEPARATE variable.
+        //
+        // Allowed:
+        // I
+        // II
+        // III
+        // =====================================================
+
+        const allowedCIE = [
+            "I",
+            "II",
+            "III"
+        ];
+
+        let normalizedCIE = null;
+
+        if (cie !== undefined && cie !== null && cie !== "") {
+
+            normalizedCIE =
+                String(cie)
+                    .trim()
+                    .toUpperCase();
+
+            if (!allowedCIE.includes(normalizedCIE)) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "CIE must be I, II or III."
+                });
+            }
+        }
+
+        // =====================================================
+        // CIE REQUIRED FOR NORMAL CATEGORY
+        // =====================================================
+
+        if (
+            normalizedCategory === "normal" &&
+            !normalizedCIE
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "CIE is required for normal examination."
+            });
+        }
+
+        // =====================================================
+        // SECTION VALIDATION
+        // =====================================================
+
         const allowedSections = [
             "A",
             "B",
@@ -61,150 +127,394 @@ const scheduleExam = async (req, res) => {
             "D"
         ];
 
-        if (!allowedSections.includes(section.toUpperCase())) {
+        const normalizedSection =
+            String(section)
+                .trim()
+                .toUpperCase();
+
+        if (!allowedSections.includes(normalizedSection)) {
+
             return res.status(400).json({
                 success: false,
-                message: "Section must be A, B, C or D."
+                message:
+                    "Section must be A, B, C or D."
             });
         }
 
-        // ==========================
-        // admissionNo Validation
-        // ==========================
-        if (admissionNo && !Array.isArray(admissionNo)) {
+        // =====================================================
+        // ACADEMIC YEAR VALIDATION
+        // =====================================================
+
+        const normalizedAcademicYear =
+            String(academicYear).trim();
+
+        if (!normalizedAcademicYear) {
             return res.status(400).json({
                 success: false,
-                message: "admissionNo must be an array."
+                message:
+                    "Academic year is required."
             });
         }
+
+        // Example:
+        // 2024-2028
+        // 2025-2029
+
+        if (!/^\d{4}-\d{4}$/.test(normalizedAcademicYear)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Academic year must be in format YYYY-YYYY. Example: 2024-2028."
+            });
+        }
+
+        // =====================================================
+        // SEMESTER VALIDATION
+        // =====================================================
+
+        const normalizedSemester =semester;
+        console.log(normalizedSemester!="even");
+        console.log(normalizedSemester!="odd");
 
         if (
-            category.toLowerCase() === "retest" &&
+            normalizedSemester !="odd" &&
+            normalizedSemester !="even"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Semester must be odd or even"
+            });
+        }
+
+        // =====================================================
+        // ADMISSION NUMBER VALIDATION
+        // =====================================================
+
+        if (
+            admissionNo !== undefined &&
+            admissionNo !== null &&
+            !Array.isArray(admissionNo)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "admissionNo must be an array."
+            });
+        }
+
+        // =====================================================
+        // RETEST REQUIRES ADMISSION NUMBERS
+        // =====================================================
+
+        if (
+            normalizedCategory === "retest" &&
             (!admissionNo || admissionNo.length === 0)
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Admission numbers are required for retest."
+                message:
+                    "Admission numbers are required for retest."
             });
         }
 
+        // =====================================================
+        // SEMESTER VALIDATION
+        // =====================================================
+
+        const semesterNumber =semester;
+
+        if (
+            semesterNumber !="odd" &&
+            semesterNumber !="even"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Semester must be a number between 1 and 8."
+            });
+        }
+
+        // =====================================================
+        // DURATION VALIDATION
+        // =====================================================
+
+        const durationNumber =
+            Number(duration);
+
+        if (
+            !Number.isInteger(durationNumber) ||
+            durationNumber <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Duration must be a positive number in minutes."
+            });
+        }
+
+        // =====================================================
+        // DATE VALIDATION
+        // =====================================================
+
+        const start = new Date(startTime);
+        const end = new Date(endTime);
         // ==========================
         // Date Validation
         // ==========================
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-
-        if (end <= start) {
+        
+        if (
+            Number.isNaN(start.getTime()) ||
+            Number.isNaN(end.getTime())
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "End time must be greater than start time."
+                message:
+                    "Invalid startTime."
             });
         }
+
+        if (isNaN(end.getTime())) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid endTime."
+            });
+        }
+
+        if (end <= start) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "End time must be greater than start time."
+            });
+        }
+
+        // =====================================================
+        // DATABASE
+        // =====================================================
 
         const db = getDB();
 
-        // ==========================
-        // Question Set Validation
-        // ==========================
-        let questionObjectId;
+        // =====================================================
+        // QUESTION SET VALIDATION
+        // =====================================================
 
-        try {
-            questionObjectId = new ObjectId(questionSetId);
-        } catch {
+        if (!ObjectId.isValid(questionSetId)) {
+
             return res.status(400).json({
                 success: false,
-                message: "Invalid Question Set ID."
+                message:
+                    "Invalid Question Set ID."
             });
         }
 
-        const questionSet = await db.collection("questions").findOne({
-            _id: questionObjectId
-        });
+        const questionObjectId =
+            new ObjectId(questionSetId);
+
+        const questionSet =
+            await db.collection("questions").findOne({
+                _id: questionObjectId
+            });
 
         if (!questionSet) {
+
             return res.status(404).json({
                 success: false,
-                message: "Question set not found."
+                message:
+                    "Question set not found."
             });
         }
 
-        // ==========================
-        // Duplicate Schedule Check
-        // ==========================
-        const existingExam = await db.collection("schedule").findOne({
-            category: category.toLowerCase(),
-            "eligibility.department": department,
-            "eligibility.batch": batch,
-            "eligibility.section": section.toUpperCase(),
-            startTime: { $lte: end },
-            endTime: { $gte: start }
-        });
+        // =====================================================
+        // DUPLICATE SCHEDULE CHECK
+        // =====================================================
+
+        const duplicateQuery = {
+            category: normalizedCategory,
+
+            "eligibility.department":
+                department,
+
+            "eligibility.batch":
+                batch,
+
+            "eligibility.academicYear":
+                academicYear,
+
+            "eligibility.semester":
+                semesterNumber,
+
+            "eligibility.section":
+                normalizedSection,
+
+            startTime: {
+                $lte: end
+            },
+
+            endTime: {
+                $gte: start
+            }
+        };
+
+        // CIE is checked separately if supplied
+        if (normalizedCIE) {
+            duplicateQuery.cie =
+                normalizedCIE;
+        }
+
+        const existingExam =
+            await db.collection("schedule").findOne(
+                duplicateQuery
+            );
 
         if (existingExam) {
+
             return res.status(409).json({
                 success: false,
-                message: "An exam is already scheduled for this department, batch and section during this time."
+                message:
+                    "An exam is already scheduled for this department, batch, academic year, semester and section during this time."
             });
         }
 
-        // ==========================
-        // Create Exam
-        // ==========================
+        // =====================================================
+        // CREATE EXAM
+        // =====================================================
+
         const exam = {
 
-            category: category.toLowerCase(),
+            // -------------------------------------------------
+            // BASIC INFORMATION
+            // -------------------------------------------------
 
-            questionSetId: questionObjectId,
+            category:
+                normalizedCategory,
+
+            // CIE is a separate field
+            // I / II / III
+            cie:
+                normalizedCIE,
+
+            questionSetId:
+                questionObjectId,
+
+            // -------------------------------------------------
+            // ELIGIBILITY
+            // -------------------------------------------------
 
             eligibility: {
 
-                department,
+                department:
+                    String(department).trim(),
 
-                batch,
+                batch:
+                    String(batch).trim(),
 
-                section: section.toUpperCase(),
+                academicYear:
+                    String(academicYear).trim(),
 
-                // Always stored as an array
-                admissionNo: Array.isArray(admissionNo)
-                    ? admissionNo
-                    : []
+                semester:
+                    semesterNumber,
+
+                section:
+                    normalizedSection,
+
+                admissionNo:
+                    Array.isArray(admissionNo)
+                        ? admissionNo
+                        : []
 
             },
 
-            duration: Number(duration),
+            // -------------------------------------------------
+            // EXAM TIMING
+            // -------------------------------------------------
 
-            startTime: start,
+            duration:
+                durationNumber,
 
-            endTime: end,
+            // MongoDB stores Date in UTC.
+            // The input can be IST/ISO and JavaScript
+            // converts it correctly to UTC internally.
+            startTime:
+                start,
 
-            status: "Scheduled",
+            endTime:
+                end,
 
-            createdBy: req.user?.username,
+            // -------------------------------------------------
+            // STATUS
+            // -------------------------------------------------
 
-            createdAt: new Date(),
+            status:
+                "Scheduled",
 
-            updatedAt: new Date()
+            // testcode will be generated by cron
+            testcode:
+                null,
 
+            testcodeGeneratedAt:
+                null,
+
+            // -------------------------------------------------
+            // AUDIT
+            // -------------------------------------------------
+
+            createdBy:
+                req.user?.username || null,
+
+            createdAt:
+                new Date(),
+
+            updatedAt:
+                new Date()
         };
 
-        const result = await db.collection("schedule").insertOne(exam);
+        // =====================================================
+        // INSERT
+        // =====================================================
+
+        const result =
+            await db.collection("schedule").insertOne(
+                exam
+            );
+
+        // =====================================================
+        // RESPONSE
+        // =====================================================
 
         return res.status(201).json({
+
             success: true,
-            message: "Exam scheduled successfully.",
-            examId: result.insertedId,
+
+            message:
+                "Exam scheduled successfully.",
+
+            examId:
+                result.insertedId,
+
             exam
+
         });
 
     } catch (error) {
 
-        console.error("Schedule Exam Error:", error);
+        console.error(
+            "Schedule Exam Error:",
+            error
+        );
 
         return res.status(500).json({
-            success: false,
-            message: error.message || "Internal Server Error"
-        });
 
+            success: false,
+
+            message:
+                error.message ||
+                "Internal Server Error"
+
+        });
     }
 };
 

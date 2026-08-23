@@ -1,13 +1,68 @@
 .vec-header {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    width: 100%;
+    height: 160px;
+
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 18px 40px;
-    min-height: 95px;
-    background: #fff;
+    justify-content: space-between;
+
+    background: white;
+    z-index: 1000;
+
     box-sizing: border-box;
-    overflow: hidden;
+}
+.vec-header__underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+
+    background: linear-gradient(
+        90deg,
+        #f5b301,
+        #ffd873,
+        #f5b301
+    );
+}
+
+.vec-header__user {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    min-width: 170px;
+    padding: 12px 18px;
+
+    background: #fffdf5;
+    border: 2px solid #f5b301;
+    border-radius: 12px;
+
+    text-align: center;
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+
+    z-index: 10;
+}
+
+.vec-header__user-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #800000;
+    line-height: 1.2;
+}
+
+.vec-header__user-details {
+    margin-top: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
 }
 
 /* ================= LEFT ================= */
