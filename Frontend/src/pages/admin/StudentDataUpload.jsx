@@ -68,6 +68,47 @@ const normalizeStudent = (student = {}) => ({
   dob: getValue(student, ["dob"]),
 });
 
+const uploadInstructions = [
+  {
+    id: "01",
+    title: "Use the correct Excel file",
+    description: (
+      <>
+        Upload only Excel files with <strong>.xlsx</strong> extension. The file must be less than <strong>10 MB</strong> and cannot be empty.
+      </>
+    )
+  },
+  {
+    id: "02",
+    title: "Keep the column names unchanged",
+    description: "Use the exact template headers: Name, Reg_no, Admission_no, Email, Phone, Department, Year, Section, Batch, DOB."
+  },
+  {
+    id: "03",
+    title: "Follow strict data formatting",
+    description: (
+      <>
+        <strong>DOB</strong> must be exactly <strong>DD-MM-YYYY</strong>. <strong>Phone numbers</strong> must be exactly <strong>10 digits</strong>.
+      </>
+    )
+  },
+  {
+    id: "04",
+    title: "Ensure unique records",
+    description: (
+      <>
+        <strong>Admission_no</strong> must be unique. Duplicate records will cause the upload to fail.
+      </>
+    )
+  },
+  {
+    id: "05",
+    title: "Valid values required",
+    description: "Year must be 1-4. Departments must match approved courses. Remove empty rows before uploading."
+  }
+];
+
+
 const toArray = (value) => {
   if (Array.isArray(value)) return value;
 
@@ -1113,96 +1154,58 @@ const StudentDataUpload = () => {
       </div>
 
       {showInstructions && (
-        <div
-          className="instruction-overlay"
-          onClick={() => setShowInstructions(false)}
-        >
-          <div
-            className="instruction-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="instruction-modal-header">
-              <div className="instruction-heading">
-                <div className="instruction-icon">
-                  <Info size={21} />
-                </div>
+<div
+  className="instruction-overlay"
+  onClick={() => setShowInstructions(false)}
+>
+  <div
+    className="instruction-modal"
+    onClick={(event) => event.stopPropagation()}
+  >
+    <div className="instruction-modal-header">
+      <div className="instruction-heading">
+        <div className="instruction-icon">
+          <Info size={21} />
+        </div>
 
-                <div>
-                  <h2>Upload Instructions</h2>
-                  <p>Please check these before uploading</p>
-                </div>
-              </div>
+        <div>
+          <h2>Upload Instructions</h2>
+          <p>Please check these before uploading</p>
+        </div>
+      </div>
 
-              <button
-                type="button"
-                className="instruction-close"
-                onClick={() => setShowInstructions(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
+      <button
+        type="button"
+        className="instruction-close"
+        onClick={() => setShowInstructions(false)}
+      >
+        <X size={20} />
+      </button>
+    </div>
 
-            <div className="instruction-content">
-              <div className="instruction-item">
-                <span className="instruction-number">01</span>
-
-                <div>
-                  <h3>Use the correct Excel file</h3>
-                  <p>
-                    Upload only Excel files with{" "}
-                    <strong>.xlsx</strong> or{" "}
-                    <strong>.xls</strong> extension.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">02</span>
-
-                <div>
-                  <h3>Keep the column names unchanged</h3>
-                  <p>
-                    Use the same columns as the downloaded student
-                    data template.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">03</span>
-
-                <div>
-                  <h3>Remove unnecessary rows</h3>
-                  <p>
-                    Remove empty rows or unnecessary data before
-                    uploading the file.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">04</span>
-
-                <div>
-                  <h3>Check the file size</h3>
-                  <p>
-                    The Excel file must be less than{" "}
-                    <strong>10 MB</strong>.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="got-it-button"
-              onClick={() => setShowInstructions(false)}
-            >
-              <CheckCircle2 size={18} />
-              Got it
-            </button>
+    {/* Using the variable here */}
+    <div className="instruction-content">
+      {uploadInstructions.map((item) => (
+        <div key={item.id} className="instruction-item">
+          <span className="instruction-number">{item.id}</span>
+          <div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
           </div>
         </div>
+      ))}
+    </div>
+
+    <button
+      type="button"
+      className="got-it-button"
+      onClick={() => setShowInstructions(false)}
+    >
+      <CheckCircle2 size={18} />
+      Got it
+    </button>
+  </div>
+</div>
       )}
     </div>
   );
