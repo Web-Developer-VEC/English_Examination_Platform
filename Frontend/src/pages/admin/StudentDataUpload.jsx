@@ -33,7 +33,7 @@ const API_BASE_URL = (
 
 const STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/studentsupload`;
 const EXISTING_STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/student-data`;
-const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;

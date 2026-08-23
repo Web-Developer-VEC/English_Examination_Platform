@@ -22,7 +22,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import ThemeDropdown from "../../components/common/ThemeDropDown"
+import ThemeDropdown from "../../components/common/ThemeDropDown";
 
 // API CONFIG
 
@@ -30,9 +30,8 @@ const API_BASE_URL = "http://localhost:5000";
 
 const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
 
-const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 console.log("GET URL:", GET_SCHEDULE_DATA_ENDPOINT);
-
 
 // PROJECT COLOR TOKENS
 export const colors = {
@@ -67,8 +66,7 @@ const MINUTE_VALUES = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,...,55
 const PERIOD_OPTIONS = ["AM", "PM"];
 
 // SHARED STYLES
-const labelClasses =
-  "mb-1.5 block text-sm font-semibold text-[#000000]";
+const labelClasses = "mb-1.5 block text-sm font-semibold text-[#000000]";
 
 const boxClasses =
   "w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-9 text-sm text-[#000000] placeholder:text-[#9CA3AF] shadow-sm outline-none transition focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40";
@@ -81,17 +79,20 @@ const cardClasses =
 // Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
 // so they read as the same family of control as ThemeDropdown itself.
 const dropdownTriggerClasses = (isOpen, disabled) =>
-  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${isOpen
-    ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
-    : "border-black/15 hover:border-black/30"
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${
+    isOpen
+      ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+      : "border-black/15 hover:border-black/30"
   } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
 
 const dropdownIconClasses = (isOpen) =>
-  `shrink-0 transition-colors duration-200 ${isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  `shrink-0 transition-colors duration-200 ${
+    isOpen ? "text-black" : "text-black/60 group-hover:text-black"
   }`;
 
 const dropdownArrowClasses = (isOpen) =>
-  `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${
+    isOpen ? "text-black" : "text-black/50 group-hover:text-black"
   }`;
 
 const dropdownPanelClasses =
@@ -101,9 +102,10 @@ const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
 
 const dropdownOptionRowClasses = (isSelected) =>
-  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
-    ? "bg-[#fdcc03]/15 font-semibold text-black"
-    : "font-medium text-black hover:bg-[#fff8d6]"
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
+    isSelected
+      ? "bg-[#fdcc03]/15 font-semibold text-black"
+      : "font-medium text-black hover:bg-[#fff8d6]"
   }`;
 
 // ANALOG CLOCK TIME PICKER
@@ -115,7 +117,14 @@ function polarPoint(index, radius, cx, cy) {
   };
 }
 
-function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChange }) {
+function AnalogClockPicker({
+  label,
+  IconComponent,
+  hour,
+  minute,
+  period,
+  onChange,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState("hour"); // "hour" | "minute"
   const wrapperRef = useRef(null);
@@ -164,11 +173,16 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
           className={dropdownTriggerClasses(isOpen, false)}
         >
           {IconComponent && (
-            <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
+            <IconComponent
+              size={18}
+              strokeWidth={2}
+              className={dropdownIconClasses(isOpen)}
+            />
           )}
           <span
-            className={`flex-1 truncate text-[15px] font-medium ${displayValue ? "text-black" : "text-black/45"
-              }`}
+            className={`flex-1 truncate text-[15px] font-medium ${
+              displayValue ? "text-black" : "text-black/45"
+            }`}
           >
             {displayValue || "Select time"}
           </span>
@@ -244,63 +258,63 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
               {mode === "hour"
                 ? HOUR_VALUES.map((h) => {
-                  const { x, y } = polarPoint(h, outerRadius, cx, cy);
-                  const isSelected = hour === pad2(h);
-                  return (
-                    <g
-                      key={h}
-                      onClick={() => handlePickHour(h)}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                    const { x, y } = polarPoint(h, outerRadius, cx, cy);
+                    const isSelected = hour === pad2(h);
+                    return (
+                      <g
+                        key={h}
+                        onClick={() => handlePickHour(h)}
+                        className="cursor-pointer"
                       >
-                        {h}
-                      </text>
-                    </g>
-                  );
-                })
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {h}
+                        </text>
+                      </g>
+                    );
+                  })
                 : MINUTE_VALUES.map((m, idx) => {
-                  const { x, y } = polarPoint(idx, outerRadius, cx, cy);
-                  const isSelected = minute === pad2(m);
-                  return (
-                    <g
-                      key={m}
-                      onClick={() => handlePickMinute(m)}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                    const { x, y } = polarPoint(idx, outerRadius, cx, cy);
+                    const isSelected = minute === pad2(m);
+                    return (
+                      <g
+                        key={m}
+                        onClick={() => handlePickMinute(m)}
+                        className="cursor-pointer"
                       >
-                        {pad2(m)}
-                      </text>
-                    </g>
-                  );
-                })}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {pad2(m)}
+                        </text>
+                      </g>
+                    );
+                  })}
             </svg>
 
             <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
@@ -380,7 +394,7 @@ export default function Schedule() {
         console.log("GET SCHEDULE DATA RESPONSE:", body);
         console.log(
           "BATCH DEPARTMENT SECTIONS:",
-          body?.data?.batchDepartmentSections
+          body?.data?.batchDepartmentSections,
         );
 
         if (!res.ok || !body.success) {
@@ -395,7 +409,7 @@ export default function Schedule() {
       } catch (err) {
         if (!cancelled) {
           setScheduleDataError(
-            err.message || "Failed to load batches/departments/test codes."
+            err.message || "Failed to load batches/departments/test codes.",
           );
         }
       } finally {
@@ -410,8 +424,10 @@ export default function Schedule() {
   }, []);
 
   const BATCH_OPTIONS = useMemo(
-    () => [...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch))],
-    [scheduleData.batchDepartmentSections]
+    () => [
+      ...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch)),
+    ],
+    [scheduleData.batchDepartmentSections],
   );
   const DEPT_SECTION_OPTIONS = useMemo(() => {
     return scheduleData.batchDepartmentSections
@@ -426,32 +442,25 @@ export default function Schedule() {
   const ADMISSION_NO_OPTIONS = useMemo(() => {
     if (!batch) return [];
 
-    const selectedOptions =
-      scheduleData.batchDepartmentSections.filter(
-        (item) =>
-          item.batch === batch &&
-          selectedCombos.includes(
-            `${item.department}__${item.section}`
-          )
-      );
+    const selectedOptions = scheduleData.batchDepartmentSections.filter(
+      (item) =>
+        item.batch === batch &&
+        selectedCombos.includes(`${item.department}__${item.section}`),
+    );
 
     const admissionNumbers = selectedOptions.flatMap(
-      (item) => item.students || []
+      (item) => item.students || [],
     );
 
     return [...new Set(admissionNumbers)];
-  }, [
-    scheduleData.batchDepartmentSections,
-    batch,
-    selectedCombos,
-  ]);
+  }, [scheduleData.batchDepartmentSections, batch, selectedCombos]);
   const TEST_CODE_OPTIONS = useMemo(
     () => scheduleData.tests,
-    [scheduleData.tests]
+    [scheduleData.tests],
   );
   const TEST_CODE_LABELS = useMemo(
     () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
-    [TEST_CODE_OPTIONS]
+    [TEST_CODE_OPTIONS],
   );
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
@@ -558,13 +567,13 @@ export default function Schedule() {
 
   const handleComboToggle = (key) => {
     setSelectedCombos((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
   const handleToggleAllCombos = () => {
     setSelectedCombos(
-      isAllCombosSelected ? [] : DEPT_SECTION_OPTIONS.map((o) => o.key)
+      isAllCombosSelected ? [] : DEPT_SECTION_OPTIONS.map((o) => o.key),
     );
   };
 
@@ -584,13 +593,13 @@ export default function Schedule() {
 
   const handleAdmissionToggle = (no) => {
     setSelectedAdmissionNos((prev) =>
-      prev.includes(no) ? prev.filter((n) => n !== no) : [...prev, no]
+      prev.includes(no) ? prev.filter((n) => n !== no) : [...prev, no],
     );
   };
 
   const handleToggleAllAdmission = () => {
     setSelectedAdmissionNos(
-      isAllAdmissionSelected ? [] : [...ADMISSION_NO_OPTIONS]
+      isAllAdmissionSelected ? [] : [...ADMISSION_NO_OPTIONS],
     );
   };
 
@@ -654,7 +663,11 @@ export default function Schedule() {
     if (!hasEndTime) problems.push("End Time is required");
 
     if (hasStartTime && hasEndTime) {
-      const startMinutes = toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+      const startMinutes = toMinutesSinceMidnight(
+        startHour,
+        startMinute,
+        startPeriod,
+      );
       const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
       if (endMinutes <= startMinutes) {
         problems.push("End Time must be after Start Time");
@@ -680,7 +693,7 @@ export default function Schedule() {
     }
 
     const selectedTest = TEST_CODE_OPTIONS.find(
-      (t) => t.questionCode === questionCode
+      (t) => t.questionCode === questionCode,
     );
     const questionSetId = selectedTest?.questionSetId;
 
@@ -690,7 +703,12 @@ export default function Schedule() {
       return;
     }
 
-    const startTime = buildIsoDateTime(date, startHour, startMinute, startPeriod);
+    const startTime = buildIsoDateTime(
+      date,
+      startHour,
+      startMinute,
+      startPeriod,
+    );
     const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
     const duration =
       toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
@@ -708,7 +726,6 @@ export default function Schedule() {
     const results = await Promise.allSettled(
       combosToSubmit.map((combo) => {
         const payload = {
-
           category: category.toLowerCase(),
           questionSetId,
           department: combo.dept,
@@ -748,7 +765,7 @@ export default function Schedule() {
           }
           return body;
         });
-      })
+      }),
     );
 
     setIsSubmitting(false);
@@ -764,27 +781,28 @@ export default function Schedule() {
             ? "University exam scheduled"
             : "Schedule created";
       toast.success(
-        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
+        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`,
       );
       resetFormFields();
     } else if (successCount > 0) {
       toast.success(
-        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
+        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`,
       );
       setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
       );
     } else {
       setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
       );
     }
-
   };
 
   // ---------------- RENDER ----------------
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">      {/* ---------------- PAGE CONTENT ---------------- */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">
+      {" "}
+      {/* ---------------- PAGE CONTENT ---------------- */}
       <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
@@ -793,7 +811,6 @@ export default function Schedule() {
               className="h-7 w-7 text-[#FDCC03]"
               strokeWidth={2}
             />
-
           </div>
           <div>
             <h3
@@ -891,12 +908,20 @@ export default function Schedule() {
                   type="button"
                   disabled={isLoadingScheduleData}
                   onClick={() => setIsPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(isPickerOpen, isLoadingScheduleData)}
+                  className={dropdownTriggerClasses(
+                    isPickerOpen,
+                    isLoadingScheduleData,
+                  )}
                 >
-                  <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
+                  <Building2
+                    size={18}
+                    strokeWidth={2}
+                    className={dropdownIconClasses(isPickerOpen)}
+                  />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${selectedCombos.length ? "text-black" : "text-black/45"
-                      }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedCombos.length ? "text-black" : "text-black/45"
+                    }`}
                   >
                     {selectedCombos.length
                       ? `${selectedCombos.length} Selected`
@@ -926,7 +951,9 @@ export default function Schedule() {
                       {DEPT_SECTION_OPTIONS.map((option) => (
                         <label
                           key={option.key}
-                          className={dropdownOptionRowClasses(selectedCombos.includes(option.key))}
+                          className={dropdownOptionRowClasses(
+                            selectedCombos.includes(option.key),
+                          )}
                         >
                           <input
                             type="checkbox"
@@ -987,12 +1014,22 @@ export default function Schedule() {
                 <button
                   type="button"
                   onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(isAdmissionPickerOpen, false)}
+                  className={dropdownTriggerClasses(
+                    isAdmissionPickerOpen,
+                    false,
+                  )}
                 >
-                  <BadgeCheck size={18} strokeWidth={2} className={dropdownIconClasses(isAdmissionPickerOpen)} />
+                  <BadgeCheck
+                    size={18}
+                    strokeWidth={2}
+                    className={dropdownIconClasses(isAdmissionPickerOpen)}
+                  />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length ? "text-black" : "text-black/45"
-                      }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedAdmissionNos.length
+                        ? "text-black"
+                        : "text-black/45"
+                    }`}
                   >
                     {selectedAdmissionNos.length
                       ? `${selectedAdmissionNos.length} Selected`
@@ -1058,7 +1095,9 @@ export default function Schedule() {
                       {ADMISSION_NO_OPTIONS.map((no) => (
                         <label
                           key={no}
-                          className={dropdownOptionRowClasses(selectedAdmissionNos.includes(no))}
+                          className={dropdownOptionRowClasses(
+                            selectedAdmissionNos.includes(no),
+                          )}
                         >
                           <input
                             type="checkbox"
@@ -1193,7 +1232,8 @@ export default function Schedule() {
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
-                  Couldn't load batches/departments/test codes: {scheduleDataError}
+                  Couldn't load batches/departments/test codes:{" "}
+                  {scheduleDataError}
                 </span>
               </div>
             )}
@@ -1222,7 +1262,6 @@ export default function Schedule() {
         pauseOnHover
         draggable
       />
-
     </div>
   );
 }
