@@ -21,18 +21,14 @@ import {
   Layers,
   AlertCircle,
   Loader2,
+  Search,
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown"
 
 // API CONFIG
-
 const API_BASE_URL = "http://localhost:5000";
-
 const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
-
-const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
-console.log("GET URL:", GET_SCHEDULE_DATA_ENDPOINT);
-
+const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 
 // PROJECT COLOR TOKENS
 export const colors = {
@@ -67,8 +63,7 @@ const MINUTE_VALUES = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,...,55
 const PERIOD_OPTIONS = ["AM", "PM"];
 
 // SHARED STYLES
-const labelClasses =
-  "mb-1.5 block text-sm font-semibold text-[#000000]";
+const labelClasses = "mb-1.5 block text-sm font-semibold text-[#000000]";
 
 const boxClasses =
   "w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-9 text-sm text-[#000000] placeholder:text-[#9CA3AF] shadow-sm outline-none transition focus:border-[#FDCC03] focus:ring-2 focus:ring-[#FDCC03]/40";
@@ -101,10 +96,99 @@ const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
 
 const dropdownOptionRowClasses = (isSelected) =>
-  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
-    ? "bg-[#fdcc03]/15 font-semibold text-black"
-    : "font-medium text-black hover:bg-[#fff8d6]"
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
+    isSelected
+      ? "bg-[#fdcc03]/15 font-semibold text-black"
+      : "font-medium text-black hover:bg-[#fff8d6]"
   }`;
+
+// SEARCHABLE SELECT FOR RANGE PICKER
+function SearchableSelect({ value, options, detailsMap, onChange, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const lowerSearch = search.toLowerCase();
+    return options.filter((no) => {
+      const details = detailsMap.get(no);
+      const searchString = details ? `${no} ${details.name}`.toLowerCase() : no.toLowerCase();
+      return searchString.includes(lowerSearch);
+    });
+  }, [options, detailsMap, search]);
+
+  const details = value ? detailsMap.get(value) : null;
+  const displayValue = value ? (details ? `${value} - ${details.name}` : value) : "";
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-left shadow-sm focus:border-[#800000] focus:outline-none hover:border-gray-400 transition"
+        title={displayValue}
+      >
+        <span className={`truncate mr-2 ${value ? "text-black" : "text-gray-400"}`}>
+          {displayValue || placeholder}
+        </span>
+        <ChevronDown size={14} className="text-gray-500 shrink-0" />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-[60] left-0 mt-1 w-full min-w-[220px] rounded-md border border-gray-200 bg-white shadow-xl">
+          <div className="p-2 border-b border-gray-100">
+             <div className="relative">
+               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+               <input
+                 type="text"
+                 autoFocus
+                 placeholder="Search..."
+                 value={search}
+                 onChange={(e) => setSearch(e.target.value)}
+                 className="w-full rounded border border-gray-300 pl-6 pr-2 py-1 text-xs focus:border-[#800000] focus:outline-none"
+               />
+             </div>
+          </div>
+          <div className="max-h-48 overflow-y-auto p-1">
+            {filteredOptions.length === 0 ? (
+               <div className="px-2 py-3 text-xs text-gray-500 text-center">No results</div>
+            ) : (
+              filteredOptions.map((no) => {
+                const d = detailsMap.get(no);
+                const label = d ? `${no} - ${d.name}` : no;
+                return (
+                  <button
+                    key={no}
+                    type="button"
+                    onClick={() => {
+                      onChange(no);
+                      setIsOpen(false);
+                      setSearch("");
+                    }}
+                    className={`w-full text-left px-2 py-1.5 text-xs rounded transition-colors ${value === no ? "bg-[#fdcc03]/30 font-semibold text-black" : "text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    {label}
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ANALOG CLOCK TIME PICKER
 function polarPoint(index, radius, cx, cy) {
@@ -115,7 +199,14 @@ function polarPoint(index, radius, cx, cy) {
   };
 }
 
-function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChange }) {
+function AnalogClockPicker({
+  label,
+  IconComponent,
+  hour,
+  minute,
+  period,
+  onChange,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState("hour"); // "hour" | "minute"
   const wrapperRef = useRef(null);
@@ -244,63 +335,63 @@ function AnalogClockPicker({ label, IconComponent, hour, minute, period, onChang
 
               {mode === "hour"
                 ? HOUR_VALUES.map((h) => {
-                  const { x, y } = polarPoint(h, outerRadius, cx, cy);
-                  const isSelected = hour === pad2(h);
-                  return (
-                    <g
-                      key={h}
-                      onClick={() => handlePickHour(h)}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                    const { x, y } = polarPoint(h, outerRadius, cx, cy);
+                    const isSelected = hour === pad2(h);
+                    return (
+                      <g
+                        key={h}
+                        onClick={() => handlePickHour(h)}
+                        className="cursor-pointer"
                       >
-                        {h}
-                      </text>
-                    </g>
-                  );
-                })
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {h}
+                        </text>
+                      </g>
+                    );
+                  })
                 : MINUTE_VALUES.map((m, idx) => {
-                  const { x, y } = polarPoint(idx, outerRadius, cx, cy);
-                  const isSelected = minute === pad2(m);
-                  return (
-                    <g
-                      key={m}
-                      onClick={() => handlePickMinute(m)}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                    const { x, y } = polarPoint(idx, outerRadius, cx, cy);
+                    const isSelected = minute === pad2(m);
+                    return (
+                      <g
+                        key={m}
+                        onClick={() => handlePickMinute(m)}
+                        className="cursor-pointer"
                       >
-                        {pad2(m)}
-                      </text>
-                    </g>
-                  );
-                })}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {pad2(m)}
+                        </text>
+                      </g>
+                    );
+                  })}
             </svg>
 
             <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
@@ -334,6 +425,7 @@ export default function Schedule() {
   const [selectedAdmissionNos, setSelectedAdmissionNos] = useState([]);
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
   const admissionPickerRef = useRef(null);
+  const [admissionSearch, setAdmissionSearch] = useState("");
 
   // everything in between (inclusive), based on ADMISSION_NO_OPTIONS order.
   const [rangeFrom, setRangeFrom] = useState("");
@@ -398,7 +490,7 @@ export default function Schedule() {
       } catch (err) {
         if (!cancelled) {
           setScheduleDataError(
-            err.message || "Failed to load batches/departments/test codes."
+            err.message || "Failed to load batches/departments/test codes.",
           );
         }
       } finally {
@@ -413,9 +505,12 @@ export default function Schedule() {
   }, []);
 
   const BATCH_OPTIONS = useMemo(
-    () => [...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch))],
-    [scheduleData.batchDepartmentSections]
+    () => [
+      ...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch)),
+    ],
+    [scheduleData.batchDepartmentSections],
   );
+
   const DEPT_SECTION_OPTIONS = useMemo(() => {
     return scheduleData.batchDepartmentSections
       .filter((c) => !batch || c.batch === batch)
@@ -426,28 +521,51 @@ export default function Schedule() {
         label: `${c.department} - Section ${c.section}`,
       }));
   }, [scheduleData.batchDepartmentSections, batch]);
+
+  // Gets the exact ordered array of usernames directly out of the matched sections
   const ADMISSION_NO_OPTIONS = useMemo(() => {
     if (!batch) return [];
 
-    const selectedOptions =
-      scheduleData.batchDepartmentSections.filter(
-        (item) =>
-          item.batch === batch &&
-          selectedCombos.includes(
-            `${item.department}__${item.section}`
-          )
-      );
+    const selectedOptions = scheduleData.batchDepartmentSections.filter(
+      (item) =>
+        item.batch === batch &&
+        selectedCombos.includes(`${item.department}__${item.section}`),
+    );
 
-    const admissionNumbers = selectedOptions.flatMap(
-      (item) => item.students || []
+    const admissionNumbers = selectedOptions.flatMap((item) =>
+      (item.students || []).map((s) => (typeof s === "object" ? s.username : s)),
     );
 
     return [...new Set(admissionNumbers)];
-  }, [
-    scheduleData.batchDepartmentSections,
-    batch,
-    selectedCombos,
-  ]);
+  }, [scheduleData.batchDepartmentSections, batch, selectedCombos]);
+
+  // Lookup map to quickly get name and gender based on a username
+  const ADMISSION_DETAILS = useMemo(() => {
+    const map = new Map();
+    scheduleData.batchDepartmentSections.forEach((item) => {
+      (item.students || []).forEach((s) => {
+        if (typeof s === "object" && s !== null) {
+          map.set(s.username, s);
+        }
+      });
+    });
+    return map;
+  }, [scheduleData.batchDepartmentSections]);
+
+  // Filter admission options based on search text (searches both number and name)
+  const filteredAdmissionOptions = useMemo(() => {
+    if (!admissionSearch.trim()) return ADMISSION_NO_OPTIONS;
+
+    const lowerSearch = admissionSearch.toLowerCase();
+    return ADMISSION_NO_OPTIONS.filter((no) => {
+      const details = ADMISSION_DETAILS.get(no);
+      const searchString = details
+        ? `${no} ${details.name}`.toLowerCase()
+        : no.toLowerCase();
+      return searchString.includes(lowerSearch);
+    });
+  }, [ADMISSION_NO_OPTIONS, ADMISSION_DETAILS, admissionSearch]);
+
   const TEST_CODE_OPTIONS = useMemo(
     () =>
       [...scheduleData.tests].sort((a, b) =>
@@ -501,6 +619,7 @@ export default function Schedule() {
     setEndHour(d.endHour || "");
     setEndMinute(d.endMinute || "");
     setEndPeriod(d.endPeriod || "AM");
+    setAdmissionSearch("");
   };
 
   const resetFormFields = () => {
@@ -585,13 +704,13 @@ export default function Schedule() {
 
   const handleComboToggle = (key) => {
     setSelectedCombos((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
   const handleToggleAllCombos = () => {
     setSelectedCombos(
-      isAllCombosSelected ? [] : DEPT_SECTION_OPTIONS.map((o) => o.key)
+      isAllCombosSelected ? [] : DEPT_SECTION_OPTIONS.map((o) => o.key),
     );
   };
 
@@ -611,13 +730,13 @@ export default function Schedule() {
 
   const handleAdmissionToggle = (no) => {
     setSelectedAdmissionNos((prev) =>
-      prev.includes(no) ? prev.filter((n) => n !== no) : [...prev, no]
+      prev.includes(no) ? prev.filter((n) => n !== no) : [...prev, no],
     );
   };
 
   const handleToggleAllAdmission = () => {
     setSelectedAdmissionNos(
-      isAllAdmissionSelected ? [] : [...ADMISSION_NO_OPTIONS]
+      isAllAdmissionSelected ? [] : [...ADMISSION_NO_OPTIONS],
     );
   };
 
@@ -627,6 +746,7 @@ export default function Schedule() {
 
   // Clears everything, and doubles as "undo" for the whole selection
   const handleClearAllAdmission = () => setSelectedAdmissionNos([]);
+
   const handleApplyAdmissionRange = () => {
     if (!rangeFrom || !rangeTo) return;
 
@@ -644,6 +764,7 @@ export default function Schedule() {
       return ADMISSION_NO_OPTIONS.filter((no) => merged.has(no));
     });
   };
+
   // Converts 12-hour hour/minute/period into 24-hour {h, m}.
   const to24Hour = (hour, minute, period) => {
     let h = parseInt(hour, 10) % 12;
@@ -657,6 +778,7 @@ export default function Schedule() {
     const pad2 = (n) => String(n).padStart(2, "0");
     return `${dateStr}T${pad2(h)}:${pad2(m)}:00`;
   };
+
   const toMinutesSinceMidnight = (hour, minute, period) => {
     const { h, m } = to24Hour(hour, minute, period);
     return h * 60 + m;
@@ -681,7 +803,11 @@ export default function Schedule() {
     if (!hasEndTime) problems.push("End Time is required");
 
     if (hasStartTime && hasEndTime) {
-      const startMinutes = toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+      const startMinutes = toMinutesSinceMidnight(
+        startHour,
+        startMinute,
+        startPeriod,
+      );
       const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
       if (endMinutes <= startMinutes) {
         problems.push("End Time must be after Start Time");
@@ -707,7 +833,7 @@ export default function Schedule() {
     }
 
     const selectedTest = TEST_CODE_OPTIONS.find(
-      (t) => t.questionCode === questionCode
+      (t) => t.questionCode === questionCode,
     );
     const questionSetId = selectedTest?.questionSetId;
 
@@ -717,7 +843,12 @@ export default function Schedule() {
       return;
     }
 
-    const startTime = buildIsoDateTime(date, startHour, startMinute, startPeriod);
+    const startTime = buildIsoDateTime(
+      date,
+      startHour,
+      startMinute,
+      startPeriod,
+    );
     const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
     const duration =
       toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
@@ -735,7 +866,6 @@ export default function Schedule() {
     const results = await Promise.allSettled(
       combosToSubmit.map((combo) => {
         const payload = {
-
           category: category.toLowerCase(),
           questionSetId,
           department: combo.dept,
@@ -752,7 +882,6 @@ export default function Schedule() {
         if (category === "Normal") {
           payload.cie = cie;
         }
-        console.log(payload);
         return fetch(SCHEDULE_EXAM_ENDPOINT, {
           method: "POST",
           headers: {
@@ -775,7 +904,7 @@ export default function Schedule() {
           }
           return body;
         });
-      })
+      }),
     );
 
     setIsSubmitting(false);
@@ -799,11 +928,11 @@ export default function Schedule() {
         `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
       );
       setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
       );
     } else {
       setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • ")
+        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
       );
     }
 
@@ -822,7 +951,6 @@ export default function Schedule() {
               className="h-7 w-7 text-[#FDCC03]"
               strokeWidth={2}
             />
-
           </div>
           <div>
             <h3
@@ -851,7 +979,6 @@ export default function Schedule() {
             />
           </div>
 
-          {/* Main card — same fields always, including Admission Number */}
           <div className={cardClasses + " md:p-6"}>
             <h2
               className="mb-5 text-center text-lg font-bold"
@@ -861,7 +988,7 @@ export default function Schedule() {
             </h2>
 
             <div className="flex flex-col gap-5">
-              {/* Academic Year & Semester — single row */}
+              {/* Academic Year & Semester */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClasses}>Academic Year</label>
@@ -899,7 +1026,7 @@ export default function Schedule() {
                 />
               </div>
 
-              {/* CIE — required by backend only for Normal category */}
+              {/* CIE (Normal only) */}
               {category === "Normal" && (
                 <div>
                   <label className={labelClasses}>CIE</label>
@@ -1010,18 +1137,28 @@ export default function Schedule() {
                 )}
               </div>
 
-              {/* Admission Number — now rendered for BOTH Normal and Retest */}
+              {/* Admission Number */}
               <div ref={admissionPickerRef} className="relative">
                 <label className={labelClasses}>Admission Number</label>
                 <button
                   type="button"
                   onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(isAdmissionPickerOpen, false)}
+                  className={dropdownTriggerClasses(
+                    isAdmissionPickerOpen,
+                    false,
+                  )}
                 >
-                  <BadgeCheck size={18} strokeWidth={2} className={dropdownIconClasses(isAdmissionPickerOpen)} />
+                  <BadgeCheck
+                    size={18}
+                    strokeWidth={2}
+                    className={dropdownIconClasses(isAdmissionPickerOpen)}
+                  />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length ? "text-black" : "text-black/45"
-                      }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedAdmissionNos.length
+                        ? "text-black"
+                        : "text-black/45"
+                    }`}
                   >
                     {selectedAdmissionNos.length
                       ? `${selectedAdmissionNos.length} Selected`
@@ -1044,10 +1181,11 @@ export default function Schedule() {
                         Select Range
                       </p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <ThemeDropdown
+                        <div className="flex-1 min-w-0">
+                          <SearchableSelect
                             value={rangeFrom}
                             options={ADMISSION_NO_OPTIONS}
+                            detailsMap={ADMISSION_DETAILS}
                             onChange={setRangeFrom}
                             placeholder="From"
                           />
@@ -1055,10 +1193,11 @@ export default function Schedule() {
                         <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
                           to
                         </span>
-                        <div className="flex-1">
-                          <ThemeDropdown
+                        <div className="flex-1 min-w-0">
+                          <SearchableSelect
                             value={rangeTo}
                             options={ADMISSION_NO_OPTIONS}
+                            detailsMap={ADMISSION_DETAILS}
                             onChange={setRangeTo}
                             placeholder="To"
                           />
@@ -1074,30 +1213,71 @@ export default function Schedule() {
                       </button>
                     </div>
 
-                    <div className="max-h-56 overflow-y-auto p-1.5">
-                      <label className={dropdownAllRowClasses}>
+                    {/* Search Bar for Main Checkbox List */}
+                    <div className="p-2 border-b border-black/5 bg-white sticky top-0 z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
-                          type="checkbox"
-                          checked={isAllAdmissionSelected}
-                          onChange={handleToggleAllAdmission}
-                          className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                          type="text"
+                          placeholder="Search by name or number..."
+                          value={admissionSearch}
+                          onChange={(e) => setAdmissionSearch(e.target.value)}
+                          className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#800000] focus:ring-1 focus:ring-[#800000]"
                         />
-                        All
-                      </label>
-                      {ADMISSION_NO_OPTIONS.map((no) => (
-                        <label
-                          key={no}
-                          className={dropdownOptionRowClasses(selectedAdmissionNos.includes(no))}
-                        >
+                        {admissionSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setAdmissionSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto p-1.5 relative">
+                      {!admissionSearch && (
+                        <label className={dropdownAllRowClasses}>
                           <input
                             type="checkbox"
-                            checked={selectedAdmissionNos.includes(no)}
-                            onChange={() => handleAdmissionToggle(no)}
+                            checked={isAllAdmissionSelected}
+                            onChange={handleToggleAllAdmission}
                             className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
                           />
-                          {no}
+                          All
                         </label>
-                      ))}
+                      )}
+
+                      {filteredAdmissionOptions.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          No students found matching "{admissionSearch}"
+                        </div>
+                      ) : (
+                        filteredAdmissionOptions.map((no) => {
+                          const details = ADMISSION_DETAILS.get(no);
+                          const label = details
+                            ? `${no} - ${details.name} (${details.gender})`
+                            : no;
+
+                          return (
+                            <label
+                              key={no}
+                              className={dropdownOptionRowClasses(
+                                selectedAdmissionNos.includes(no),
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedAdmissionNos.includes(no)}
+                                onChange={() => handleAdmissionToggle(no)}
+                                className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                              />
+                              {label}
+                            </label>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}
@@ -1118,25 +1298,30 @@ export default function Schedule() {
                       </button>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      {selectedAdmissionNos.map((no) => (
-                        <div
-                          key={no}
-                          className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-                        >
-                          <span className="flex items-center gap-2">
-                            <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
-                            {no}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAdmission(no)}
-                            className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                            aria-label={`Remove ${no}`}
+                      {selectedAdmissionNos.map((no) => {
+                        const details = ADMISSION_DETAILS.get(no);
+                        const label = details ? `${no} - ${details.name}` : no;
+
+                        return (
+                          <div
+                            key={no}
+                            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
                           >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                            <span className="flex items-center gap-2">
+                              <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
+                              {label}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAdmission(no)}
+                              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+                              aria-label={`Remove ${no}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1145,21 +1330,17 @@ export default function Schedule() {
               {/* Test Code */}
               <div ref={questionCodeRef} className="relative">
                 <label className={labelClasses}>Question Code</label>
-
                 <ThemeDropdown
                   icon={BookOpenCheck}
                   value={questionCode}
                   options={TEST_CODE_LABELS}
-                  onChange={(value) => {
-                    setquestionCode(value);
-                    setQuestionCodeSpace(false);
-                  }}
+                  onChange={setquestionCode}
                   placeholder="Select Test Code"
                   loading={isLoadingScheduleData}
                 />
               </div>
 
-              {/* Date / Start Time / End Time — single row, analog clock pickers */}
+              {/* Date / Start Time / End Time */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={labelClasses}>Date</label>
@@ -1226,7 +1407,8 @@ export default function Schedule() {
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
-                  Couldn't load batches/departments/test codes: {scheduleDataError}
+                  Couldn't load batches/departments/test codes:{" "}
+                  {scheduleDataError}
                 </span>
               </div>
             )}
