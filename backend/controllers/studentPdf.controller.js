@@ -1326,26 +1326,10 @@ body {
         </div>
 
 
-        <div class="student-field">
-
-            <strong>Started At:</strong>
-
-            ${formatDate(
-                examAttempt.startedAt
-            )}
-
-        </div>
+        
 
 
-        <div class="student-field">
-
-            <strong>Submitted At:</strong>
-
-            ${formatDate(
-                examAttempt.submittedAt
-            )}
-
-        </div>
+        
 
 
     </div>
