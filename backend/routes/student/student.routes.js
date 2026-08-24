@@ -14,9 +14,9 @@ const{ studentAuth} =
 // STUDENT EXAM PDF
 // ==========================================================
 
-router.get(
-    "/exam/:testId/:admissionNo/pdf",
-    studentAuth,
+router.post(
+    "/exam/studentresult",
+    
     generateStudentExamPDF
 );
 

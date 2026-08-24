@@ -218,7 +218,6 @@ const scheduleExam = async (req, res) => {
             });
         }
 
-<<<<<<< Updated upstream
         // =====================================================
         // SEMESTER VALIDATION
         // =====================================================
@@ -235,9 +234,6 @@ const scheduleExam = async (req, res) => {
                     "Semester must be a number between 1 and 8."
             });
         }
-=======
-        
->>>>>>> Stashed changes
 
         // =====================================================
         // DURATION VALIDATION

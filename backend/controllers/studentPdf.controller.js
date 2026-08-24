@@ -112,7 +112,7 @@ const generateStudentExamPDF = async (req, res) => {
         const {
             testId,
             admissionNo
-        } = req.params;
+        } = req.body;
 
 
         // ====================================================
