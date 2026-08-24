@@ -117,34 +117,28 @@ export function getProgress(
 // =====================================================
 // Test State Helpers
 // =====================================================
-
-export function saveTestState(state) {
+export function saveTestState(state, admissionNo, testId) {
+    const key = `audioTestState:${admissionNo}:${testId}`;
 
     sessionStorage.setItem(
-        "audioTest",
+        key,
         JSON.stringify(state)
     );
 }
 
+export function getTestState(admissionNo, testId) {
+    const key = `audioTestState:${admissionNo}:${testId}`;
 
-export function getTestState() {
+    const saved = sessionStorage.getItem(key);
 
-    const saved =
-        sessionStorage.getItem("audioTest");
-
-    return saved
-        ? JSON.parse(saved)
-        : null;
+    return saved ? JSON.parse(saved) : null;
 }
 
+export function clearTestState(admissionNo, testId) {
+    const key = `audioTestState:${admissionNo}:${testId}`;
 
-export function clearTestState() {
-
-    sessionStorage.removeItem(
-        "audioTest"
-    );
+    sessionStorage.removeItem(key);
 }
-
 
 // =====================================================
 // Time Helpers
@@ -211,7 +205,7 @@ export function saveAdminSession(session) {
     );
 }
 
-export function getAdminSession() {
+export function  getAdminSession() {
     const saved = sessionStorage.getItem(
         "adminSession"
     );
