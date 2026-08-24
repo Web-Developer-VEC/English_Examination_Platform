@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
-import {toast, ToastContainer} from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
 import { loginUser } from "../../services/authService";
+import { saveAdminSession } from "../../utils/helpers";
 import Footer from "../common/footer.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
@@ -18,18 +19,21 @@ const AdminLogin = () => {
         e.preventDefault();
 
         try {
-            const data = await loginUser(
+            const response = await loginUser(
                 formData.identifier,
                 formData.password,
                 "staff"
             );
-            // Save token
-            localStorage.setItem("token", data.token);
+            if (response.success) {
+                saveAdminSession({
+                    token: response.token,
+                    sessionId: response.sessionId,
+                    expiresAt: response.expiresAt,
+                    user: response.user
+                });
 
-            // Save user information
-            localStorage.setItem("user", JSON.stringify(data.user));
-
-            navigate("/admin/dashboard");
+                navigate("/admin");
+            };
 
         } catch (error) {
 

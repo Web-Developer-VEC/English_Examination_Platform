@@ -26,7 +26,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.8.1",
     "node-cron": "^4.6.0",
-    "puppeteer": "^25.5.0",
+    "pdfkit": "^0.19.1",
+    "puppeteer": "^25.8.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

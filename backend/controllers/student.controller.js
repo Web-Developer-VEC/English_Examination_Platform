@@ -106,7 +106,6 @@ const updateStudent = async (req, res) => {
         const notFound = [];
 
         for (const student of parsedStudents) {
-console.log(student);
 
             const result = await db.collection("students").updateOne(
                 {
