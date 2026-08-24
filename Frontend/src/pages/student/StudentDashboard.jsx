@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from "../../components/common/footer";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -862,7 +863,7 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
-
+    <Footer />
     </div>
   );
 };

@@ -59,6 +59,8 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
+      <Route path="*" element={<Navigate to="/" replace />} />
+
     </Routes>
   );
 }
