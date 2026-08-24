@@ -8,6 +8,9 @@ const {
 
 const{ studentAuth} =
     require("../../middleware/roleby.access.middleware");
+const {
+  getStudentByUsername
+} = require("../../controllers/student.controller");
 
 
 // ==========================================================
@@ -16,9 +19,9 @@ const{ studentAuth} =
 
 router.post(
     "/exam/studentresult",
-    
     generateStudentExamPDF
 );
 
+router.get("/getstudent", getStudentByUsername);
 
 module.exports = router;

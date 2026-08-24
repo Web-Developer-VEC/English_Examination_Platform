@@ -49,7 +49,7 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="admins" element={<Admins />} />
-          <Route path="QuestionUpload" element={<QuestionUpload />} />
+          <Route path="questionupload" element={<QuestionUpload />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="results" element={<Results />} />
           <Route path="students" element={<Students />} />
@@ -58,6 +58,8 @@ export default function AppRoutes() {
           <Route path="student-result" element={<StudentResult />} />
         </Route>
       </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
   );

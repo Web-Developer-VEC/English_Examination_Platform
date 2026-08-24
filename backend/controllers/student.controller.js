@@ -148,7 +148,69 @@ const updateStudent = async (req, res) => {
 
 
 
+
+const getStudentByUsername = async (req, res) => {
+    try {
+
+        const { username } = req.body;
+
+        // =====================================================
+        // VALIDATION
+        // =====================================================
+
+        if (!username || !username.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Username is required."
+            });
+        }
+
+
+
+        const db = getDB();
+
+        // =====================================================
+        // FIND STUDENT (EXCLUDE PASSWORD)
+        // =====================================================
+
+        const student = await db.collection("students").findOne(
+            { username: username },
+            { projection: { password: 0 } }
+        );
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "Student not found."
+            });
+        }
+
+        // =====================================================
+        // RESPONSE
+        // =====================================================
+
+        return res.status(200).json({
+            success: true,
+            data: student
+        });
+
+    } catch (error) {
+
+        console.error(
+            "GET STUDENT BY USERNAME ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     studentsUpload,
-    updateStudent
+    updateStudent,
+    getStudentByUsername
 };
