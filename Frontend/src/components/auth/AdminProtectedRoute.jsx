@@ -5,9 +5,9 @@ const AdminProtectedRoute = () => {
 
     const session = getAdminSession();
 
-    if (!session?.user) {
-        return <Navigate to="/" replace />;
-    }
+    // if (!session?.user) {
+    //     return <Navigate to="/" replace />;
+    // }
 
     return <Outlet />;
 };

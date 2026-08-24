@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+    ClipboardList, CalendarDays, Activity, CircleCheck
+} from "lucide-react";
 export default function AdminDashboard() {
 
     const [tests, setTests] = useState([]);
@@ -9,9 +12,14 @@ export default function AdminDashboard() {
     const [department, setDepartment] = useState("All");
     const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
-    const [selectedDate, setSelectedDate] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 5;
+    const [selectedDate, setSelectedDate] = useState("");
     const navigate = useNavigate();
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, department, category, status, selectedDate]);
 
     useEffect(() => {
         const fetchTests = async () => {
@@ -133,47 +141,18 @@ export default function AdminDashboard() {
         });
     }, [tests, search, department, category, status, selectedDate]);
 
-    const handleDownload = (test) => {
-        const content = `
-Exam ID: ${test.id}
-Category: ${test.category}
-Section: ${test.section}
-Test Code: ${test.testCode}
-Duration: ${test.duration} minutes
-Date: ${test.date}
-Time: ${test.time}
-Status: ${test.status}
-`;
+    const totalPages = Math.ceil(
+        filteredTests.length / recordsPerPage
+    );
 
-        const blob = new Blob([content], {
-            type: "text/plain"
-        });
+    const startIndex = (currentPage - 1) * recordsPerPage;
 
-        const url = URL.createObjectURL(blob);
+    const paginatedTests = filteredTests.slice(
+        startIndex,
+        startIndex + recordsPerPage
+    );
 
-        const link = document.createElement("a");
 
-        link.href = url;
-        link.download = `${test.testCode || test.id}.txt`;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        URL.revokeObjectURL(url);
-    };
-
-    const handleCancel = async (test) => {
-        const confirmed = window.confirm(
-            "Are you sure you want to cancel this exam?"
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        console.log("Cancel exam:", test.id);
-    };
 
     return (
         <div className="w-full min-h-screen bg-gray-100">
@@ -202,7 +181,7 @@ Status: ${test.status}
 
                     <div>
 
-                        <h1 className="text-3xl font-bold text-black">
+                        <h1 className="text-3xl font-bold text-[#7a1f2b]">
                             Admin Dashboard
                         </h1>
 
@@ -229,21 +208,25 @@ Status: ${test.status}
                     <SummaryCard
                         title="Total Exams"
                         value={totalExams}
+                        type="total"
                     />
 
                     <SummaryCard
                         title="Today's Tests"
                         value={todaysTests}
+                        type="today"
                     />
 
                     <SummaryCard
                         title="Active Tests"
                         value={activeTests}
+                        type="active"
                     />
 
                     <SummaryCard
                         title="Completed Tests"
                         value={completedTests}
+                        type="completed"
                     />
 
                 </div>
@@ -260,7 +243,7 @@ Status: ${test.status}
 
                         <div>
 
-                            
+
 
                             <input
                                 type="text"
@@ -287,7 +270,7 @@ Status: ${test.status}
 
                         <div>
 
-                            
+
 
                             <select
                                 value={department}
@@ -501,7 +484,7 @@ Status: ${test.status}
 
                     ) : (
 
-                        filteredTests.map((test) => (
+                        paginatedTests.map((test) => (
 
                             <div
                                 key={test.id}
@@ -535,7 +518,7 @@ Status: ${test.status}
                                             {test.category}
                                         </h3>
 
-                                        
+
                                     </div>
                                 </div>
 
@@ -600,53 +583,6 @@ Status: ${test.status}
 
                                 </div>
 
-
-
-                                {/* DOWNLOAD
-
-                                <div className="flex items-center justify-center">
-
-                                    {test.status === "Completed" && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDownload(test)}
-                                            title="Download Test"
-                                            className="
-                flex
-                items-center
-                justify-center
-                w-9
-                h-9
-                rounded-lg
-                bg-[#FDCC03]
-                border
-                border-[#FDCC03]
-                text-black
-                hover:bg-red-700
-                hover:border-red-500
-                hover:text-white
-                transition
-            "
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                strokeWidth={2}
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
-                                                />
-                                            </svg>
-                                        </button>
-                                    )}
-
-                                </div> */}
-
                             </div>
 
                         ))
@@ -662,57 +598,64 @@ Status: ${test.status}
                 <div className="mt-6 flex items-center justify-between">
 
                     <p className="text-sm text-gray-500">
-
-                        Showing {filteredTests.length} Records
-
+                        {filteredTests.length === 0
+                            ? "Showing 0 Records"
+                            : `Showing ${startIndex + 1}-${Math.min(
+                                startIndex + recordsPerPage,
+                                filteredTests.length
+                            )} of ${filteredTests.length} Records`
+                        }
                     </p>
 
-                    <div className="flex gap-3">
+                    <div className="flex items-center gap-3">
 
                         {currentPage > 1 && (
                             <button
                                 onClick={() => setCurrentPage(currentPage - 1)}
                                 className="
-            px-4
-            py-2
-            rounded-lg
-            border
-            border-gray-300
-            hover:bg-gray-100
-            transition
-        "
+                    px-4
+                    py-2
+                    rounded-lg
+                    border
+                    border-gray-300
+                    hover:bg-gray-100
+                    transition
+                "
                             >
                                 Previous
                             </button>
                         )}
 
-                        <button
-                            className="
-              px-4
-              py-2
-              rounded-lg
-              bg-[#FDCC03]
-              font-semibold
-              hover:bg-yellow-400
-              transition
-              "
-                        >
-                            1
-                        </button>
+                        {totalPages > 0 && (
+                            <span
+                                className="
+                    px-4
+                    py-2
+                    rounded-lg
+                    bg-[#FDCC03]
+                    font-semibold
+                "
+                            >
+                                {currentPage}
+                            </span>
+                        )}
 
-                        <button
-                            className="
-              px-4
-              py-2
-              rounded-lg
-              border
-              border-gray-300
-              hover:bg-gray-100
-              transition
-              "
-                        >
-                            Next
-                        </button>
+                        {currentPage < totalPages && (
+                            <button
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                className="
+                    px-4
+                    py-2
+                    rounded-lg
+                    border
+                    border-gray-300
+                    hover:bg-gray-100
+                    transition
+                "
+                            >
+                                Next
+                            </button>
+                        )}
 
                     </div>
 
@@ -727,20 +670,123 @@ Status: ${test.status}
 /* ==========================================================
    SUMMARY CARD
 ========================================================== */
+function SummaryCard({ title, value, type }) {
 
-function SummaryCard({ title, value }) {
+    const descriptions = {
+        total: "All scheduled exams",
+        today: "Scheduled for today",
+        active: "Currently in progress",
+        completed: "Successfully completed",
+    };
+
     return (
-        <div className="relative bg-white border border-gray-200 rounded-xl p-5 overflow-hidden hover:border-[#FDCC03] hover:shadow-sm transition">
+        <div
+            className="
+                relative
+                bg-white
+                border
+                border-gray-200
+                rounded-xl
+                px-5
+                py-4
+                overflow-hidden
+                transition-all
+                duration-200
+                hover:shadow-md
+                hover:border-gray-300
+            "
+        >
 
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDCC03]" />
+            {/* TOP ACCENT */}
 
-            <p className="text-sm font-medium text-gray-500">
-                {title}
-            </p>
+            <div className="flex items-center gap-2">
 
-            <h2 className="mt-3 text-3xl font-bold text-black">
-                {value}
-            </h2>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#FDCC03]" />
+
+                <p className="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-wider
+                    text-gray-500
+                ">
+                    {title}
+                </p>
+
+            </div>
+
+            {/* MAIN CONTENT */}
+
+            <div className="mt-3 flex items-end justify-between">
+
+                <div className="flex items-baseline gap-2">
+
+                    <span className="
+                        text-4xl
+                        leading-none
+                        font-semibold
+                        tracking-tight
+                        text-[#7a1f2b]
+                    ">
+                        {String(value).padStart(2, "0")}
+                    </span>
+
+                    <span className="
+                        text-xs
+                        text-gray-400
+                    ">
+                        exams
+                    </span>
+
+                </div>
+
+                <p className="
+                    max-w-[120px]
+                    text-right
+                    text-[11px]
+                    leading-4
+                    text-gray-400
+                ">
+                    {descriptions[type]}
+                </p>
+
+            </div>
+
+            {/* DIVIDER */}
+
+            <div className="
+                mt-4
+                border-t
+                border-gray-100
+            " />
+
+            {/* BOTTOM */}
+
+            <div className="
+                mt-2
+                flex
+                items-center
+                justify-between
+            ">
+
+                <span className="
+                    text-[10px]
+                    uppercase
+                    tracking-wide
+                    text-gray-300
+                ">
+                    Dashboard
+                </span>
+
+                <span className="
+                    text-[10px]
+                    font-medium
+                    text-gray-400
+                ">
+                    2026
+                </span>
+
+            </div>
 
         </div>
     );
@@ -750,15 +796,10 @@ function SummaryCard({ title, value }) {
    TABLE HEADER
 ========================================================== */
 
-function TableHeading({ children, align = "center" }) {
+function TableHeading({ children }) {
     return (
-        <div className="py-4 flex items-center">
-            <p
-                className={`text-xs font-bold uppercase tracking-wider text-gray-400 ${align === "left"
-                    ? "text-left"
-                    : "text-center w-full"
-                    }`}
-            >
+        <div className="py-4 flex items-center justify-center">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 text-center w-full">
                 {children}
             </p>
         </div>
