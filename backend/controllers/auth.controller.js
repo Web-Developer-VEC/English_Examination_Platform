@@ -32,17 +32,18 @@ const register = async (req, res) => {
         if (!["student", "staff"].includes(role)) {
             return res.status(400).json({
                 success: false,
-                message: "Role must be either 'student' or 'staff'"
+                message: "Role must be either 'student', 'staff' or 'admin'"
             });
         }
 
         const db = getDB();
-
+      
         const collection = role === "student"
             ? db.collection("students")
-            : db.collection("staff");
+            : db.collection("staff")
+            
 
-        // Check if admission number already exists
+        // Check if username already exists
         const existingUser = await collection.findOne({ username: username });
 
         if (existingUser) {
@@ -115,10 +116,11 @@ const login = async (req, res) => {
             });
         }
 
-        if (!["student", "staff"].includes(role)) {
+        if (!["student","staff","admin"].includes(role)) {
             return res.status(400).json({
                 success: false,
-                message: "Role must be either 'student' or 'staff'"
+                message: "Role must be either 'student', 'staff' or 'admin'"
+                
             });
         }
 
@@ -131,7 +133,9 @@ const login = async (req, res) => {
         const collection =
             role === "student"
                 ? db.collection("students")
-                : db.collection("staff");
+                :role === "staff" 
+                ?db.collection("staff")
+                :db.collection("admin");
 
         // =====================================================
         // FIND USER
@@ -269,16 +273,16 @@ const login = async (req, res) => {
         const userData = {
             id: user._id,
             username: user.username,
-            role: role
+            role: role,
+            name: user.name 
         };
 
         if (role === "student") {
 
-            userData.admissionNo =
-                user.admissionNo;
-
-            userData.registerNo =
-                user.registerNo;
+            userData.admissionNo = user.admissionNo;
+            userData.registerNo = user.registerNo;
+            userData.department = user.department;
+            userData.section = user.section;
         }
 
         return res.status(200).json({
