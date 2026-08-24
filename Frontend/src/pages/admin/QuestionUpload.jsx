@@ -267,7 +267,7 @@ export default function QuestionUpload() {
             ) : (
               <>
                 <Send size={18} />
-                <span>Create Test</span>
+                <span>Submit</span>
               </>
             )}
           </button>
@@ -365,7 +365,7 @@ export default function QuestionUpload() {
                   </span>
                   <span>
                     Check all test details and uploaded files before clicking
-                    <b> Create Test</b>.
+                    <b> Submit</b>.
                   </span>
                 </li>
               </ol>
