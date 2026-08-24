@@ -13,8 +13,9 @@ const getScheduleData = async (req, res) => {
             .collection("students")
             .find({})
             .sort({
-                batch:1,
-                department:1,
+                batch: 1,
+                academicYear: 1,
+                department: 1,
                 section: 1,
                 name: 1
             })
@@ -26,19 +27,21 @@ const getScheduleData = async (req, res) => {
             .filter(
                 student =>
                     student.batch &&
+                    student.academicYear &&
                     student.department &&
                     student.section
             )
             .forEach(student => {
 
                 const key =
-                    `${student.batch}_${student.department}_${student.section}`;
+                    `${student.batch}_${student.academicYear}_${student.department}_${student.section}`;
 
                 if (!groupMap.has(key)) {
 
                     groupMap.set(key, {
 
                         batch: student.batch,
+                        academicYear: student.academicYear,
                         department: student.department,
                         section: student.section,
                         students: []
@@ -58,7 +61,7 @@ const getScheduleData = async (req, res) => {
 
             });
 
-        const batchDepartmentSections =
+        const batchAcademicYearDepartmentSections =
             [...groupMap.values()];
 
 
@@ -88,7 +91,7 @@ const getScheduleData = async (req, res) => {
         // ==========================================
 
         const data = {
-            batchDepartmentSections,
+            batchAcademicYearDepartmentSections,
             tests
         };
 

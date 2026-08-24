@@ -11,5 +11,5 @@ const { scheduleExam } = require("../../controllers/schedule.controller");
 router.get("/getscheduledata", getScheduleData);
 router.get("/getscheduleexams", getScheduledExams);
 router.post("/scheduleexam", scheduleExam);
-// router.post("/upload",uploadHTMLToS3)
+
 module.exports = router;

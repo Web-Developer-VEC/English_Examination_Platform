@@ -10,6 +10,7 @@ const REQUIRED_HEADERS = [
     "Year",
     "Section",
     "Batch",
+    "Academic_Year",
     "DOB"
 ];
 
@@ -139,6 +140,7 @@ const parseStudentExcel = (buffer) => {
         const rawRegisterNo = String(row.Reg_no).trim();
         const registerNo =rawRegisterNo === "" ||rawRegisterNo.toLowerCase() === "null"? null: rawRegisterNo;
         const dob = String(row.DOB).trim();
+        const academicYear = String(row.Academic_Year).trim();  
 
      console.log(dob);
         if (!name) {
@@ -211,7 +213,19 @@ const parseStudentExcel = (buffer) => {
             }
 
         }
+        if(academicYear){
 
+            const academicYearRegex = /^\d{4}-\d{4}$/;
+
+            if (!academicYearRegex.test(academicYear)) {
+
+                throwValidationError(
+                    `Row ${excelRow}: Invalid Academic Year. Use YYYY-YYYY format.`
+                );
+
+            }
+
+        }
         if (phone) {
 
             if (!/^\d{10}$/.test(phone)) {
@@ -243,7 +257,8 @@ const parseStudentExcel = (buffer) => {
             year,
             section,
             batch,
-            dob
+            dob,
+            academicYear
 
         };
 
