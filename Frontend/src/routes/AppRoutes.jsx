@@ -16,7 +16,7 @@ import AudioTest from "../pages/student/AudioTest";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import StudentDashboard from "../pages/student/StudentDashboard";
 import Admins from "../pages/admin/Admins";
-import Questionupload from "../pages/admin/QuestionUpload";
+import QuestionUpload from "../pages/admin/QuestionUpload";
 import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/StudentResult";
 import Students from "../pages/admin/Students";
