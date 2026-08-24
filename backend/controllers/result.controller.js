@@ -19,13 +19,7 @@ const generateExamReport = async (req, res) => {
 
     try {
 
-        // ====================================================
-        // GET JSON BODY
-        // ====================================================
-        // Requires express.json() middleware to be applied
-        // (globally, or on this route) so req.body is already
-        // a parsed object here.
-
+    
         const data = req.body;
 
         if (!data || Object.keys(data).length === 0) {
@@ -46,11 +40,11 @@ const generateExamReport = async (req, res) => {
         // ====================================================
 
         const {
-            batch,
             department,
             section,
             cie,
-            semester
+            semester,
+            academicYear
         } = data;
 
         const cleanBatch = batch && typeof batch === "string" && batch.trim() !== "" ? batch.trim() : null;
@@ -227,10 +221,6 @@ const generateExamReport = async (req, res) => {
         // ====================================================
         // ORDER TESTS BY testcode (NATURAL NUMERIC SORT)
         // ====================================================
-        // testcode values look like "test1", "test2", ... "test10".
-        // A plain string sort would put "test10" before "test2",
-        // so pull out the trailing number and sort on that.
-
         const extractTestNumber = (testcode) => {
 
             if (!testcode) {
@@ -258,13 +248,7 @@ const generateExamReport = async (req, res) => {
         });
 
 
-        // Column label per test — formatted as "Test-1", "Test-2",
-        // etc. using the number pulled from testcode. Falls back to
-        // the raw testcode/title, then a positional label, if no
-        // number can be extracted. Matching against exam records
-        // is done via questionSetId, which is the field that
-        // actually links a schedule entry to its exam attempts
-        // (schedule._id and exam.testId do NOT match each other).
+  
         const testColumns = scheduleTests.map((test, index) => {
 
             const testNumber =
@@ -357,8 +341,7 @@ const generateExamReport = async (req, res) => {
 
             if (!record.admissionNo) {
 
-                // Can't attribute this attempt to a roster row
-                // without an admissionNo — skip it.
+                
                 return;
 
             }
@@ -493,11 +476,103 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
+        // FETCH STAFF (MENTOR) NAME FOR THIS CLASS
+        // ====================================================
+        // Only looked up when enough details are present in the
+        // request to identify the staff (department + section at
+        // minimum). Exactly one mentor is expected per class, so
+        // this uses findOne rather than collecting a list. If
+        // nothing matches, the report simply shows "-" instead
+        // of failing.
+
+        let staffValue = "-";
+
+        const staffFilter = {};
+
+        if (
+            department &&
+            typeof department === "string" &&
+            department.trim() !== ""
+        ) {
+
+            staffFilter.department = department.trim();
+
+        }
+
+        if (
+            section &&
+            typeof section === "string" &&
+            section.trim() !== ""
+        ) {
+
+            staffFilter.section = section.trim();
+
+        }
+
+        if (
+            academicYear &&
+            typeof academicYear === "string" &&
+            academicYear.trim() !== ""
+        ) {
+
+            staffFilter.academicYear = academicYear.trim();
+
+        }
+
+        if (
+            semester &&
+            typeof semester === "string" &&
+            semester.trim() !== ""
+        ) {
+
+            staffFilter.semester = semester.trim();
+
+        }
+
+        // Only query when we actually have department + section at
+        // minimum — anything looser risks matching unrelated staff.
+        const hasEnoughDetailsForStaff =
+            staffFilter.department &&
+            staffFilter.section;
+
+        if (hasEnoughDetailsForStaff) {
+
+            console.log(
+                "STAFF FILTER:",
+                staffFilter
+            );
+
+            const staffMember = await db
+                .collection("staff")
+                .findOne(
+                    staffFilter,
+                    {
+                        projection: {
+                            _id: 0,
+                            name: 1
+                        }
+                    }
+                );
+
+            console.log(
+                staffMember
+                    ? `Found mentor: ${staffMember.name}`
+                    : "No mentor found for this class"
+            );
+
+            if (staffMember && staffMember.name) {
+
+                staffValue = staffMember.name;
+
+            }
+
+        }
+
+
+        // ====================================================
         // GET HTML TEMPLATE FROM LOCAL FILE
         // ====================================================
-        // TEMPORARY: reading from disk for now instead of S3.
-        // Adjust this path to wherever examExport.html actually
-        // lives relative to this controller file.
+        
 
         const templatePath =
             path.join(
@@ -592,14 +667,7 @@ const generateExamReport = async (req, res) => {
         // ====================================================
         // REPLACE HTML PLACEHOLDERS
         // ====================================================
-        // NOTE: the template must include a {{MARKS_HEADERS}}
-        // placeholder inside the <thead> row, in place of the
-        // single static "Marks" <th>, and a {{CIE}} placeholder
-        // wherever the CIE filter value should be shown.
-        // {{SEMESTER}} is replaced here too, but the current
-        // template has no {{SEMESTER}} placeholder in it, so
-        // this particular .replace() is a harmless no-op until
-        // one is added to the template.
+        
 
         html = html
 
@@ -609,8 +677,8 @@ const generateExamReport = async (req, res) => {
             )
 
             .replace(
-                "{{BATCH}}",
-                batchValue
+                "{{ACADEMIC_YEAR}}",
+                academicYearValue
             )
 
             .replace(
@@ -631,6 +699,16 @@ const generateExamReport = async (req, res) => {
             .replace(
                 "{{CIE}}",
                 cieDisplay
+            )
+
+            .replace(
+                "{{STAFF}}",
+                staffValue
+            )
+
+            .replace(
+                "{{STAFF}}",
+                staffValue
             )
 
             .replace(
@@ -731,7 +809,7 @@ const generateExamReport = async (req, res) => {
 
             "exam-report",
             sanitizeForFilename(departmentValue),
-            sanitizeForFilename(batchValue),
+            sanitizeForFilename(academicYearValue),
             sanitizeForFilename(sectionValue),
             cleanSem
                 ? cleanSem
@@ -792,7 +870,10 @@ const generateExamReport = async (req, res) => {
                     uploadResult.url,
 
                 totalStudents:
-                    studentRoster.length
+                    studentRoster.length,
+
+                staff:
+                    staffValue
 
             }
 
