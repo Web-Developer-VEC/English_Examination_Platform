@@ -22,6 +22,6 @@ router.post(
     generateStudentExamPDF
 );
 
-router.get("/getstudent", getStudentByUsername);
+router.post("/getstudent", getStudentByUsername);
 
 module.exports = router;
