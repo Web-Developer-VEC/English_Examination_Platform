@@ -12,9 +12,10 @@ const getformdata = async (req, res) => {
       .collection("students")
       .find({})
       .sort({
-        batch: 1,
+        batch:  1,
+                academicYear: 1,
         // Removed academicYear since it's not in the student document
-        department: 1,
+        department:  1,
         section: 1,
         gender: 1, // Groups by gender first (Female -> Male -> Other)
         name: 1,   // Sorts alphabetically by name within each gender group
@@ -35,14 +36,19 @@ const getformdata = async (req, res) => {
         // Removed academicYear from the unique key
         const key = `${student.batch}_${student.department}_${student.section}`;
 
-        if (!groupMap.has(key)) {
-          groupMap.set(key, {
-            batch: student.batch,
-            department: student.department,
-            section: student.section,
-            students: [],
-          });
-        }
+                if (!groupMap.has(key)) {
+
+                    groupMap.set(key, {
+
+                        batch: student.batch,
+                        academicYear: student.academicYear,
+                        department: student.department,
+                        section: student.section,
+                        students: []
+
+                    });
+
+                }
 
         if (student.username) {
           // Push name and gender along with username
