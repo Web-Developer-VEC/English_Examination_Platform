@@ -37,6 +37,7 @@
   scrollbar-color: var(--maroon-soft-strong) transparent;
   transition: transform 0.3s ease, width 0.25s ease;
   z-index: 40;
+  height: 100%;
 }
 
 .vec-sidebar::-webkit-scrollbar {

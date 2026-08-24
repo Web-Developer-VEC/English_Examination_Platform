@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "^3.1113.0",
     "@aws-sdk/lib-storage": "^3.1113.0",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "busboy": "^1.6.0",
     "connect-mongo": "^6.0.0",
     "cors": "^2.8.6",
@@ -25,7 +26,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.8.1",
     "node-cron": "^4.6.0",
-    "puppeteer": "^25.5.0",
+    "pdfkit": "^0.19.1",
+    "puppeteer": "^25.8.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
