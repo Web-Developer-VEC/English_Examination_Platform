@@ -172,18 +172,18 @@ const scheduleExam = async (req, res) => {
         // SEMESTER VALIDATION
         // =====================================================
 
-        const normalizedSemester =
-            Number(semester);
+        const normalizedSemester =semester;
+        console.log(normalizedSemester!="even");
+        console.log(normalizedSemester!="odd");
 
         if (
-            !Number.isInteger(normalizedSemester) ||
-            normalizedSemester < 1 ||
-            normalizedSemester > 8
+            normalizedSemester !="odd" &&
+            normalizedSemester !="even"
         ) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Semester must be an integer between 1 and 8."
+                    "Semester must be odd or even"
             });
         }
 
@@ -222,13 +222,11 @@ const scheduleExam = async (req, res) => {
         // SEMESTER VALIDATION
         // =====================================================
 
-        const semesterNumber =
-            Number(semester);
+        const semesterNumber =semester;
 
         if (
-            !Number.isInteger(semesterNumber) ||
-            semesterNumber < 1 ||
-            semesterNumber > 8
+            semesterNumber !="odd" &&
+            semesterNumber !="even"
         ) {
             return res.status(400).json({
                 success: false,

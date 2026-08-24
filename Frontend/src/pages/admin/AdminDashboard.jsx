@@ -264,7 +264,7 @@ Status: ${test.status}
 
                             <input
                                 type="text"
-                                placeholder="Search Test Code..."
+                                placeholder="Search Question Code"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="
