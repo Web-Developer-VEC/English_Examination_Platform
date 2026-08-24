@@ -5,6 +5,7 @@ const {connectDB} = require("./config/db");
 const indexRoutes = require("./routes/index.routes");
 const startExamCron = require("./middleware/cron_middleware");
 
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -21,14 +22,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-// Health Check
-app.get("/", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Listening Test API is running"
-    });
-});
 
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    console.log({
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs: Date.now() - start,
+      requestId: req.headers["x-request-id"],
+    });
+  });
+
+  next();
+});
 // Register Routes
 app.use("/api", indexRoutes);
 
