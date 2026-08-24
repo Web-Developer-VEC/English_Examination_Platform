@@ -41,6 +41,9 @@ const StudentLogin = () => {
           token: response.token,
           user: response.user
         });
+        sessionStorage.removeItem(
+          "adminSession"
+        );
 
         navigate("/student/dashboard");
       }
