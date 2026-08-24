@@ -34,6 +34,7 @@ const generateExamReport = async (req, res) => {
         // CLEAN FILTERS
         // ====================================================
         const {
+            batch,
             department,
             section,
             cie,
@@ -302,100 +303,34 @@ const generateExamReport = async (req, res) => {
             })
             .join("");
 
-
         // ====================================================
         // FETCH STAFF (MENTOR) NAME FOR THIS CLASS
         // ====================================================
-        // Only looked up when enough details are present in the
-        // request to identify the staff (department + section at
-        // minimum). Exactly one mentor is expected per class, so
-        // this uses findOne rather than collecting a list. If
-        // nothing matches, the report simply shows "-" instead
-        // of failing.
-
         let staffValue = "-";
-
         const staffFilter = {};
 
-        if (
-            department &&
-            typeof department === "string" &&
-            department.trim() !== ""
-        ) {
+        if (cleanDept) staffFilter.department = cleanDept;
+        if (cleanSec) staffFilter.section = cleanSec;
+        if (cleanAcademicYear) staffFilter.academicYear = cleanAcademicYear;
+        if (cleanSem) staffFilter.semester = cleanSem;
 
-            staffFilter.department = department.trim();
-
-        }
-
-        if (
-            section &&
-            typeof section === "string" &&
-            section.trim() !== ""
-        ) {
-
-            staffFilter.section = section.trim();
-
-        }
-
-        if (
-            academicYear &&
-            typeof academicYear === "string" &&
-            academicYear.trim() !== ""
-        ) {
-
-            staffFilter.academicYear = academicYear.trim();
-
-        }
-
-        if (
-            semester &&
-            typeof semester === "string" &&
-            semester.trim() !== ""
-        ) {
-
-            staffFilter.semester = semester.trim();
-
-        }
-
-        // Only query when we actually have department + section at
-        // minimum — anything looser risks matching unrelated staff.
-        const hasEnoughDetailsForStaff =
-            staffFilter.department &&
-            staffFilter.section;
+        const hasEnoughDetailsForStaff = staffFilter.department && staffFilter.section;
 
         if (hasEnoughDetailsForStaff) {
-
-            console.log(
-                "STAFF FILTER:",
-                staffFilter
-            );
+            console.log("STAFF FILTER:", staffFilter);
 
             const staffMember = await db
                 .collection("staff")
-                .findOne(
-                    staffFilter,
-                    {
-                        projection: {
-                            _id: 0,
-                            name: 1
-                        }
-                    }
-                );
+                .findOne(staffFilter, {
+                    projection: { _id: 0, name: 1 }
+                });
 
-            console.log(
-                staffMember
-                    ? `Found mentor: ${staffMember.name}`
-                    : "No mentor found for this class"
-            );
+            console.log(staffMember ? `Found mentor: ${staffMember.name}` : "No mentor found for this class");
 
             if (staffMember && staffMember.name) {
-
                 staffValue = staffMember.name;
-
             }
-
         }
-
 
         // ====================================================
         // GET HTML TEMPLATE FROM LOCAL FILE
@@ -525,7 +460,6 @@ const generateExamReport = async (req, res) => {
                 staff: staffValue
             }
         });
-
 
     } catch (error) {
         console.error("PDF generation error:", error);
