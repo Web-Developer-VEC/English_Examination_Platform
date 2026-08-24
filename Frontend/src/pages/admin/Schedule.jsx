@@ -23,7 +23,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
-import ThemeDropdown from "../../components/common/ThemeDropDown";
+import ThemeDropdown from "../../components/common/ThemeDropDown"
 
 // API CONFIG
 const API_BASE_URL = "http://localhost:5000";
@@ -73,27 +73,24 @@ const iconLeftClasses =
 const cardClasses =
   "rounded-2xl border border-gray-200 bg-[#F4F5F7] shadow-[0_4px_20px_rgba(0,0,0,0.15)] p-5";
 
-// Shared "ThemeDropdown" look for the custom multi-select triggers/panels below
+// Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
+// so they read as the same family of control as ThemeDropdown itself.
 const dropdownTriggerClasses = (isOpen, disabled) =>
-  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${
-    isOpen
-      ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
-      : "border-black/15 hover:border-black/30"
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${isOpen
+    ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+    : "border-black/15 hover:border-black/30"
   } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
 
 const dropdownIconClasses = (isOpen) =>
-  `shrink-0 transition-colors duration-200 ${
-    isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  `shrink-0 transition-colors duration-200 ${isOpen ? "text-black" : "text-black/60 group-hover:text-black"
   }`;
 
 const dropdownArrowClasses = (isOpen) =>
-  `flex shrink-0 items-center justify-center transition-all duration-200 ${
-    isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
   }`;
 
-// Removed overflow-hidden to allow nested popovers (like the range picker dropdowns) to bleed out
 const dropdownPanelClasses =
-  "absolute z-30 mt-2 w-full rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]";
+  "absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]";
 
 const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
@@ -258,16 +255,11 @@ function AnalogClockPicker({
           className={dropdownTriggerClasses(isOpen, false)}
         >
           {IconComponent && (
-            <IconComponent
-              size={18}
-              strokeWidth={2}
-              className={dropdownIconClasses(isOpen)}
-            />
+            <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
           )}
           <span
-            className={`flex-1 truncate text-[15px] font-medium ${
-              displayValue ? "text-black" : "text-black/45"
-            }`}
+            className={`flex-1 truncate text-[15px] font-medium ${displayValue ? "text-black" : "text-black/45"
+              }`}
           >
             {displayValue || "Select time"}
           </span>
@@ -460,6 +452,8 @@ export default function Schedule() {
   });
   const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
   const [scheduleDataError, setScheduleDataError] = useState("");
+  const [questionCodeSpace, setQuestionCodeSpace] = useState(false);
+  const questionCodeRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -476,6 +470,13 @@ export default function Schedule() {
           },
         });
         const body = await res.json();
+        console.log("GET SCHEDULE DATA STATUS:", res.status);
+        console.log("GET SCHEDULE DATA RESPONSE:", body);
+        console.log("TESTS FROM BACKEND:", body?.data?.tests);
+        console.log(
+          "BATCH DEPARTMENT SECTIONS:",
+          body?.data?.batchDepartmentSections
+        );
 
         if (!res.ok || !body.success) {
           throw new Error(body.message || `Request failed (${res.status})`);
@@ -566,15 +567,16 @@ export default function Schedule() {
   }, [ADMISSION_NO_OPTIONS, ADMISSION_DETAILS, admissionSearch]);
 
   const TEST_CODE_OPTIONS = useMemo(
-    () => scheduleData.tests,
-    [scheduleData.tests],
+    () =>
+      [...scheduleData.tests].sort((a, b) =>
+        b.questionSetId.localeCompare(a.questionSetId)
+      ),
+    [scheduleData.tests]
   );
-
   const TEST_CODE_LABELS = useMemo(
     () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
-    [TEST_CODE_OPTIONS],
+    [TEST_CODE_OPTIONS]
   );
-
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
   const captureCurrentFields = () => ({
@@ -658,6 +660,27 @@ export default function Schedule() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  // Question Code dropdown - control main page extra space
+  useEffect(() => {
+    const handleQuestionCodeClick = (event) => {
+      if (!questionCodeRef.current) return;
+
+      if (questionCodeRef.current.contains(event.target)) {
+        setQuestionCodeSpace(true);
+      } else {
+        setQuestionCodeSpace(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleQuestionCodeClick);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleQuestionCodeClick
+      );
+    };
   }, []);
 
   // Auto-clear the confirmation banner
@@ -897,12 +920,12 @@ export default function Schedule() {
             ? "University exam scheduled"
             : "Schedule created";
       toast.success(
-        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`,
+        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
       );
       resetFormFields();
     } else if (successCount > 0) {
       toast.success(
-        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`,
+        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
       );
       setErrorMessage(
         failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
@@ -912,13 +935,16 @@ export default function Schedule() {
         failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
       );
     }
+
   };
 
   // ---------------- RENDER ----------------
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-white px-4 py-10 md:px-10">
-      <div className="relative mx-auto max-w-3xl">
-        {/* ---------------- HEADER ---------------- */}
+    <div
+      className={`relative min-h-screen w-full bg-white px-4 pt-10 md:px-10 ${questionCodeSpace ? "pb-96" : "pb-10"
+        }`}
+    >      <div className="relative mx-auto max-w-3xl">
+        {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#FDCC03]/40 bg-[#800000] shadow-md shadow-[#800000]/20">
             <ClipboardClock
@@ -1021,20 +1047,12 @@ export default function Schedule() {
                   type="button"
                   disabled={isLoadingScheduleData}
                   onClick={() => setIsPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(
-                    isPickerOpen,
-                    isLoadingScheduleData,
-                  )}
+                  className={dropdownTriggerClasses(isPickerOpen, isLoadingScheduleData)}
                 >
-                  <Building2
-                    size={18}
-                    strokeWidth={2}
-                    className={dropdownIconClasses(isPickerOpen)}
-                  />
+                  <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedCombos.length ? "text-black" : "text-black/45"
-                    }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedCombos.length ? "text-black" : "text-black/45"
+                      }`}
                   >
                     {selectedCombos.length
                       ? `${selectedCombos.length} Selected`
@@ -1064,9 +1082,7 @@ export default function Schedule() {
                       {DEPT_SECTION_OPTIONS.map((option) => (
                         <label
                           key={option.key}
-                          className={dropdownOptionRowClasses(
-                            selectedCombos.includes(option.key),
-                          )}
+                          className={dropdownOptionRowClasses(selectedCombos.includes(option.key))}
                         >
                           <input
                             type="checkbox"
@@ -1158,7 +1174,7 @@ export default function Schedule() {
                 </button>
 
                 {isAdmissionPickerOpen && (
-                  <div className={dropdownPanelClasses + " p-0 flex flex-col"}>
+                  <div className={dropdownPanelClasses + " p-0"}>
                     {/* Range picker: select from-number to-number */}
                     <div className="border-b border-black/5 bg-[#FAFAFA] p-3">
                       <p className="mb-2 text-xs font-semibold text-[#000000]">
@@ -1312,7 +1328,7 @@ export default function Schedule() {
               </div>
 
               {/* Test Code */}
-              <div>
+              <div ref={questionCodeRef} className="relative">
                 <label className={labelClasses}>Question Code</label>
                 <ThemeDropdown
                   icon={BookOpenCheck}
@@ -1421,6 +1437,7 @@ export default function Schedule() {
         pauseOnHover
         draggable
       />
+
     </div>
   );
 }
