@@ -7,9 +7,11 @@ const {
   getScheduledExams,
 } = require("../../controllers/getscheduleexam.controller");
 const { scheduleExam } = require("../../controllers/schedule.controller");
+const{deleteScheduledExam}=require("../../controllers/delete.schedule.controller");
 // const {uploadHTMLToS3}=require("../../controllers/upload")
 router.get("/getformdata", getformdata);
 router.get("/getscheduleexams", getScheduledExams);
 router.post("/scheduleexam", scheduleExam);
+router.delete("/delete-scheduled-exam", deleteScheduledExam);
 // router.post("/upload",uploadHTMLToS3)
 module.exports = router;
