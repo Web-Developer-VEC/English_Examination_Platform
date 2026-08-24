@@ -29,12 +29,13 @@ const colors = {
 // -----------------------------------------------------
 // API
 // -----------------------------------------------------
-const API_ENDPOINT = "http://localhost:5000/api/staff/schedule/getscheduledata";
+const API_ENDPOINT = "http://localhost:5000/api/staff/schedule/getformdata";
 const EXAM_RESULTS_ENDPOINT = "http://localhost:5000/api/staff/exam-results";
+
 // -----------------------------------------------------
 // DEFAULT CIE + SEMESTER OPTIONS
 // -----------------------------------------------------
-const CIE_OPTIONS = ["CIE 1", "CIE 2", "CIE 3"];
+const CIE_OPTIONS = ["I", "II", "III"];
 const SEM_OPTIONS = ["Odd", "Even"];
 
 // -----------------------------------------------------
@@ -230,7 +231,7 @@ function SelectField({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
-    };
+    }
 
     document.addEventListener("mousedown", handleOutsideClick);
 
@@ -238,8 +239,6 @@ function SelectField({
       document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, []);
-
-  // ...
 
   // Unique ID for this dropdown
   const dropdownId = React.useId();
@@ -399,6 +398,7 @@ function SelectField({
     </div>
   );
 }
+
 // -----------------------------------------------------
 // RESULT BADGE
 // -----------------------------------------------------
@@ -492,15 +492,10 @@ export default function StudentResult() {
   // RESULT DATA
   // ---------------------------------------------------
   const [results, setResults] = useState([]);
-
   const [loadingSchedule, setLoadingSchedule] = useState(true);
-
   const [loadingResults, setLoadingResults] = useState(false);
-
   const [error, setError] = useState("");
-
   const [showResults, setShowResults] = useState(false);
-
   const [submittedFilters, setSubmittedFilters] = useState(null);
 
   // ---------------------------------------------------
@@ -524,7 +519,6 @@ export default function StudentResult() {
         }
 
         const data = await response.json();
-
         console.log("GETSCHEDULEDATA RESPONSE:", data);
 
         const rawArray = findArrayInResponse(data);
@@ -544,9 +538,7 @@ export default function StudentResult() {
         }
       } catch (err) {
         console.error("Schedule API error:", err);
-
         setError("Unable to load schedule data from the server.");
-
         setScheduleData([]);
       } finally {
         setLoadingSchedule(false);
@@ -582,11 +574,9 @@ export default function StudentResult() {
       if (batch && item.batch !== batch) {
         return false;
       }
-
       if (dept && item.dept !== dept) {
         return false;
       }
-
       return true;
     });
 
@@ -615,10 +605,8 @@ export default function StudentResult() {
   const validate = () => {
     if (!batch || !dept || !section || !cie || !sem) {
       setError("Please select Batch, Department, Section, CIE and Semester.");
-
       return false;
     }
-
     return true;
   };
 
@@ -631,32 +619,29 @@ export default function StudentResult() {
     // ---------------------------------------------------
 
     // Frontend displays:
-    // CIE 1 / CIE 2 / CIE 3
-    //
+    // I / II / III
     // Backend expects:
     // 1 / 2 / 3
+    const cieMapping = {
+      "I": 1,
+      "II": 2,
+      "III": 3
+    };
+    
+    const cieNumber = filters.cie ? cieMapping[filters.cie] : null;
 
-    const cieNumber = filters.cie
-      ? Number(filters.cie.replace("CIE", "").trim())
-      : null;
-
-    // Frontend displays:
-    // Odd / Even
-    //
-    // Backend expects:
-    // odd / even
-
+    // Frontend displays: Odd / Even
+    // Backend expects: odd / even
     const semesterValue = filters.sem ? filters.sem.toLowerCase() : "";
 
     // ---------------------------------------------------
     // REQUEST BODY
     // ---------------------------------------------------
-
     const requestBody = {
       batch: filters.batch,
       department: filters.dept,
       section: filters.section,
-      cie: cieNumber,
+      cie: filters.cie,
       semester: semesterValue,
     };
 
@@ -665,28 +650,23 @@ export default function StudentResult() {
     // ---------------------------------------------------
     // CALL BACKEND PDF API
     // ---------------------------------------------------
-
     const response = await fetch(EXAM_RESULTS_ENDPOINT, {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-
       body: JSON.stringify(requestBody),
     });
 
     // ---------------------------------------------------
     // CHECK RESPONSE
     // ---------------------------------------------------
-
     if (!response.ok) {
       throw new Error(`Report API Error: ${response.status}`);
     }
 
     const responseData = await response.json();
-
     console.log("EXAM REPORT RESPONSE:", responseData);
 
     if (!responseData.success || !responseData.data || !responseData.data.url) {
@@ -698,15 +678,12 @@ export default function StudentResult() {
     // ---------------------------------------------------
     // GET PDF URL
     // ---------------------------------------------------
-
     const pdfUrl = responseData.data.url;
-
     console.log("PDF URL:", pdfUrl);
 
     // ---------------------------------------------------
     // DOWNLOAD PDF
     // ---------------------------------------------------
-
     const pdfResponse = await fetch(pdfUrl);
 
     if (!pdfResponse.ok) {
@@ -718,17 +695,13 @@ export default function StudentResult() {
     // ---------------------------------------------------
     // CREATE TEMPORARY DOWNLOAD URL
     // ---------------------------------------------------
-
     const downloadUrl = window.URL.createObjectURL(pdfBlob);
 
     // ---------------------------------------------------
     // CREATE DOWNLOAD LINK
     // ---------------------------------------------------
-
     const downloadLink = document.createElement("a");
-
     downloadLink.href = downloadUrl;
-
     downloadLink.download = `exam-report-${filters.dept}-${filters.batch}-${filters.section}-${semesterValue}-${cieNumber}.pdf`;
 
     document.body.appendChild(downloadLink);
@@ -736,19 +709,14 @@ export default function StudentResult() {
     // ---------------------------------------------------
     // START DOWNLOAD
     // ---------------------------------------------------
-
     downloadLink.click();
 
     // ---------------------------------------------------
     // CLEANUP
     // ---------------------------------------------------
-
     document.body.removeChild(downloadLink);
-
     window.URL.revokeObjectURL(downloadUrl);
 
-    // Return backend response if
-    // you need it later.
     return responseData;
   };
 
@@ -757,10 +725,6 @@ export default function StudentResult() {
   // ---------------------------------------------------
   const handleViewResult = async () => {
     setError("");
-
-    // ---------------------------------------------------
-    // VALIDATE FILTERS
-    // ---------------------------------------------------
 
     if (!validate()) {
       setShowResults(false);
@@ -772,10 +736,6 @@ export default function StudentResult() {
     setResults([]);
 
     try {
-      // -------------------------------------------------
-      // SELECTED FILTERS
-      // -------------------------------------------------
-
       const filters = {
         batch,
         dept,
@@ -785,34 +745,18 @@ export default function StudentResult() {
       };
 
       console.log("SELECTED RESULT FILTERS:", filters);
-
-      // -------------------------------------------------
-      // CALL BACKEND
-      // -------------------------------------------------
-
       await fetchStudentResults(filters);
 
-      // -------------------------------------------------
-      // STORE FILTERS
-      // -------------------------------------------------
-
       setSubmittedFilters(filters);
-
-      // -------------------------------------------------
-      // SUCCESS
-      // -------------------------------------------------
-
       setShowResults(false);
 
       console.log("PDF downloaded successfully.");
     } catch (err) {
       console.error("PDF download error:", err);
-
       setError(
         err.message ||
           "Something went wrong while generating or downloading the PDF.",
       );
-
       setShowResults(false);
     } finally {
       setLoadingResults(false);

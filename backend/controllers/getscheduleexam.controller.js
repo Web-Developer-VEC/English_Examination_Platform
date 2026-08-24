@@ -15,7 +15,8 @@ const getformdata = async (req, res) => {
         batch: 1,
         department: 1,
         section: 1,
-        name: 1,
+        gender: 1, // Groups by gender first (Female -> Male -> Other)
+        name: 1,   // Sorts alphabetically by name within each gender group
       })
       .toArray();
 
@@ -38,10 +39,16 @@ const getformdata = async (req, res) => {
         }
 
         if (student.username) {
-          groupMap.get(key).students.push(student.username);
+          // Push name and gender along with username
+          groupMap.get(key).students.push({
+            username: student.username,
+            name: student.name,
+            gender: student.gender || "Unknown" // Fallback just in case
+          });
         }
       });
-
+      for(student of students){
+      }
     const batchDepartmentSections = [...groupMap.values()];
 
     const questions = await db
@@ -61,7 +68,6 @@ const getformdata = async (req, res) => {
       questionSetId: question._id,
       questionCode: question.questionCode,
     }));
-    console.log(tests);
 
     // ==========================================
     // Prepare response

@@ -6,7 +6,7 @@ const StudentProtectedRoute = () => {
     const session = getStudentSession();
 
     if (!session?.user?.admissionNo) {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/studentlogin" replace />;
     }
 
     return <Outlet />;
