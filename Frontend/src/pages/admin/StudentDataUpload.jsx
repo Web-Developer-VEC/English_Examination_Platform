@@ -744,19 +744,6 @@ const StudentDataUpload = () => {
               )}
             </div>
 
-            {message && (
-              <div className={`upload-message ${messageType}`}>
-                <span className="message-icon">
-                  {messageType === "success" ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <AlertCircle size={16} />
-                  )}
-                </span>
-                <span>{message}</span>
-              </div>
-            )}
-
             <button
               type="button"
               className={`upload-submit-button ${uploading ? "uploading" : ""
@@ -888,15 +875,6 @@ const StudentDataUpload = () => {
                 </button>
               </div>
             </div>
-
-            {existingMessage && (
-              <div
-                className={`existing-message ${existingMessageType}`}
-              >
-                <AlertCircle size={17} />
-                <span>{existingMessage}</span>
-              </div>
-            )}
 
             {students.length > 0 && (
               <div className="student-results-section">
@@ -1152,6 +1130,212 @@ const StudentDataUpload = () => {
           </div>
         )}
       </div>
+
+      {(message || existingMessage) && (
+        <div
+          className="student-message-overlay"
+          role="alert"
+          aria-live="assertive"
+          onClick={() => {
+            setMessage("");
+            setMessageType("");
+            setExistingMessage("");
+            setExistingMessageType("");
+          }}
+        >
+          <div
+            className={`student-message-popup ${
+              (message ? messageType : existingMessageType) === "success"
+                ? "success"
+                : "error"
+            }`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="student-message-icon-wrap">
+              {(message ? messageType : existingMessageType) === "success" ? (
+                <CheckCircle2 size={30} strokeWidth={2.2} />
+              ) : (
+                <AlertCircle size={30} strokeWidth={2.2} />
+              )}
+            </div>
+
+            <div className="student-message-content">
+              <span className="student-message-label">
+                {(message ? messageType : existingMessageType) === "success"
+                  ? "Success"
+                  : "Something went wrong"}
+              </span>
+              <p>{message || existingMessage}</p>
+            </div>
+
+            <button
+              type="button"
+              className="student-message-close"
+              aria-label="Close message"
+              onClick={() => {
+                setMessage("");
+                setMessageType("");
+                setExistingMessage("");
+                setExistingMessageType("");
+              }}
+            >
+              <X size={18} strokeWidth={2.2} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .student-message-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(8, 12, 20, 0.38);
+          backdrop-filter: blur(9px);
+          -webkit-backdrop-filter: blur(9px);
+          animation: studentMessageFadeIn 0.22s ease-out;
+        }
+
+        .student-message-popup {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          width: min(500px, 100%);
+          padding: 22px 48px 22px 22px;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.96);
+          box-shadow:
+            0 24px 70px rgba(0, 0, 0, 0.22),
+            0 8px 25px rgba(0, 0, 0, 0.10);
+          animation: studentMessagePopIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .student-message-icon-wrap {
+          flex: 0 0 58px;
+          width: 58px;
+          height: 58px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 17px;
+        }
+
+        .student-message-popup.success .student-message-icon-wrap {
+          color: #15803d;
+          background: rgba(34, 197, 94, 0.12);
+          box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.16);
+        }
+
+        .student-message-popup.error .student-message-icon-wrap {
+          color: #dc2626;
+          background: rgba(239, 68, 68, 0.11);
+          box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.15);
+        }
+
+        .student-message-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .student-message-label {
+          display: block;
+          margin-bottom: 4px;
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+        }
+
+        .student-message-popup.success .student-message-label {
+          color: #166534;
+        }
+
+        .student-message-popup.error .student-message-label {
+          color: #b91c1c;
+        }
+
+        .student-message-content p {
+          margin: 0;
+          color: #4b5563;
+          font-size: 14px;
+          line-height: 1.55;
+          overflow-wrap: anywhere;
+        }
+
+        .student-message-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 10px;
+          background: transparent;
+          color: #6b7280;
+          cursor: pointer;
+          transition: 0.18s ease;
+        }
+
+        .student-message-close:hover {
+          background: rgba(107, 114, 128, 0.10);
+          color: #111827;
+        }
+
+        @keyframes studentMessageFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes studentMessagePopIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (max-width: 560px) {
+          .student-message-overlay {
+            padding: 16px;
+          }
+
+          .student-message-popup {
+            gap: 13px;
+            padding: 18px 42px 18px 16px;
+            border-radius: 17px;
+          }
+
+          .student-message-icon-wrap {
+            flex-basis: 50px;
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+          }
+
+          .student-message-content p {
+            font-size: 13px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .student-message-overlay,
+          .student-message-popup {
+            animation: none;
+          }
+        }
+      `}</style>
 
       {showInstructions && (
 <div
