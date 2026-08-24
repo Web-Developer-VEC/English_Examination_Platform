@@ -24,7 +24,8 @@ router.delete("/delete-question-set", deleteQuestionSet);
 
 router.post("/exam-results", generateExamReport);
 router.post("/student-data",getStudentsByDepartmentAndBatch);
-
+router.get("/getstaff", getStaff);
+router.post("/updatestaff", updateStaff);
 router.use("/schedule", scheduleRoutes);
 
 module.exports = router;
