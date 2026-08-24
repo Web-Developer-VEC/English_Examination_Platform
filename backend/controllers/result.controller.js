@@ -42,7 +42,7 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // GET FILTERS
+        // CLEAN FILTERS
         // ====================================================
 
         const {
@@ -53,76 +53,12 @@ const generateExamReport = async (req, res) => {
             semester
         } = data;
 
-
-        // ====================================================
-        // GET DATABASE
-        // ====================================================
-
-        const db = getDB();
-
-
-        // ====================================================
-        // BUILD COMMON FILTER (batch / department / section / semester)
-        // ====================================================
-        // Used for the "schedule" and "exam" queries, which both
-        // carry a semester field.
-
-        const commonFilter = {};
-
-        if (
-            batch &&
-            typeof batch === "string" &&
-            batch.trim() !== ""
-        ) {
-
-            commonFilter.batch = batch.trim();
-
-        }
-
-
-        if (
-            department &&
-            typeof department === "string" &&
-            department.trim() !== ""
-        ) {
-
-            commonFilter.department = department.trim();
-
-        }
-
-
-        if (
-            section &&
-            typeof section === "string" &&
-            section.trim() !== ""
-        ) {
-
-            commonFilter.section = section.trim();
-
-        }
-
-
-        // semester is stored as "odd" or "even" — validate against
-        if (
-            semester &&
-            typeof semester === "string" &&
-            ["odd", "even"].includes(semester.trim().toLowerCase())
-        ) {
-
-            commonFilter.semester = semester.trim().toLowerCase();
-
-        }
-
-
-        // ====================================================
-        // BUILD STUDENT ROSTER FILTER
-        // ====================================================
-        // Same as commonFilter, minus semester — the "student"
-        // collection doesn't carry a semester field.
-
-        const studentFilter = { ...commonFilter };
-
-        delete studentFilter.semester;
+        const cleanBatch = batch && typeof batch === "string" && batch.trim() !== "" ? batch.trim() : null;
+        const cleanDept = department && typeof department === "string" && department.trim() !== "" ? department.trim() : null;
+        const cleanSec = section && typeof section === "string" && section.trim() !== "" ? section.trim() : null;
+        const cleanSem = semester && typeof semester === "string" && ["odd", "even"].includes(semester.trim().toLowerCase()) 
+            ? semester.trim().toLowerCase() 
+            : null;
 
 
         // ====================================================
@@ -132,19 +68,45 @@ const generateExamReport = async (req, res) => {
         const isCieReport =
             cie !== undefined &&
             cie !== null &&
-            cie !== "" &&
-            !isNaN(Number(cie));
+            typeof cie === "string" &&
+            cie.trim() !== "";
 
-        const cieNumber =
+        const cieValue =
             isCieReport
-                ? Number(cie)
+                ? cie.trim()
                 : null;
-
 
         console.log(
             "isCieReport:",
             isCieReport
         );
+
+
+        // ====================================================
+        // GET DATABASE
+        // ====================================================
+
+        const db = getDB();
+
+
+        // ====================================================
+        // BUILD STUDENT ROSTER FILTER (Top-Level Fields)
+        // ====================================================
+        // The "students" collection stores data at the root level.
+
+        const studentFilter = {};
+
+        if (cleanBatch) {
+            studentFilter.batch = cleanBatch;
+        }
+        
+        if (cleanDept) {
+            studentFilter.department = cleanDept;
+        }
+        
+        if (cleanSec) {
+            studentFilter.section = cleanSec;
+        }
 
 
         // ====================================================
@@ -190,24 +152,43 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // FETCH TEST COLUMNS FROM "schedule"
+        // BUILD SCHEDULE FILTER (Nested "eligibility" Fields)
         // ====================================================
-        // If a cie was requested, restrict to that cie's tests.
-        // Otherwise every scheduled test for this class becomes
-        // a column.
+        // The "schedule" collection nests these fields inside "eligibility"
+        // except for "cie", which is top-level.
 
-        const scheduleFilter = {
+        const scheduleFilter = {};
 
-            ...commonFilter,
+        if (cleanBatch) {
+            scheduleFilter["eligibility.batch"] = cleanBatch;
+        }
 
-            ...(isCieReport ? { cie: cieNumber } : {})
+        if (cleanDept) {
+            scheduleFilter["eligibility.department"] = cleanDept;
+        }
 
-        };
+        if (cleanSec) {
+            scheduleFilter["eligibility.section"] = cleanSec;
+        }
+
+        if (cleanSem) {
+            scheduleFilter["eligibility.semester"] = cleanSem;
+        }
+
+        if (isCieReport) {
+            scheduleFilter.cie = cieValue;
+        }
+
 
         console.log(
             "SCHEDULE FILTER:",
             scheduleFilter
         );
+
+
+        // ====================================================
+        // FETCH TEST COLUMNS FROM "schedule"
+        // ====================================================
 
         const scheduleTests = await db
             .collection("schedule")
@@ -235,7 +216,7 @@ const generateExamReport = async (req, res) => {
                 success: false,
 
                 message: isCieReport
-                    ? `No tests found for CIE ${cieNumber} with the given filters.`
+                    ? `No tests found for CIE ${cieValue} with the given filters.`
                     : "No tests found for the given filters."
 
             });
@@ -313,25 +294,38 @@ const generateExamReport = async (req, res) => {
 
 
         // ====================================================
-        // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
+        // BUILD EXAM FILTER (Top-Level Fields + QuestionSet IDs)
         // ====================================================
-        // Both "normal" and "retest" documents are fetched here —
-        // the preference between them is resolved afterwards.
+        // The "exam" collection stores data at the root level.
+        // It strictly binds to the matched schedules via questionSetId.
 
         const examFilter = {
-
-            ...commonFilter,
-
             questionSetId: {
                 $in: questionSetIds
             }
-
         };
+
+        if (cleanBatch) {
+            examFilter.batch = cleanBatch;
+        }
+
+        if (cleanDept) {
+            examFilter.department = cleanDept;
+        }
+
+        if (cleanSec) {
+            examFilter.section = cleanSec;
+        }
 
         console.log(
             "EXAM FILTER:",
             examFilter
         );
+
+
+        // ====================================================
+        // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
+        // ====================================================
 
         const examRecords = await db
             .collection("exam")
@@ -585,14 +579,14 @@ const generateExamReport = async (req, res) => {
         // DISPLAY FILTER VALUES
         // ====================================================
 
-        const batchValue = commonFilter.batch || "All";
-        const departmentValue = commonFilter.department || "All";
-        const sectionValue = commonFilter.section || "All";
+        const batchValue = cleanBatch || "All";
+        const departmentValue = cleanDept || "All";
+        const sectionValue = cleanSec || "All";
         const semesterValue =
-            commonFilter.semester
-                ? commonFilter.semester.charAt(0).toUpperCase() + commonFilter.semester.slice(1)
+            cleanSem
+                ? cleanSem.charAt(0).toUpperCase() + cleanSem.slice(1)
                 : "All";
-        const cieValue = isCieReport ? `CIE ${cieNumber}` : "All";
+        const cieDisplay = isCieReport ? `CIE ${cieValue}` : "All";
 
 
         // ====================================================
@@ -636,7 +630,7 @@ const generateExamReport = async (req, res) => {
 
             .replace(
                 "{{CIE}}",
-                cieValue
+                cieDisplay
             )
 
             .replace(
@@ -739,11 +733,11 @@ const generateExamReport = async (req, res) => {
             sanitizeForFilename(departmentValue),
             sanitizeForFilename(batchValue),
             sanitizeForFilename(sectionValue),
-            commonFilter.semester
-                ? commonFilter.semester
+            cleanSem
+                ? cleanSem
                 : "AllSem",
             isCieReport
-                ? `CIE${cieNumber}`
+                ? `CIE${cieValue}`
                 : "AllCIE"
 
         ];
