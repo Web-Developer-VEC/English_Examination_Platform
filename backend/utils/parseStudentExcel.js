@@ -10,6 +10,7 @@ const REQUIRED_HEADERS = [
   "Year",
   "Section",
   "Batch",
+    "Academic_Year",
   "Gender",
   "DOB",
 ];
@@ -163,6 +164,7 @@ const parseStudentExcel = (buffer) => {
 
     // Gender Logic
     let rawGender = String(row.Gender || "").trim();
+        const academicYear = String(row.Academic_Year).trim();  
     const gender = rawGender ? rawGender.charAt(0).toUpperCase() + rawGender.slice(1).toLowerCase() : "";
 
     // DOB Logic
@@ -240,7 +242,19 @@ const parseStudentExcel = (buffer) => {
         throwValidationError(`Row ${excelRow}: Invalid email address.`);
       }
     }
+        if(academicYear){
 
+            const academicYearRegex = /^\d{4}-\d{4}$/;
+
+            if (!academicYearRegex.test(academicYear)) {
+
+                throwValidationError(
+                    `Row ${excelRow}: Invalid Academic Year. Use YYYY-YYYY format.`
+                );
+
+            }
+
+        }
     if (phone) {
       if (!/^\d{10}$/.test(phone)) {
         throwValidationError(`Row ${excelRow}: Phone number must contain exactly 10 digits.`);
@@ -263,6 +277,7 @@ const parseStudentExcel = (buffer) => {
       batch,
       gender,
       dob,
+            academicYear,
     };
   });
 

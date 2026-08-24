@@ -12,8 +12,9 @@ const getformdata = async (req, res) => {
       .collection("students")
       .find({})
       .sort({
-        batch: 1,
-        department: 1,
+        batch:  1,
+                academicYear: 1,
+        department:  1,
         section: 1,
         gender: 1, // Groups by gender first (Female -> Male -> Other)
         name: 1,   // Sorts alphabetically by name within each gender group
@@ -22,21 +23,32 @@ const getformdata = async (req, res) => {
 
     const groupMap = new Map();
 
-    students
-      .filter(
-        (student) => student.batch && student.department && student.section,
-      )
-      .forEach((student) => {
-        const key = `${student.batch}_${student.department}_${student.section}`;
+        students
+            .filter(
+                student =>
+                    student.batch &&
+                    student.academicYear &&
+                    student.department &&
+                    student.section
+            )
+            .forEach(student => {
 
-        if (!groupMap.has(key)) {
-          groupMap.set(key, {
-            batch: student.batch,
-            department: student.department,
-            section: student.section,
-            students: [],
-          });
-        }
+                const key =
+                    `${student.batch}_${student.academicYear}_${student.department}_${student.section}`;
+
+                if (!groupMap.has(key)) {
+
+                    groupMap.set(key, {
+
+                        batch: student.batch,
+                        academicYear: student.academicYear,
+                        department: student.department,
+                        section: student.section,
+                        students: []
+
+                    });
+
+                }
 
         if (student.username) {
           // Push name and gender along with username

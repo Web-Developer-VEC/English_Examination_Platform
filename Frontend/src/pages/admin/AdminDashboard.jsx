@@ -8,7 +8,6 @@ export default function AdminDashboard() {
     const [tests, setTests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All");
     const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
@@ -16,18 +15,37 @@ export default function AdminDashboard() {
     const recordsPerPage = 5;
     const [selectedDate, setSelectedDate] = useState("");
     const navigate = useNavigate();
+    const getDynamicStatus = (startTime, endTime) => {
+        if (!startTime || !endTime) {
+            return "Upcoming";
+        }
+
+        const now = new Date();
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+
+        if (now < start) {
+            return "Upcoming";
+        }
+
+        if (now >= start && now <= end) {
+            return "Ongoing";
+        }
+
+        return "Completed";
+    };
 
     useEffect(() => {
-        setCurrentPage(1);
-    }, [search, department, category, status, selectedDate]);
+        let interval;
 
-    useEffect(() => {
         const fetchTests = async () => {
             try {
-                setLoading(true);
                 setError("");
 
-                const response = await fetch("http://localhost:5000/api/staff/schedule/getscheduleexams");
+                const response = await fetch(
+                    "http://localhost:5000/api/staff/schedule/getscheduleexams"
+                );
+
                 if (!response.ok) {
                     throw new Error(`HTTP error: ${response.status}`);
                 }
@@ -51,18 +69,12 @@ export default function AdminDashboard() {
                         ? new Date(exam.startTime).toLocaleDateString("en-CA")
                         : "N/A",
 
-                    time: exam.startTime
-                        ? new Date(exam.startTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })
-                        : "N/A",
-
-                    duration: exam.duration || 0,
-
                     testCode: exam.testcode || "N/A",
 
-                    status: exam.status || "N/A",
+                    status: getDynamicStatus(
+                        exam.startTime,
+                        exam.endTime
+                    ),
 
                     questionSetId: exam.questionSetId,
 
@@ -84,6 +96,13 @@ export default function AdminDashboard() {
         };
 
         fetchTests();
+
+        // Refresh every 10 seconds
+        interval = setInterval(fetchTests, 10000);
+
+        return () => {
+            clearInterval(interval);
+        };
     }, []);
 
     // ==========================================================
@@ -111,10 +130,6 @@ export default function AdminDashboard() {
     const filteredTests = useMemo(() => {
         return tests.filter((test) => {
 
-            const matchSearch = (test.testCode || "")
-                .toLowerCase()
-                .includes(search.toLowerCase());
-
             const matchDepartment =
                 department === "All" ||
                 test.department === department;
@@ -132,14 +147,17 @@ export default function AdminDashboard() {
                 test.date === selectedDate;
 
             return (
-                matchSearch &&
                 matchDepartment &&
                 matchCategory &&
                 matchStatus &&
                 matchDate
             );
         });
-    }, [tests, search, department, category, status, selectedDate]);
+    }, [tests, department, category, status, selectedDate]);
+
+    // ==========================================================
+    // PAGINATION
+    // ==========================================================
 
     const totalPages = Math.ceil(
         filteredTests.length / recordsPerPage
@@ -151,6 +169,39 @@ export default function AdminDashboard() {
         startIndex,
         startIndex + recordsPerPage
     );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [department, category, status, selectedDate]);
+
+    const handleDownload = (test) => {
+        const content = `
+Exam ID: ${test.id}
+Category: ${test.category}
+Section: ${test.section}
+Test Code: ${test.testCode}
+Date: ${test.date}
+Start Time: ${test.startTime || "N/A"}
+End Time: ${test.endTime || "N/A"}
+Status: ${test.status}
+`;
+
+        const blob = new Blob([content], {
+            type: "text/plain",
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `exam-${test.testCode || test.id}.txt`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+    };
 
 
 
@@ -237,34 +288,7 @@ export default function AdminDashboard() {
 
                 <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
-
-                        {/* SEARCH */}
-
-                        <div>
-
-
-
-                            <input
-                                type="text"
-                                placeholder="Search Question Code"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="
-                w-full
-                h-11
-                px-4
-                rounded-lg
-                border
-                border-gray-300
-                focus:outline-none
-                focus:ring-2
-                focus:ring-yellow-300
-                focus:border-[#FDCC03]
-                "
-                            />
-
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
 
                         {/* DEPARTMENT */}
 
@@ -332,7 +356,7 @@ export default function AdminDashboard() {
                                     All Categories
                                 </option>
 
-                                <option value="All">
+                                <option value="Re-Test">
                                     Re-Test
                                 </option>
 
@@ -426,18 +450,20 @@ export default function AdminDashboard() {
             TABLE
         ========================================================== */}
 
-                <div className="mt-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="mt-8 bg-white rounded-xl border border-gray-200 overflow-x-auto">
+
 
                     {/* TABLE HEADER */}
 
-                    <div className="hidden lg:grid grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
-
+                    <div
+                        className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
+                        style={{
+                            gridTemplateColumns:
+                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
+                        }}
+                    >
                         <TableHeading>
                             Department
-                        </TableHeading>
-
-                        <TableHeading>
-                            Category
                         </TableHeading>
 
                         <TableHeading>
@@ -445,15 +471,19 @@ export default function AdminDashboard() {
                         </TableHeading>
 
                         <TableHeading>
+                            Category
+                        </TableHeading>
+
+                        <TableHeading>
                             Date
                         </TableHeading>
 
                         <TableHeading>
-                            Time
+                            Start Time
                         </TableHeading>
 
                         <TableHeading>
-                            Duration
+                            End Time
                         </TableHeading>
 
                         <TableHeading>
@@ -464,6 +494,9 @@ export default function AdminDashboard() {
                             Status
                         </TableHeading>
 
+                        <TableHeading>
+                            Download
+                        </TableHeading>
                     </div>
 
                     {/* TABLE BODY */}
@@ -489,17 +522,20 @@ export default function AdminDashboard() {
                             <div
                                 key={test.id}
                                 className="
-                grid
-                lg:grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr]
-                items-center
-                px-6
-                gap-4
-                py-5
-                border-b
-                border-gray-100
-                hover:bg-yellow-50/40
-                transition
-            "
+        grid
+        items-center
+        gap-4
+        px-6
+        py-5
+        border-b
+        border-gray-100
+        hover:bg-yellow-50/40
+        transition
+    "
+                                style={{
+                                    gridTemplateColumns:
+                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
+                                }}
                             >
 
                                 {/* DEPARTMENT */}
@@ -510,6 +546,14 @@ export default function AdminDashboard() {
                                     </span>
                                 </div>
 
+                                {/* SECTION */}
+
+                                <div className="flex items-center justify-center">
+                                    <span className="font-semibold">
+                                        {test.section}
+                                    </span>
+                                </div>
+
                                 {/* CATEGORY */}
 
                                 <div className="flex items-center justify-center">
@@ -517,20 +561,7 @@ export default function AdminDashboard() {
                                         <h3 className="font-semibold text-gray-900">
                                             {test.category}
                                         </h3>
-
-
                                     </div>
-                                </div>
-
-
-                                {/* SECTION */}
-
-                                <div className="flex items-center justify-center">
-
-                                    <span className="font-semibold">
-                                        {test.section}
-                                    </span>
-
                                 </div>
 
 
@@ -542,16 +573,27 @@ export default function AdminDashboard() {
                                 </div>
 
 
-                                {/* TIME */}
-
+                                {/* START TIME */}
                                 <div className="flex items-center justify-center text-gray-600">
-                                    {test.time}
+                                    {test.startTime
+                                        ? new Date(test.startTime).toLocaleTimeString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })
+                                        : "N/A"}
                                 </div>
 
+                                {/* END TIME */}
                                 <div className="flex items-center justify-center text-gray-600">
-                                    {test.duration} min
+                                    {test.endTime
+                                        ? new Date(test.endTime).toLocaleTimeString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })
+                                        : "N/A"}
                                 </div>
-
 
                                 {/* TEST CODE */}
 
@@ -580,6 +622,53 @@ export default function AdminDashboard() {
                                     <StatusBadge
                                         status={test.status}
                                     />
+
+                                </div>
+
+
+
+                                {/* DOWNLOAD */}
+
+                                <div className="flex items-center justify-center">
+
+                                    {test.status === "Completed" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDownload(test)}
+                                            title="Download Test"
+                                            className="
+                flex
+                items-center
+                justify-center
+                w-9
+                h-9
+                rounded-lg
+                bg-[#FDCC03]
+                border
+                border-[#FDCC03]
+                text-black
+                hover:bg-red-700
+                hover:border-red-500
+                hover:text-white
+                transition
+            "
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-5 h-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
 
                                 </div>
 
