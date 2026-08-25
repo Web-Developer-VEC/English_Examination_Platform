@@ -105,8 +105,6 @@ const getAdminSettings = async (req, res) => {
 // ENABLE / DISABLE EDIT FOR SPECIFIC STUDENT
 // =====================================================
 
-
-
 const updateStudentEditPermission = async (req, res) => {
     try {
 
