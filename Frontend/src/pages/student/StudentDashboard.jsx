@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer";
+import { toast, ToastContainer } from 'react-toastify';
 import { getStudentSession } from "../../utils/helpers";
+import { getStudent, updateStudent } from "../../services/studentService";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -62,37 +64,31 @@ const StudentDashboard = () => {
         username: derivedUsername,
       };
 
-      const response = await fetch(
-        "http://localhost:5000/api/staff/studentsupdate",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
+      const response = await updateStudent(updateData);
 
-      const data = await response.json();
+      console.log("Updated student:", response.student);
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update profile");
-      }
-
-      console.log("Updated student:", data.student);
-
-      setStudent(data.student);
-      setEditForm(data.student);
+      setStudent(response.student);
+      setEditForm(response.student);
 
       setIsEditing(false);
 
-      alert("Student profile updated successfully!");
+      toast.success("Student profile updated successfully!");
+
     } catch (error) {
+
       console.error("Error updating student:", error);
 
-      alert(error.message || "Failed to update profile");
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update profile"
+      );
+
     } finally {
+
       setIsSaving(false);
+
     }
   };
 
@@ -116,48 +112,57 @@ const StudentDashboard = () => {
         const session = getStudentSession();
 
         if (!session || !session.user) {
-          throw new Error("No logged-in student found. Please log in again.");
+          throw new Error(
+            "No logged-in student found. Please log in again."
+          );
         }
 
         const username = session.user.username;
 
         if (!username) {
-          throw new Error("No logged-in student found. Please log in again.");
+          throw new Error(
+            "No logged-in student found. Please log in again."
+          );
         }
 
-        const response = await fetch(
-          "http://localhost:5000/api/student/getstudent",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(session.token
-                ? { Authorization: `Bearer ${session.token}` }
-                : {}),
-            },
-            body: JSON.stringify({ username }),
-          }
+        const result = await getStudent(username);
+
+        if (!result.success) {
+          throw new Error(
+            result.message || "Failed to fetch student data"
+          );
+        }
+
+        console.log(
+          "Student data from DB:",
+          result.data
         );
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || "Failed to fetch student data");
-        }
-
-        console.log("Student data from DB:", result.data);
 
         setStudent(result.data);
         setEditForm(result.data);
+
       } catch (error) {
-        console.error("Error fetching student:", error);
-        setFetchError(error.message || "Failed to load student data");
+
+        console.error(
+          "Error fetching student:",
+          error
+        );
+
+        setFetchError(
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to load student data"
+        );
+
       } finally {
+
         setIsLoading(false);
+
       }
     };
 
     fetchStudent();
+
   }, []);
 
   useEffect(() => {
@@ -249,8 +254,10 @@ const StudentDashboard = () => {
       : editForm.admissionNo;
 
   return (
-    <div
-      className="
+    <>
+      <ToastContainer position="bottom-right" autoClose='3000' />
+      <div
+        className="
         w-full
         h-[calc(100dvh-172px)]
         bg-gray-50
@@ -262,22 +269,22 @@ const StudentDashboard = () => {
         box-border
         min-h-0
       "
-    >
-      <div
-        className="
+      >
+        <div
+          className="
           flex-none
           flex
           justify-between
           items-center
           mb-6
         "
-      >
-        <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
+        >
+          <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="
               px-6
               py-2
               bg-white
@@ -290,13 +297,13 @@ const StudentDashboard = () => {
               transition
               cursor-pointer
             "
-          >
-            Edit Profile
-          </button>
+            >
+              Edit Profile
+            </button>
 
-          <button
-            onClick={() => navigate("/exam/instruction")}
-            className="
+            <button
+              onClick={() => navigate("/exam/instruction")}
+              className="
               px-6
               py-2
               bg-yellow-400
@@ -310,14 +317,14 @@ const StudentDashboard = () => {
               shadow-sm
               cursor-pointer
             "
-          >
-            Take Test
-          </button>
+            >
+              Take Test
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div
-        className="
+        <div
+          className="
           flex-1
           flex
           flex-row
@@ -326,9 +333,9 @@ const StudentDashboard = () => {
           w-full
           overflow-hidden
         "
-      >
-        <div
-          className="
+        >
+          <div
+            className="
             w-1/4
             flex
             flex-col
@@ -341,9 +348,9 @@ const StudentDashboard = () => {
             min-h-0
             overflow-hidden
           "
-        >
-          <h2
-            className="
+          >
+            <h2
+              className="
               flex-none
               text-xl
               font-bold
@@ -352,74 +359,74 @@ const StudentDashboard = () => {
               border-b
               pb-2
             "
-          >
-            Student Profile
-          </h2>
+            >
+              Student Profile
+            </h2>
 
-          <div className="flex-none space-y-6 pr-1">
-            <div>
-              <p
-                className="
+            <div className="flex-none space-y-6 pr-1">
+              <div>
+                <p
+                  className="
                   text-sm
                   text-gray-500
                   font-medium
                   uppercase
                   tracking-wider
                 "
-              >
-                Name
-              </p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {student.name}
-              </p>
-            </div>
+                >
+                  Name
+                </p>
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {student.name}
+                </p>
+              </div>
 
-            <div>
-              <p
-                className="
+              <div>
+                <p
+                  className="
                   text-sm
                   text-gray-500
                   font-medium
                   uppercase
                   tracking-wider
                 "
-              >
-                Department & Section
-              </p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {student.department} - {student.section}
-              </p>
-            </div>
+                >
+                  Department & Section
+                </p>
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {student.department} - {student.section}
+                </p>
+              </div>
 
-            <div>
-              <p
-                className="
+              <div>
+                <p
+                  className="
                   text-sm
                   text-gray-500
                   font-medium
                   uppercase
                   tracking-wider
                 "
-              >
-                Email
-              </p>
-              <p
-                className="
+                >
+                  Email
+                </p>
+                <p
+                  className="
                   text-lg
                   font-semibold
                   text-gray-900
                   break-all
                   mt-1
                 "
-              >
-                {student.email}
-              </p>
+                >
+                  {student.email}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          className="
+          <div
+            className="
             w-3/4
             flex
             flex-col
@@ -432,9 +439,9 @@ const StudentDashboard = () => {
             min-h-0
             overflow-hidden
           "
-        >
-          <h2
-            className="
+          >
+            <h2
+              className="
               flex-none
               text-xl
               font-bold
@@ -443,12 +450,12 @@ const StudentDashboard = () => {
               border-b
               pb-2
             "
-          >
-            Test Results
-          </h2>
+            >
+              Test Results
+            </h2>
 
-          <div
-            className="
+            <div
+              className="
               flex-1
               min-h-0
               overflow-y-auto
@@ -457,17 +464,17 @@ const StudentDashboard = () => {
               border-gray-200
               rounded-lg
             "
-          >
-            <table
-              className="
+            >
+              <table
+                className="
                 w-full
                 min-w-[700px]
                 text-left
                 border-collapse
               "
-            >
-              <thead
-                className="
+              >
+                <thead
+                  className="
                   bg-gray-100
                   sticky
                   top-0
@@ -477,45 +484,45 @@ const StudentDashboard = () => {
                   uppercase
                   text-gray-600
                 "
-              >
-                <tr>
-                  <th className="py-3 px-4 font-bold">S.No</th>
-                  <th className="py-3 px-4 font-bold">Question Code</th>
-                  <th className="py-3 px-4 font-bold">CIE</th>
-                  <th className="py-3 px-4 font-bold">Mark</th>
-                  <th className="py-3 px-4 font-bold text-right">Action</th>
-                </tr>
-              </thead>
+                >
+                  <tr>
+                    <th className="py-3 px-4 font-bold">S.No</th>
+                    <th className="py-3 px-4 font-bold">Question Code</th>
+                    <th className="py-3 px-4 font-bold">CIE</th>
+                    <th className="py-3 px-4 font-bold">Mark</th>
+                    <th className="py-3 px-4 font-bold text-right">Action</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {testResults.map((test, index) => (
-                  <tr
-                    key={index}
-                    className="
+                <tbody>
+                  {testResults.map((test, index) => (
+                    <tr
+                      key={index}
+                      className="
                       border-b
                       last:border-b-0
                       border-gray-200
                       hover:bg-yellow-50
                       transition
                     "
-                  >
-                    <td className="py-4 px-4 text-gray-700 font-medium">
-                      {index + 1}
-                    </td>
-                    <td className="py-4 px-4 font-bold text-gray-900">
-                      {test.id}
-                    </td>
-                    <td className="py-4 px-4 text-gray-600 font-medium">
-                      {test.cie}
-                    </td>
-                    <td className="py-4 px-4 font-bold text-gray-900">
-                      {test.mark}
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        {test.status === "Sent" ? (
-                          <span
-                            className="
+                    >
+                      <td className="py-4 px-4 text-gray-700 font-medium">
+                        {index + 1}
+                      </td>
+                      <td className="py-4 px-4 font-bold text-gray-900">
+                        {test.id}
+                      </td>
+                      <td className="py-4 px-4 text-gray-600 font-medium">
+                        {test.cie}
+                      </td>
+                      <td className="py-4 px-4 font-bold text-gray-900">
+                        {test.mark}
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          {test.status === "Sent" ? (
+                            <span
+                              className="
                               flex
                               items-center
                               text-green-700
@@ -527,26 +534,26 @@ const StudentDashboard = () => {
                               font-bold
                               shadow-sm
                             "
-                          >
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                            Sent
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleSendResult(test.id)}
-                            className="
+                              <svg
+                                className="w-3 h-3 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              Sent
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSendResult(test.id)}
+                              className="
                               flex
                               items-center
                               text-black
@@ -563,10 +570,10 @@ const StudentDashboard = () => {
                               cursor-pointer
                               shadow-sm
                             "
-                            title="Send result to student"
-                          >
-                            <svg
-                              className="
+                              title="Send result to student"
+                            >
+                              <svg
+                                className="
                                 w-3
                                 h-3
                                 mr-1
@@ -574,33 +581,33 @@ const StudentDashboard = () => {
                                 rotate-45
                                 -mt-1
                               "
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                              />
-                            </svg>
-                            Send
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                />
+                              </svg>
+                              Send
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      {isEditing && (
-        <div
-          className="
+        {isEditing && (
+          <div
+            className="
             fixed
             inset-0
             bg-black/30
@@ -613,13 +620,13 @@ const StudentDashboard = () => {
             z-[2147483000]
             overflow-y-auto
           "
-          style={{ isolation: "isolate" }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !isSaving) setIsEditing(false);
-          }}
-        >
-          <div
-            className="
+            style={{ isolation: "isolate" }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !isSaving) setIsEditing(false);
+            }}
+          >
+            <div
+              className="
               bg-white
               rounded-xl
               shadow-2xl
@@ -635,9 +642,9 @@ const StudentDashboard = () => {
               border-t-4
               border-yellow-400
             "
-          >
-            <div
-              className="
+            >
+              <div
+                className="
                 flex
                 justify-between
                 items-center
@@ -649,15 +656,15 @@ const StudentDashboard = () => {
                 bg-white
                 z-10
               "
-            >
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                Edit Profile
-              </h2>
+              >
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                  Edit Profile
+                </h2>
 
-              <button
-                onClick={() => setIsEditing(false)}
-                disabled={isSaving}
-                className="
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                  className="
                   text-gray-500
                   hover:text-red-500
                   transition
@@ -665,38 +672,156 @@ const StudentDashboard = () => {
                   disabled:opacity-50
                   disabled:cursor-not-allowed
                 "
-                aria-label="Close"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSave}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
+                <div className="col-span-1 sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Admission No (Cannot be changed)
+                  </label>
+                  <input
+                    type="text"
+                    name="admissionNo"
+                    value={editForm.admissionNo}
+                    disabled
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    bg-gray-100
+                    text-gray-500
+                    cursor-not-allowed
+                  "
                   />
-                </svg>
-              </button>
-            </div>
+                </div>
 
-            <form
-              onSubmit={handleSave}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-            >
-              <div className="col-span-1 sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Admission No (Cannot be changed)
-                </label>
-                <input
-                  type="text"
-                  name="admissionNo"
-                  value={editForm.admissionNo}
-                  disabled
-                  className="
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={editForm.name}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Register No
+                  </label>
+                  <input
+                    type="text"
+                    name="registerNo"
+                    value={editForm.registerNo}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={editForm.email}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={editForm.phone}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department (Cannot be changed)
+                  </label>
+                  <input
+                    type="text"
+                    name="department"
+                    value={editForm.department}
+                    disabled
+                    className="
                     w-full
                     p-2
                     border
@@ -706,115 +831,19 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={editForm.name}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Register No
-                </label>
-                <input
-                  type="text"
-                  name="registerNo"
-                  value={editForm.registerNo}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={editForm.email}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={editForm.phone}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department (Cannot be changed)
-                </label>
-                <input
-                  type="text"
-                  name="department"
-                  value={editForm.department}
-                  disabled
-                  className="
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section (Cannot be changed)
+                  </label>
+                  <input
+                    type="text"
+                    name="section"
+                    value={editForm.section}
+                    disabled
+                    className="
                     w-full
                     p-2
                     border
@@ -824,19 +853,95 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Section (Cannot be changed)
-                </label>
-                <input
-                  type="text"
-                  name="section"
-                  value={editForm.section}
-                  disabled
-                  className="
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    value={editForm.gender}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Batch
+                  </label>
+                  <input
+                    type="text"
+                    name="batch"
+                    value={editForm.batch}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="text"
+                    name="dob"
+                    value={editForm.dob}
+                    onChange={handleInputChange}
+                    disabled={isSaving}
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
+                  "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Username (Cannot be changed)
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={displayUsername}
+                    disabled
+                    className="
                     w-full
                     p-2
                     border
@@ -846,109 +951,11 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender
-                </label>
-                <select
-                  name="gender"
-                  value={editForm.gender}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
+                <div
                   className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Batch
-                </label>
-                <input
-                  type="text"
-                  name="batch"
-                  value={editForm.batch}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date of Birth
-                </label>
-                <input
-                  type="text"
-                  name="dob"
-                  value={editForm.dob}
-                  onChange={handleInputChange}
-                  disabled={isSaving}
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-yellow-400
-                    outline-none
-                    disabled:bg-gray-100
-                  "
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Username (Cannot be changed)
-                </label>
-                <input
-                  type="text"
-                  name="username"
-                  value={displayUsername}
-                  disabled
-                  className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    bg-gray-100
-                    text-gray-500
-                    cursor-not-allowed
-                  "
-                />
-              </div>
-
-              <div
-                className="
                   col-span-1
                   sm:col-span-2
                   flex
@@ -961,12 +968,12 @@ const StudentDashboard = () => {
                   border-t
                   pt-4
                 "
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                  className="
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={isSaving}
+                    className="
                     px-4
                     py-2
                     border
@@ -978,14 +985,14 @@ const StudentDashboard = () => {
                     disabled:opacity-50
                     disabled:cursor-not-allowed
                   "
-                >
-                  Cancel
-                </button>
+                  >
+                    Cancel
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="
                     px-6
                     py-2
                     bg-yellow-400
@@ -999,16 +1006,18 @@ const StudentDashboard = () => {
                     disabled:opacity-70
                     disabled:cursor-wait
                   "
-                >
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-      <Footer />
-    </div>
+        )}
+        <Footer />
+      </div>
+    </>
+
   );
 };
 
