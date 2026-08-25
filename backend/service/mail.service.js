@@ -6,7 +6,7 @@ const {
 
 
 const sendExamPDFEmail = async ({
-    to,
+    studentEmail,
     studentName,
     examTitle,
     questionCode, // <-- ADDED THIS
@@ -59,7 +59,7 @@ const sendExamPDFEmail = async ({
 
         `From: ${process.env.REPORT_MAIL}`,
 
-        `To: ${to}`,
+        `To: ${studentEmail}`,
 
         // <-- UPDATED SUBJECT LINE TO INCLUDE QUESTION CODE
         `Subject: Examination Report - ${examTitle} ${questionCode}`,
