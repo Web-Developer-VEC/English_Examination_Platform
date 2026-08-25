@@ -684,38 +684,11 @@ export default function StudentResult() {
     // ---------------------------------------------------
     // DOWNLOAD PDF
     // ---------------------------------------------------
-    const pdfResponse = await fetch(pdfUrl);
-
-    if (!pdfResponse.ok) {
-      throw new Error("Unable to download the generated PDF.");
-    }
-
-    const pdfBlob = await pdfResponse.blob();
-
-    // ---------------------------------------------------
-    // CREATE TEMPORARY DOWNLOAD URL
-    // ---------------------------------------------------
-    const downloadUrl = window.URL.createObjectURL(pdfBlob);
-
-    // ---------------------------------------------------
-    // CREATE DOWNLOAD LINK
-    // ---------------------------------------------------
-    const downloadLink = document.createElement("a");
-    downloadLink.href = downloadUrl;
-    downloadLink.download = `exam-report-${filters.dept}-${filters.batch}-${filters.section}-${semesterValue}-${cieNumber}.pdf`;
-
-    document.body.appendChild(downloadLink);
-
-    // ---------------------------------------------------
-    // START DOWNLOAD
-    // ---------------------------------------------------
-    downloadLink.click();
-
-    // ---------------------------------------------------
-    // CLEANUP
-    // ---------------------------------------------------
-    document.body.removeChild(downloadLink);
-    window.URL.revokeObjectURL(downloadUrl);
+    window.open(
+  pdfUrl,
+  "_blank",
+  "noopener,noreferrer"
+);
 
     return responseData;
   };
