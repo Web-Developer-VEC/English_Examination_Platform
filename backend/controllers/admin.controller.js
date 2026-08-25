@@ -225,15 +225,6 @@ const updateStudentEditPermission = async (req, res) => {
                 notFoundCount: notFoundStudents.length
 
             }
-            data: students.map(student => ({
-                admissionNo:
-                    String(student.admissionNo).trim(),
-
-                editEnabled:
-                    student.editEnabled
-            })),
-
-            settings: updatedSettings
 
         });
 
