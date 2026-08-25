@@ -173,7 +173,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
 
                                         {user.department &&
                                             user.section &&
-                                            " | "}
+                                            " - "}
 
                                         {user.section &&
                                             user.section.toUpperCase()}
