@@ -29,18 +29,18 @@ const AdminLogin = () => {
             if (response.success) {
 
                 // Save admin session
+
+
+                // Optional: remove old student session
+                sessionStorage.removeItem(
+                    "studentSession"
+                );
                 saveAdminSession({
                     token: response.token,
                     sessionId: response.sessionId,
                     expiresAt: response.expiresAt,
                     user: response.user
                 });
-
-                // Optional: remove old student session
-                sessionStorage.removeItem(
-                    "studentSession"
-                );
-
                 navigate("/admin");
             }
 
