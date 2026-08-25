@@ -14,7 +14,7 @@ const { updateStudent } = require("../../controllers/student.controller");
 const scheduleRoutes = require("./schedule.routes");
 const { generateExamReport } = require("../../controllers/result.controller");
 const{deleteQuestionSet}=require("../../controllers/delete.question.controller");
-const { getStaff, updateStaff } = require("../../controllers/staff.controller");
+const { updateStaff,getStaff } = require("../../controllers/staff.controller");
 
 // Upload Student Excel
 router.post("/studentsupload", student_upload_Middleware, studentsUpload);
