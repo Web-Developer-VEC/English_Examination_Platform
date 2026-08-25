@@ -4,522 +4,346 @@ const path = require("path");
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
 
+// IMPORT YOUR EMAIL SERVICE HERE
+const { sendExamPDFEmail } = require("../service/mail.service");
 
 // ============================================================
 // HTML ESCAPE
 // ============================================================
 
 const escapeHtml = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
 
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 };
-
 
 // ============================================================
 // GET OPTION LETTER
 // ============================================================
 
 const getOptionLetter = (options, answer) => {
-
-    if (!options || !answer) {
-        return "";
-    }
-
-    const normalizedAnswer =
-        String(answer)
-            .trim()
-            .toLowerCase();
-
-    for (const [letter, text] of Object.entries(options)) {
-
-        if (
-            String(text)
-                .trim()
-                .toLowerCase() ===
-            normalizedAnswer
-        ) {
-            return letter;
-        }
-    }
-
+  if (!options || !answer) {
     return "";
-};
+  }
 
+  const normalizedAnswer = String(answer).trim().toLowerCase();
+
+  for (const [letter, text] of Object.entries(options)) {
+    if (String(text).trim().toLowerCase() === normalizedAnswer) {
+      return letter;
+    }
+  }
+
+  return "";
+};
 
 // ============================================================
 // FORMAT DATE
 // ============================================================
 
 const formatDate = (date) => {
+  if (!date) {
+    return "-";
+  }
 
-    if (!date) {
-        return "-";
-    }
+  const parsedDate = new Date(date);
 
-    const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) {
+    return "-";
+  }
 
-    if (isNaN(parsedDate.getTime())) {
-        return "-";
-    }
+  return parsedDate.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
 
-    return parsedDate.toLocaleString(
-        "en-IN",
-        {
-            timeZone: "Asia/Kolkata",
+    day: "2-digit",
 
-            day: "2-digit",
+    month: "2-digit",
 
-            month: "2-digit",
+    year: "numeric",
 
-            year: "numeric",
+    hour: "2-digit",
 
-            hour: "2-digit",
+    minute: "2-digit",
 
-            minute: "2-digit",
-
-            hour12: true
-        }
-    );
+    hour12: true,
+  });
 };
-
 
 // ============================================================
 // GENERATE STUDENT EXAM PDF
 // ============================================================
 
 const generateStudentExamPDF = async (req, res) => {
+  let browser = null;
+
+  try {
+    // ====================================================
+    // GET PARAMETERS
+    // ====================================================
 
-    let browser = null;
+    const { testId, admissionNo } = req.body;
 
-    try {
+    // ====================================================
+    // VALIDATION
+    // ====================================================
 
-        // ====================================================
-        // GET PARAMETERS
-        // ====================================================
+    if (!testId || !admissionNo) {
+      return res.status(400).json({
+        success: false,
 
-        const {
-            testId,
-            admissionNo
-        } = req.body;
+        message: "testId and admissionNo are required.",
+      });
+    }
 
+    if (!ObjectId.isValid(testId)) {
+      return res.status(400).json({
+        success: false,
 
-        // ====================================================
-        // VALIDATION
-        // ====================================================
+        message: "Invalid testId.",
+      });
+    }
 
-        if (!testId || !admissionNo) {
+    // ====================================================
+    // DATABASE
+    // ====================================================
 
-            return res.status(400).json({
+    const db = getDB();
+
+    // ====================================================
+    // FIND STUDENT
+    // ====================================================
+
+    const student = await db.collection("students").findOne({
+      admissionNo: admissionNo.trim(),
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+
+        message: "Student not found.",
+      });
+    }
+
+    // VALIDATE STUDENT EMAIL EXISTANCE
+    const studentEmail = student.email; // Ensure this matches your DB schema
+    if (!studentEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Student email address not found in the database.",
+      });
+    }
 
-                success: false,
+    // ====================================================
+    // FIND SCHEDULE
+    // ====================================================
 
-                message:
-                    "testId and admissionNo are required."
+    const exam = await db.collection("schedule").findOne({
+      _id: new ObjectId(testId),
+    });
 
-            });
-        }
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
 
+        message: "Scheduled examination not found.",
+      });
+    }
 
-        if (!ObjectId.isValid(testId)) {
+    // ====================================================
+    // FIND STUDENT ATTEMPT
+    // ====================================================
 
-            return res.status(400).json({
+    const examAttempt = await db.collection("exam").findOne({
+      testId: new ObjectId(testId),
 
-                success: false,
+      admissionNo: student.admissionNo,
+    });
 
-                message: "Invalid testId."
+    if (!examAttempt) {
+      return res.status(404).json({
+        success: false,
 
-            });
-        }
+        message: "Student exam attempt not found.",
+      });
+    }
 
+    // ====================================================
+    // QUESTION SET ID
+    // ====================================================
 
-        // ====================================================
-        // DATABASE
-        // ====================================================
+    if (!exam.questionSetId) {
+      return res.status(404).json({
+        success: false,
 
-        const db = getDB();
+        message: "Question set not assigned.",
+      });
+    }
 
+    const questionSetId =
+      exam.questionSetId instanceof ObjectId
+        ? exam.questionSetId
+        : new ObjectId(exam.questionSetId);
 
-        // ====================================================
-        // FIND STUDENT
-        // ====================================================
+    // ====================================================
+    // FIND QUESTION SET
+    // ====================================================
 
-        const student =
-            await db.collection("students").findOne({
+    const questionSet = await db.collection("questions").findOne({
+      _id: questionSetId,
+    });
 
-                admissionNo:
-                    admissionNo.trim()
+    if (!questionSet) {
+      return res.status(404).json({
+        success: false,
 
-            });
+        message: "Question set not found.",
+      });
+    }
+    const questionCode = questionSet.questionCode || "N/A";
 
+    // ====================================================
+    // QUESTIONS
+    // ====================================================
 
-        if (!student) {
+    const questions = Array.isArray(questionSet.questions)
+      ? questionSet.questions
+      : [];
 
-            return res.status(404).json({
+    if (questions.length === 0) {
+      return res.status(404).json({
+        success: false,
 
-                success: false,
+        message: "No questions found.",
+      });
+    }
 
-                message: "Student not found."
+    // ====================================================
+    // STUDENT ANSWERS
+    // ====================================================
 
-            });
-        }
+    const studentAnswers = Array.isArray(examAttempt.answers)
+      ? examAttempt.answers
+      : [];
 
+    // ====================================================
+    // LOGO
+    // ====================================================
 
-        // ====================================================
-        // FIND SCHEDULE
-        // ====================================================
+    const logoPath = path.join(__dirname, "../assets/vec-logo.png");
 
-        const exam =
-            await db.collection("schedule").findOne({
+    let logoHTML = "";
 
-                _id:
-                    new ObjectId(testId)
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
 
-            });
+      const logoBase64 = logoBuffer.toString("base64");
 
-
-        if (!exam) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "Scheduled examination not found."
-
-            });
-        }
-
-
-        // ====================================================
-        // FIND STUDENT ATTEMPT
-        // ====================================================
-
-        const examAttempt =
-            await db.collection("exam").findOne({
-
-                testId:
-                    new ObjectId(testId),
-
-                admissionNo:
-                    student.admissionNo
-
-            });
-
-
-        if (!examAttempt) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "Student exam attempt not found."
-
-            });
-        }
-
-
-        // ====================================================
-        // QUESTION SET ID
-        // ====================================================
-
-        if (!exam.questionSetId) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "Question set not assigned."
-
-            });
-        }
-
-
-        const questionSetId =
-            exam.questionSetId instanceof ObjectId
-                ? exam.questionSetId
-                : new ObjectId(exam.questionSetId);
-
-
-        // ====================================================
-        // FIND QUESTION SET
-        // ====================================================
-
-        const questionSet =
-            await db.collection("questions").findOne({
-
-                _id: questionSetId
-
-            });
-
-
-        if (!questionSet) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "Question set not found."
-
-            });
-        }
-
-
-        // ====================================================
-        // QUESTIONS
-        // ====================================================
-
-        const questions =
-            Array.isArray(questionSet.questions)
-                ? questionSet.questions
-                : [];
-
-
-        if (questions.length === 0) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "No questions found."
-
-            });
-        }
-
-
-        // ====================================================
-        // STUDENT ANSWERS
-        // ====================================================
-
-        const studentAnswers =
-            Array.isArray(examAttempt.answers)
-                ? examAttempt.answers
-                : [];
-
-
-        // ====================================================
-        // LOGO
-        // ====================================================
-
-        const logoPath =
-            path.join(
-                __dirname,
-                "../assets/vec-logo.png"
-            );
-
-
-        let logoHTML = "";
-
-
-        if (fs.existsSync(logoPath)) {
-
-            const logoBuffer =
-                fs.readFileSync(logoPath);
-
-
-            const logoBase64 =
-                logoBuffer.toString("base64");
-
-
-            logoHTML = `
+      logoHTML = `
                 <img
                     class="college-logo"
                     src="data:image/png;base64,${logoBase64}"
                 />
             `;
+    }
+
+    // ====================================================
+    // GENERATE QUESTIONS
+    // ====================================================
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let unansweredCount = 0;
+
+    const questionHTML = questions
+      .map((question, index) => {
+        // ========================================
+        // STUDENT ANSWER
+        // ========================================
+
+        const savedAnswer = studentAnswers.find(
+          (item) => Number(item.questionNo) === Number(question.questionNo),
+        );
+
+        const studentAnswer =
+          savedAnswer && savedAnswer.studentAnswer
+            ? String(savedAnswer.studentAnswer).trim()
+            : "";
+
+        // ========================================
+        // CORRECT ANSWER
+        // ========================================
+
+        const correctAnswer = question.answer
+          ? String(question.answer).trim()
+          : "";
+
+        // ========================================
+        // OPTION LETTERS
+        // ========================================
+
+        const studentLetter = getOptionLetter(question.options, studentAnswer);
+
+        const correctLetter = getOptionLetter(question.options, correctAnswer);
+
+        // ========================================
+        // CHECK RESULT
+        // ========================================
+
+        const isCorrect =
+          studentAnswer !== "" &&
+          studentAnswer.toLowerCase() === correctAnswer.toLowerCase();
+
+        if (!studentAnswer) {
+          unansweredCount++;
+        } else if (isCorrect) {
+          correctCount++;
+        } else {
+          wrongCount++;
         }
 
+        // ========================================
+        // OPTIONS
+        // ========================================
 
-        // ====================================================
-        // GENERATE QUESTIONS
-        // ====================================================
+        const optionLetters = ["A", "B", "C", "D"];
 
-        let correctCount = 0;
-        let wrongCount = 0;
-        let unansweredCount = 0;
+        const optionsHTML = optionLetters
+          .map((letter) => {
+            const optionText =
+              question.options && question.options[letter]
+                ? question.options[letter]
+                : "";
 
+            const normalizedOption = String(optionText).trim().toLowerCase();
 
-        const questionHTML =
-            questions.map(
-                (question, index) => {
+            const normalizedStudent = studentAnswer.trim().toLowerCase();
 
+            const normalizedCorrect = correctAnswer.trim().toLowerCase();
 
-                    // ========================================
-                    // STUDENT ANSWER
-                    // ========================================
+            const isStudentOption =
+              studentAnswer !== "" && normalizedOption === normalizedStudent;
 
-                    const savedAnswer =
-                        studentAnswers.find(
-                            item =>
-                                Number(item.questionNo) ===
-                                Number(question.questionNo)
-                        );
+            const isCorrectOption = normalizedOption === normalizedCorrect;
 
+            let className = "option";
 
-                    const studentAnswer =
-                        savedAnswer &&
-                        savedAnswer.studentAnswer
-                            ? String(
-                                savedAnswer.studentAnswer
-                            ).trim()
-                            : "";
+            if (isStudentOption && isCorrectOption) {
+              className += " student-correct";
+            } else if (isStudentOption) {
+              className += " student-option";
+            } else if (isCorrectOption) {
+              className += " correct-option";
+            }
 
-
-                    // ========================================
-                    // CORRECT ANSWER
-                    // ========================================
-
-                    const correctAnswer =
-                        question.answer
-                            ? String(
-                                question.answer
-                            ).trim()
-                            : "";
-
-
-                    // ========================================
-                    // OPTION LETTERS
-                    // ========================================
-
-                    const studentLetter =
-                        getOptionLetter(
-                            question.options,
-                            studentAnswer
-                        );
-
-
-                    const correctLetter =
-                        getOptionLetter(
-                            question.options,
-                            correctAnswer
-                        );
-
-
-                    // ========================================
-                    // CHECK RESULT
-                    // ========================================
-
-                    const isCorrect =
-                        studentAnswer !== "" &&
-                        studentAnswer
-                            .toLowerCase() ===
-                        correctAnswer
-                            .toLowerCase();
-
-
-                    if (!studentAnswer) {
-
-                        unansweredCount++;
-
-                    } else if (isCorrect) {
-
-                        correctCount++;
-
-                    } else {
-
-                        wrongCount++;
-
-                    }
-
-
-                    // ========================================
-                    // OPTIONS
-                    // ========================================
-
-                    const optionLetters =
-                        ["A", "B", "C", "D"];
-
-
-                    const optionsHTML =
-                        optionLetters
-                            .map(letter => {
-
-
-                                const optionText =
-                                    question.options &&
-                                    question.options[letter]
-                                        ? question.options[letter]
-                                        : "";
-
-
-                                const normalizedOption =
-                                    String(optionText)
-                                        .trim()
-                                        .toLowerCase();
-
-
-                                const normalizedStudent =
-                                    studentAnswer
-                                        .trim()
-                                        .toLowerCase();
-
-
-                                const normalizedCorrect =
-                                    correctAnswer
-                                        .trim()
-                                        .toLowerCase();
-
-
-                                const isStudentOption =
-                                    studentAnswer !== "" &&
-                                    normalizedOption ===
-                                    normalizedStudent;
-
-
-                                const isCorrectOption =
-                                    normalizedOption ===
-                                    normalizedCorrect;
-
-
-                                let className =
-                                    "option";
-
-
-                                if (
-                                    isStudentOption &&
-                                    isCorrectOption
-                                ) {
-
-                                    className +=
-                                        " student-correct";
-
-                                }
-
-                                else if (
-                                    isStudentOption
-                                ) {
-
-                                    className +=
-                                        " student-option";
-
-                                }
-
-                                else if (
-                                    isCorrectOption
-                                ) {
-
-                                    className +=
-                                        " correct-option";
-
-                                }
-
-
-                                return `
+            return `
 
                                     <span
                                         class="${className}"
@@ -529,62 +353,40 @@ const generateStudentExamPDF = async (req, res) => {
                                             ${letter}.
                                         </strong>
 
-                                        ${escapeHtml(
-                                            optionText
-                                        )}
+                                        ${escapeHtml(optionText)}
 
                                     </span>
 
                                 `;
+          })
+          .join("");
 
-                            })
-                            .join("");
+        // ========================================
+        // STATUS
+        // ========================================
 
+        let statusText = "";
+        let statusClass = "";
 
-                    // ========================================
-                    // STATUS
-                    // ========================================
+        if (!studentAnswer) {
+          statusText = "NOT ANSWERED";
 
-                    let statusText = "";
-                    let statusClass = "";
+          statusClass = "status-unanswered";
+        } else if (isCorrect) {
+          statusText = "CORRECT";
 
+          statusClass = "status-correct";
+        } else {
+          statusText = "WRONG";
 
-                    if (!studentAnswer) {
+          statusClass = "status-wrong";
+        }
 
-                        statusText =
-                            "NOT ANSWERED";
+        // ========================================
+        // RETURN QUESTION HTML
+        // ========================================
 
-                        statusClass =
-                            "status-unanswered";
-
-                    }
-
-                    else if (isCorrect) {
-
-                        statusText =
-                            "CORRECT";
-
-                        statusClass =
-                            "status-correct";
-
-                    }
-
-                    else {
-
-                        statusText =
-                            "WRONG";
-
-                        statusClass =
-                            "status-wrong";
-
-                    }
-
-
-                    // ========================================
-                    // RETURN QUESTION HTML
-                    // ========================================
-
-                    return `
+        return `
 
                         <div class="question">
 
@@ -594,9 +396,7 @@ const generateStudentExamPDF = async (req, res) => {
                                     Q${index + 1}.
                                 </strong>
 
-                                ${escapeHtml(
-                                    question.question
-                                )}
+                                ${escapeHtml(question.question)}
 
                             </div>
 
@@ -617,18 +417,16 @@ const generateStudentExamPDF = async (req, res) => {
                                     </strong>
 
                                     ${
-                                        studentAnswer
-                                            ? `
+                                      studentAnswer
+                                        ? `
                                                 <strong>
                                                     ${escapeHtml(
-                                                        studentLetter
+                                                      studentLetter,
                                                     )}.
-                                                    ${escapeHtml(
-                                                        studentAnswer
-                                                    )}
+                                                    ${escapeHtml(studentAnswer)}
                                                 </strong>
                                             `
-                                            : `
+                                        : `
                                                 <strong>
                                                     Not Answered
                                                 </strong>
@@ -645,12 +443,8 @@ const generateStudentExamPDF = async (req, res) => {
                                     </strong>
 
                                     <strong>
-                                        ${escapeHtml(
-                                            correctLetter
-                                        )}.
-                                        ${escapeHtml(
-                                            correctAnswer
-                                        )}
+                                        ${escapeHtml(correctLetter)}.
+                                        ${escapeHtml(correctAnswer)}
                                         ✓
                                     </strong>
 
@@ -668,56 +462,31 @@ const generateStudentExamPDF = async (req, res) => {
                         </div>
 
                     `;
+      })
+      .join("");
 
-                }
-            ).join("");
+    // ====================================================
+    // SUMMARY VALUES
+    // ====================================================
 
+    const totalQuestions = questions.length;
 
-        // ====================================================
-        // SUMMARY VALUES
-        // ====================================================
+    const totalMarks = examAttempt.totalMarks ?? totalQuestions;
 
-        const totalQuestions =
-            questions.length;
+    const obtainedMarks = examAttempt.obtainedMarks ?? correctCount;
 
+    const percentage =
+      examAttempt.percentage ??
+      (totalMarks > 0 ? ((obtainedMarks / totalMarks) * 100).toFixed(2) : 0);
 
-        const totalMarks =
-            examAttempt.totalMarks ??
-            totalQuestions;
+    const result =
+      examAttempt.result || (Number(percentage) >= 50 ? "Pass" : "Fail");
 
+    // ====================================================
+    // HTML
+    // ====================================================
 
-        const obtainedMarks =
-            examAttempt.obtainedMarks ??
-            correctCount;
-
-
-        const percentage =
-            examAttempt.percentage ??
-            (
-                totalMarks > 0
-                    ? (
-                        obtainedMarks /
-                        totalMarks *
-                        100
-                    ).toFixed(2)
-                    : 0
-            );
-
-
-        const result =
-            examAttempt.result ||
-            (
-                Number(percentage) >= 50
-                    ? "Pass"
-                    : "Fail"
-            );
-
-
-        // ====================================================
-        // HTML
-        // ====================================================
-
-        const html = `
+    const html = `
 
 <!DOCTYPE html>
 
@@ -1206,7 +975,7 @@ body {
 
     <div class="report-title">
 
-        EXAM REPORT
+        EXAM REPORT - ${questionCode}
 
     </div>
 
@@ -1226,11 +995,7 @@ body {
 
             <strong>Name:</strong>
 
-            ${escapeHtml(
-                student.name ||
-                examAttempt.studentName ||
-                "-"
-            )}
+            ${escapeHtml(student.name || examAttempt.studentName || "-")}
 
         </div>
 
@@ -1239,11 +1004,7 @@ body {
 
             <strong>Roll No:</strong>
 
-            ${escapeHtml(
-                student.rollNo ||
-                examAttempt.rollNo ||
-                "-"
-            )}
+            ${escapeHtml(student.rollNo || examAttempt.rollNo || "-")}
 
         </div>
 
@@ -1252,11 +1013,7 @@ body {
 
             <strong>Register No:</strong>
 
-            ${escapeHtml(
-                student.registerNo ||
-                examAttempt.registerNo ||
-                "-"
-            )}
+            ${escapeHtml(student.registerNo || examAttempt.registerNo || "-")}
 
         </div>
 
@@ -1265,11 +1022,7 @@ body {
 
             <strong>Admission No:</strong>
 
-            ${escapeHtml(
-                student.admissionNo ||
-                examAttempt.admissionNo ||
-                "-"
-            )}
+            ${escapeHtml(student.admissionNo || examAttempt.admissionNo || "-")}
 
         </div>
 
@@ -1278,11 +1031,7 @@ body {
 
             <strong>Department:</strong>
 
-            ${escapeHtml(
-                student.department ||
-                examAttempt.department ||
-                "-"
-            )}
+            ${escapeHtml(student.department || examAttempt.department || "-")}
 
         </div>
 
@@ -1291,11 +1040,7 @@ body {
 
             <strong>Section:</strong>
 
-            ${escapeHtml(
-                student.section ||
-                examAttempt.section ||
-                "-"
-            )}
+            ${escapeHtml(student.section || examAttempt.section || "-")}
 
         </div>
 
@@ -1304,11 +1049,7 @@ body {
 
             <strong>Batch:</strong>
 
-            ${escapeHtml(
-                student.batch ||
-                examAttempt.batch ||
-                "-"
-            )}
+            ${escapeHtml(student.batch || examAttempt.batch || "-")}
 
         </div>
 
@@ -1317,11 +1058,7 @@ body {
 
             <strong>Category:</strong>
 
-            ${escapeHtml(
-                exam.category ||
-                examAttempt.category ||
-                "-"
-            )}
+            ${escapeHtml(exam.category || examAttempt.category || "-")}
 
         </div>
 
@@ -1461,145 +1198,116 @@ ${questionHTML}
 
 `;
 
+    // ====================================================
+    // PUPPETEER
+    // ====================================================
 
-        // ====================================================
-        // PUPPETEER
-        // ====================================================
+    browser = await puppeteer.launch({
+      headless: true,
 
-        browser =
-            await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
 
-                headless: true,
+    const page = await browser.newPage();
 
-                args: [
+    await page.setContent(html, {
+      waitUntil: "networkidle0",
+    });
 
-                    "--no-sandbox",
+    // ====================================================
+    // GENERATE PDF
+    // ====================================================
 
-                    "--disable-setuid-sandbox"
+    const pdfBuffer = await page.pdf({
+      format: "A4",
 
-                ]
+      printBackground: true,
 
-            });
+      preferCSSPageSize: true,
 
+      margin: {
+        top: "8mm",
 
-        const page =
-            await browser.newPage();
+        bottom: "10mm",
 
+        left: "10mm",
 
-        await page.setContent(
-            html,
-            {
-                waitUntil:
-                    "networkidle0"
-            }
-        );
+        right: "10mm",
+      },
+    });
 
+    await browser.close();
 
-        // ====================================================
-        // GENERATE PDF
-        // ====================================================
+    browser = null;
 
-        const pdfBuffer =
-            await page.pdf({
+    // ====================================================
+    // FILE NAME
+    // ====================================================
 
-                format: "A4",
+    const safeAdmissionNo = admissionNo.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-                printBackground: true,
+    const filename = `Velammal Engineering College - ${safeAdmissionNo}.pdf`;
 
-                preferCSSPageSize: true,
+    // Extract the test name/title from the scheduled exam object
+    // Ensure "title" or "name" matches your DB schema for the test name
+    const examTitle = exam.title || exam.testName || exam.name || "Assessment";
 
-                margin: {
+    // ====================================================
+    // SAVE PDF TO CURRENT FOLDER
+    // ====================================================
 
-                    top: "8mm",
+    // Define the exact path to save the file in the current directory
+    const savePath = path.join(__dirname, filename);
 
-                    bottom: "10mm",
+    // Write the PDF buffer to the disk
+    fs.writeFileSync(savePath, pdfBuffer);
 
-                    left: "10mm",
+    // ====================================================
+    // SEND EMAIL
+    // ====================================================
 
-                    right: "10mm"
+    const studentName = student.name || examAttempt.studentName || "Student";
+    const { addEmailToQueue } = require("../utils/sesEmailQueue");
 
-                }
+    await addEmailToQueue(() =>
+      sendExamPDFEmail({
+        to,
+        studentName,
+        examTitle,
+        questions,
+        pdfBuffer,
+        filename,
+      }),
+    );
 
-            });
+    // ====================================================
+    // RESPONSE
+    // ====================================================
 
+    // Note: Removed res.setHeader application/pdf here
+    // to prevent API conflicts when returning JSON.
 
+    return res.status(200).json({
+      success: true,
+      message: `Examination report generated and emailed successfully to ${studentEmail}.`,
+    });
+  } catch (error) {
+    console.error("GENERATE STUDENT PDF ERROR:", error);
+
+    if (browser) {
+      try {
         await browser.close();
-
-        browser = null;
-
-
-        // ====================================================
-        // FILE NAME
-        // ====================================================
-
-        const safeAdmissionNo =
-            admissionNo.replace(
-                /[^a-zA-Z0-9_-]/g,
-                "_"
-            );
-
-
-        const filename =
-            `Velammal Engineering College - ${safeAdmissionNo}.pdf`;
-
-
-        // ====================================================
-        // RESPONSE
-        // ====================================================
-
-        res.setHeader(
-            "Content-Type",
-            "application/pdf"
-        );
-
-
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${filename}"`
-        );
-
-
-        res.setHeader(
-            "Content-Length",
-            pdfBuffer.length
-        );
-
-
-        return res.send(pdfBuffer);
-
-
-    } catch (error) {
-
-        console.error(
-            "GENERATE STUDENT PDF ERROR:",
-            error
-        );
-
-
-        if (browser) {
-
-            try {
-                await browser.close();
-            } catch (e) {}
-
-        }
-
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                error.message ||
-                "Failed to generate examination PDF."
-
-        });
-
+      } catch (e) {}
     }
 
+    return res.status(500).json({
+      success: false,
+
+      message: error.message || "Failed to generate and email examination PDF.",
+    });
+  }
 };
 
-
 module.exports = {
-    generateStudentExamPDF
+  generateStudentExamPDF,
 };

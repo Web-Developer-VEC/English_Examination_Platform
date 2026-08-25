@@ -19,12 +19,16 @@ const AdminLogin = () => {
         e.preventDefault();
 
         try {
+
             const response = await loginUser(
                 formData.identifier,
                 formData.password,
                 "staff"
             );
+
             if (response.success) {
+
+                // Save admin session
                 saveAdminSession({
                     token: response.token,
                     sessionId: response.sessionId,
@@ -32,17 +36,32 @@ const AdminLogin = () => {
                     user: response.user
                 });
 
+                // Optional: remove old student session
+                sessionStorage.removeItem(
+                    "studentSession"
+                );
+
                 navigate("/admin");
-            };
+            }
 
         } catch (error) {
 
-            console.error("Login error:", error);
+            console.error(
+                "Login error:",
+                error
+            );
 
             if (error.response) {
-                toast.error(error.response.data.message);
+
+                toast.error(
+                    error.response.data.message
+                );
+
             } else {
-                toast.error("Unable to connect to server");
+
+                toast.error(
+                    "Unable to connect to server"
+                );
             }
         }
     };

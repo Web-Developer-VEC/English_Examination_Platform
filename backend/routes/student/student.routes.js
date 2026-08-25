@@ -18,7 +18,7 @@ const {
 // ==========================================================
 
 router.post(
-    "/exam/studentresult",
+    "/studentresult",
     generateStudentExamPDF
 );
 
