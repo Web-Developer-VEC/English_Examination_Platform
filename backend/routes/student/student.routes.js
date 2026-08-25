@@ -3,31 +3,23 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    generateStudentExamPDF
-} = require("../../controllers/studentPdf.controller");
+  generateStudentResult,
+} = require("../../controllers/srudentResult.controller");
 
-const{ studentAuth} =
-    require("../../middleware/roleby.access.middleware");
 const {
-  getStudentByUsername
+  getStudentByUsername,
 } = require("../../controllers/student.controller");
-const {
-    updateStudent
-} = require("../../controllers/edit.student.controller");
+const { updateStudent } = require("../../controllers/edit.student.controller");
+const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
-router.put("/updatestudent", updateStudent);
-
-
+router.put("/updatestudent", roleByAccess(["student"]), updateStudent);
 
 // ==========================================================
 // STUDENT EXAM PDF
 // ==========================================================
 
-router.post(
-    "/studentresult",
-    generateStudentExamPDF
-);
+router.post("/studentresult", roleByAccess(["student"]), generateStudentResult);
 
-router.post("/getstudent", getStudentByUsername);
+router.post("/getstudent", roleByAccess(["student"]), getStudentByUsername);
 
 module.exports = router;

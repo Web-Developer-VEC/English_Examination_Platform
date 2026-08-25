@@ -29,7 +29,7 @@ const register = async (req, res) => {
             });
         }
 
-        if (!["student", "staff"].includes(role)) {
+        if (!["student", "staff","admin"].includes(role)) {
             return res.status(400).json({
                 success: false,
                 message: "Role must be either 'student', 'staff' or 'admin'"
@@ -72,7 +72,7 @@ const register = async (req, res) => {
                 batch
             });
         }
-        if (role == "staff") {
+        else {
             await collection.insertOne({
                 username,
                 password: hashedPassword,
@@ -136,9 +136,7 @@ const login = async (req, res) => {
         const collection =
             role === "student"
                 ? db.collection("students")
-                :role === "staff" 
-                ?db.collection("staff")
-                :db.collection("admin");
+                :db.collection("staff");
 
         // =====================================================
         // FIND USER
