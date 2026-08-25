@@ -23,7 +23,7 @@ import Students from "../pages/admin/Students";
 import FacultyList from "../pages/admin/FacultyList";
 import StudentDataUpload from "../pages/admin/StudentDataUpload";
 import StudentResult from "../pages/admin/StudentResult";
-
+import ProfileEdit from "../pages/admin/ProfileEdit";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -56,6 +56,7 @@ export default function AppRoutes() {
           <Route path="faculty" element={<FacultyList />} />
           <Route path="student-data" element={<StudentDataUpload />} />
           <Route path="student-result" element={<StudentResult />} />
+          <Route path="profile-edit" element={<ProfileEdit/>}/>
         </Route>
       </Route>
 

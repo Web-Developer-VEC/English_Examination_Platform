@@ -36,7 +36,7 @@ router.put(
 
 // Get current settings
 router.get(
-    "/settings",
+    "/academic-year",
     getAdminSettings
 );
 router.get(
