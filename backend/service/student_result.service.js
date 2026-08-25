@@ -5,7 +5,7 @@ const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
 
 // IMPORT YOUR EMAIL SERVICE HERE
-const { sendExamPDFEmail } = require("../service/mail.service");
+const { sendExamPDFEmail } = require("./report_mail.service");
 
 // ============================================================
 // HTML ESCAPE
@@ -80,34 +80,22 @@ const formatDate = (date) => {
 // GENERATE STUDENT EXAM PDF
 // ============================================================
 
-const generateStudentExamPDF = async (req, res) => {
+const generateStudentExamPDF = async (testId, admissionNo ) => {
   let browser = null;
 
   try {
-    // ====================================================
-    // GET PARAMETERS
-    // ====================================================
-
-    const { testId, admissionNo } = req.body;
+  
 
     // ====================================================
     // VALIDATION
     // ====================================================
 
     if (!testId || !admissionNo) {
-      return res.status(400).json({
-        success: false,
-
-        message: "testId and admissionNo are required.",
-      });
+      throw new Error("testId and admissionNo are required." + testId + admissionNo);
     }
 
     if (!ObjectId.isValid(testId)) {
-      return res.status(400).json({
-        success: false,
-
-        message: "Invalid testId.",
-      });
+      throw new Error("Invalid testId.");
     }
 
     // ====================================================
@@ -125,20 +113,13 @@ const generateStudentExamPDF = async (req, res) => {
     });
 
     if (!student) {
-      return res.status(404).json({
-        success: false,
-
-        message: "Student not found.",
-      });
+      throw new Error("Student not found.");
     }
 
     // VALIDATE STUDENT EMAIL EXISTANCE
     const studentEmail = student.email; // Ensure this matches your DB schema
     if (!studentEmail) {
-      return res.status(400).json({
-        success: false,
-        message: "Student email address not found in the database.",
-      });
+      throw new Error("Student email address not found in the database.");
     }
 
     // ====================================================
@@ -150,11 +131,7 @@ const generateStudentExamPDF = async (req, res) => {
     });
 
     if (!exam) {
-      return res.status(404).json({
-        success: false,
-
-        message: "Scheduled examination not found.",
-      });
+      throw new Error("Scheduled examination not found.");
     }
 
     // ====================================================
@@ -168,11 +145,7 @@ const generateStudentExamPDF = async (req, res) => {
     });
 
     if (!examAttempt) {
-      return res.status(404).json({
-        success: false,
-
-        message: "Student exam attempt not found.",
-      });
+      throw new Error("Student exam attempt not found.");
     }
 
     // ====================================================
@@ -180,11 +153,7 @@ const generateStudentExamPDF = async (req, res) => {
     // ====================================================
 
     if (!exam.questionSetId) {
-      return res.status(404).json({
-        success: false,
-
-        message: "Question set not assigned.",
-      });
+      throw new Error("Question set not assigned.");
     }
 
     const questionSetId =
@@ -201,11 +170,7 @@ const generateStudentExamPDF = async (req, res) => {
     });
 
     if (!questionSet) {
-      return res.status(404).json({
-        success: false,
-
-        message: "Question set not found.",
-      });
+      throw new Error("Question set not found.");
     }
     const questionCode = questionSet.questionCode || "N/A";
 
@@ -218,11 +183,7 @@ const generateStudentExamPDF = async (req, res) => {
       : [];
 
     if (questions.length === 0) {
-      return res.status(404).json({
-        success: false,
-
-        message: "No questions found.",
-      });
+      throw new Error("No questions found.");
     }
 
     // ====================================================
@@ -1248,32 +1209,18 @@ ${questionHTML}
 
     const filename = `Velammal Engineering College - ${safeAdmissionNo}.pdf`;
 
-    // Extract the test name/title from the scheduled exam object
-    // Ensure "title" or "name" matches your DB schema for the test name
     const examTitle = exam.title || exam.testName || exam.name || "Assessment";
 
-    // ====================================================
-    // SAVE PDF TO CURRENT FOLDER
-    // ====================================================
-
-    // Define the exact path to save the file in the current directory
-    const savePath = path.join(__dirname, filename);
-
-    // Write the PDF buffer to the disk
-    fs.writeFileSync(savePath, pdfBuffer);
-
-    // ====================================================
-    // SEND EMAIL
-    // ====================================================
 
     const studentName = student.name || examAttempt.studentName || "Student";
     const { addEmailToQueue } = require("../utils/sesEmailQueue");
 
     await addEmailToQueue(() =>
       sendExamPDFEmail({
-        to,
+        studentEmail,
         studentName,
         examTitle,
+        questionCode,
         questions,
         pdfBuffer,
         filename,
@@ -1287,12 +1234,12 @@ ${questionHTML}
     // Note: Removed res.setHeader application/pdf here
     // to prevent API conflicts when returning JSON.
 
-    return res.status(200).json({
+    return {
       success: true,
       message: `Examination report generated and emailed successfully to ${studentEmail}.`,
-    });
+    };
   } catch (error) {
-    console.error("GENERATE STUDENT PDF ERROR:", error);
+    console.error("GENERATE STUDENT PDF ERROR:", error.message);
 
     if (browser) {
       try {
@@ -1300,11 +1247,7 @@ ${questionHTML}
       } catch (e) {}
     }
 
-    return res.status(500).json({
-      success: false,
-
-      message: error.message || "Failed to generate and email examination PDF.",
-    });
+    throw new Error(error.message || "Failed to generate and email examination PDF.");
   }
 };
 

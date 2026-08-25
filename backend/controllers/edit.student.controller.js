@@ -3,25 +3,7 @@ const { getDB } = require("../config/db");
 const updateStudent = async (req, res) => {
     try {
 
-        const db = getDB();
-        const settings =
-            await db.collection("adminSettings").findOne({
-                _id: "academic_settings"
-            });
-
-        if (
-            !settings ||
-            settings.studentEditEnabled !== true
-        ) {
-
-            return res.status(403).json({
-                success: false,
-                message:
-                    "Student editing is currently disabled by admin."
-            });
-        }
-
-
+       const db = await getDB();
         const {
             admissionNo,
             name,
@@ -57,7 +39,12 @@ const updateStudent = async (req, res) => {
                 message: "Student not found."
             });
         }
-
+        if(!student.studentEditEnabled){
+            return res.status(403).json({
+                success: false,
+                message: "Student editing is currently disabled by admin."
+            });
+        }
         // =====================================================
         // BUILD UPDATE DATA
         // =====================================================

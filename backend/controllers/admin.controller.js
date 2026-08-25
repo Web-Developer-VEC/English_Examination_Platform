@@ -149,174 +149,59 @@ const updateStudentEditPermission = async (req, res) => {
         }
 
         // =================================================
-        // FIND / CREATE SETTINGS
+        // UPDATE EACH STUDENT
         // =================================================
 
-        let settings = await db.collection("admin_settings").findOne({
-            type: "student_edit_permission"
-        });
+        const updatedStudents = [];
+        const notFoundStudents = [];
 
-        // =================================================
-        // CREATE SETTINGS IF NOT EXISTS
-        // =================================================
+        for (const student of students) {
 
-        if (!settings) {
+            const admissionNo =
+                String(student.admissionNo).trim();
 
-            const studentPermissions = [];
+            const editEnabled =
+                student.editEnabled;
 
-            for (const student of students) {
+            // ---------------------------------------------
+            // UPDATE STUDENT DOCUMENT
+            // ---------------------------------------------
 
-                const admissionNo =
-                    String(student.admissionNo).trim();
+            const result = await db.collection("students").updateOne(
 
-                // Check student exists
-                const existingStudent =
-                    await db.collection("students").findOne({
-                        admissionNo
-                    });
+                {
+                    admissionNo
+                },
 
-                if (!existingStudent) {
-                    return res.status(404).json({
-                        success: false,
-                        message:
-                            `Student not found: ${admissionNo}`
-                    });
+                {
+                    $set: {
+                        editEnabled,
+                        updatedAt: new Date()
+                    }
                 }
 
-                studentPermissions.push({
-                    admissionNo,
-                    editEnabled: student.editEnabled
-                });
+            );
+
+            // ---------------------------------------------
+            // STUDENT NOT FOUND
+            // ---------------------------------------------
+
+            if (result.matchedCount === 0) {
+
+                notFoundStudents.push(admissionNo);
+
+                continue;
             }
 
-            await db.collection("admin_settings").insertOne({
+            // ---------------------------------------------
+            // STORE UPDATED STUDENT
+            // ---------------------------------------------
 
-                type: "student_edit_permission",
-
-                students: studentPermissions,
-
-                updatedAt: new Date()
-
+            updatedStudents.push({
+                admissionNo,
+                editEnabled
             });
-
         }
-
-        // =================================================
-        // UPDATE EXISTING SETTINGS
-        // =================================================
-
-        else {
-
-            const existingPermissions =
-                Array.isArray(settings.students)
-                    ? settings.students
-                    : [];
-
-            for (const student of students) {
-
-                const admissionNo =
-                    String(student.admissionNo).trim();
-
-                const editEnabled =
-                    student.editEnabled;
-
-                // -----------------------------------------
-                // CHECK STUDENT EXISTS
-                // -----------------------------------------
-
-                const existingStudent =
-                    await db.collection("students").findOne({
-                        admissionNo
-                    });
-
-                if (!existingStudent) {
-                    return res.status(404).json({
-                        success: false,
-                        message:
-                            `Student not found: ${admissionNo}`
-                    });
-                }
-
-                // -----------------------------------------
-                // FIND EXISTING PERMISSION
-                // -----------------------------------------
-
-                const permissionIndex =
-                    existingPermissions.findIndex(
-                        item =>
-                            item.admissionNo === admissionNo
-                    );
-
-                // -----------------------------------------
-                // UPDATE EXISTING
-                // -----------------------------------------
-
-                if (permissionIndex !== -1) {
-
-                    await db.collection("admin_settings").updateOne(
-
-                        {
-                            _id: settings._id
-                        },
-
-                        {
-                            $set: {
-                                [`students.${permissionIndex}.editEnabled`]:
-                                    editEnabled,
-
-                                updatedAt: new Date()
-                            }
-                        }
-
-                    );
-
-                }
-
-                // -----------------------------------------
-                // ADD NEW STUDENT
-                // -----------------------------------------
-
-                else {
-
-                    await db.collection("admin_settings").updateOne(
-
-                        {
-                            _id: settings._id
-                        },
-
-                        {
-                            $push: {
-                                students: {
-                                    admissionNo,
-                                    editEnabled
-                                }
-                            },
-
-                            $set: {
-                                updatedAt: new Date()
-                            }
-                        }
-
-                    );
-
-                    // Keep local array updated so multiple
-                    // new students in the same request work
-                    existingPermissions.push({
-                        admissionNo,
-                        editEnabled
-                    });
-                }
-            }
-        }
-
-        // =================================================
-        // GET UPDATED SETTINGS
-        // =================================================
-
-        const updatedSettings =
-            await db.collection("admin_settings").findOne({
-                type: "student_edit_permission"
-            });
 
         // =================================================
         // RESPONSE
@@ -329,15 +214,17 @@ const updateStudentEditPermission = async (req, res) => {
             message:
                 "Student edit permissions updated successfully.",
 
-            data: students.map(student => ({
-                admissionNo:
-                    String(student.admissionNo).trim(),
+            data: {
 
-                editEnabled:
-                    student.editEnabled
-            })),
+                updated: updatedStudents,
 
-            settings: updatedSettings
+                notFound: notFoundStudents,
+
+                updatedCount: updatedStudents.length,
+
+                notFoundCount: notFoundStudents.length
+
+            }
 
         });
 
@@ -349,12 +236,18 @@ const updateStudentEditPermission = async (req, res) => {
         );
 
         return res.status(500).json({
+
             success: false,
+
             message:
-                error.message || "Internal Server Error"
+                error.message ||
+                "Internal Server Error"
+
         });
     }
 };
+
+
 
 
 
