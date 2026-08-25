@@ -105,8 +105,6 @@ const getAdminSettings = async (req, res) => {
 // ENABLE / DISABLE EDIT FOR SPECIFIC STUDENT
 // =====================================================
 
-
-
 const updateStudentEditPermission = async (req, res) => {
     try {
 
@@ -227,6 +225,15 @@ const updateStudentEditPermission = async (req, res) => {
                 notFoundCount: notFoundStudents.length
 
             }
+            data: students.map(student => ({
+                admissionNo:
+                    String(student.admissionNo).trim(),
+
+                editEnabled:
+                    student.editEnabled
+            })),
+
+            settings: updatedSettings
 
         });
 
