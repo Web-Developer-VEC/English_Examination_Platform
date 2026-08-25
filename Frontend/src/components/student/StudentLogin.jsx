@@ -37,13 +37,13 @@ const StudentLogin = () => {
       );
 
       if (response.success) {
+        sessionStorage.removeItem(
+          "adminSession"
+        );
         saveStudentSession({
           token: response.token,
           user: response.user
         });
-        sessionStorage.removeItem(
-          "adminSession"
-        );
 
         navigate("/student/dashboard");
       }

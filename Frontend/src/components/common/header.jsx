@@ -1,12 +1,19 @@
-import { React, useState, useEffect } from "react";
-import { BookOpenCheck } from "lucide-react";
+import { useState, useEffect } from "react";
+import { BookOpenCheck, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import "./Header.css";
 import collegeLogo from "../../assets/logo/college-logo.png";
-import { getAdminSession, getStudentSession } from "../../utils/helpers";
+import {
+    getAdminSession,
+    getStudentSession,
+    clearAdminSession,
+    clearStudentSession,
+} from "../../utils/helpers";
 
 const Header = ({ portalTitle = "English Examination Portal" }) => {
 
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
 
@@ -56,6 +63,38 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
         };
 
     }, []);
+
+    // =========================
+    // LOGOUT
+    // =========================
+    const handleLogout = () => {
+
+        if (!user) return;
+
+        if (user.role === "student") {
+
+            clearStudentSession();
+
+            window.dispatchEvent(
+                new Event("studentSessionChanged")
+            );
+
+            navigate("/studentlogin");
+
+        } else if (
+            user.role === "staff" ||
+            user.role === "admin"
+        ) {
+
+            clearAdminSession();
+
+            window.dispatchEvent(
+                new Event("adminSessionChanged")
+            );
+
+            navigate("/");
+        }
+    };
 
     return (
         <header className="vec-header">
@@ -112,44 +151,63 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
             </div>
 
 
-            {/* USER DETAILS */}
+            {/* USER DETAILS + LOGOUT */}
             {user && (
-                <>
-                    {/* STUDENT */}
-                    {user.role === "student" &&
-                        (user.name || user.department || user.section) && (
-                            <div className="vec-header__user">
+                <div className="vec-header__account">
 
+                    <div className="vec-header__user">
+
+                        {/* STUDENT */}
+                        {user.role === "student" && (
+                            <>
                                 {user.name && (
                                     <div className="vec-header__user-name">
-                                        {user.name}
+                                        {user.name.toUpperCase()}
                                     </div>
                                 )}
 
                                 {(user.department || user.section) && (
                                     <div className="vec-header__user-details">
-                                        {user.department && user.department}
-                                        {user.department && user.section && " | "}
-                                        {user.section && user.section}
+                                        {user.department &&
+                                            user.department.toUpperCase()}
+
+                                        {user.department &&
+                                            user.section &&
+                                            " | "}
+
+                                        {user.section &&
+                                            user.section.toUpperCase()}
                                     </div>
                                 )}
-
-                            </div>
+                            </>
                         )}
 
-                    {/* STAFF / ADMIN */}
-                    {(user.role === "staff" || user.role === "admin") &&
-                        user.name && (
-                            <div className="vec-header__user">
-
+                        {/* STAFF / ADMIN */}
+                        {(user.role === "staff" ||
+                            user.role === "admin") &&
+                            (user.name || user.username) && (
                                 <div className="vec-header__user-name">
-                                    {user.name}
+                                    {(user.name || user.username).toUpperCase()}
                                 </div>
+                            )}
 
-                            </div>
-                        )}
-                </>
+                    </div>
+
+
+                    {/* LOGOUT BUTTON */}
+                    <button
+                        type="button"
+                        className="vec-header__logout"
+                        onClick={handleLogout}
+                        title="Logout"
+                    >
+                        <LogOut size={18} />
+                    </button>
+
+                </div>
             )}
+
+
             {/* HEADER LINE */}
             <span
                 className="vec-header__underline"

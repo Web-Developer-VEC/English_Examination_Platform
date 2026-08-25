@@ -27,7 +27,9 @@ const AdminLogin = () => {
             );
 
             if (response.success) {
-
+                sessionStorage.removeItem(
+                    "studentSession"
+                );
                 // Save admin session
 
 
