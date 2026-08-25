@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer";
-import { getStudentSession } from "../../utils/helpers";
+//import { getStudentSession, saveStudentSession } from "../../utils/helpers";
 import {
   getStudent,
   updateStudent,
   sendStudentResult,
 } from "../../services/studentService";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import {
+  getStudentSession,
+  saveStudentSession,
+  getSentResults,
+  markResultSent,
+} from "../../utils/helpers";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -94,21 +102,45 @@ const StudentDashboard = () => {
 
       // Backend returns the updated student under `data.data`,
       // not `data.student`.
+      // Backend returns the updated student under `data.data`,
+      // not `data.student`.
       console.log("Updated student:", data.data);
 
       if (data.data) {
         setStudent(data.data);
         setEditForm(data.data);
+
+        // The session's username was captured at login. If registerNo
+        // (which drives the username) changed, the session goes stale —
+        // a refresh would then call getStudent() with the OLD username
+        // and get "Student not found". Keep the session in sync.
+        const session = getStudentSession();
+        if (session?.user) {
+          const newUsername =
+            data.data.registerNo && data.data.registerNo.trim()
+              ? data.data.registerNo
+              : data.data.admissionNo;
+
+          if (session.user.username !== newUsername) {
+            saveStudentSession({
+              ...session,
+              user: {
+                ...session.user,
+                username: newUsername,
+              },
+            });
+          }
+        }
       }
 
       setIsEditing(false);
 
-      alert("Student profile updated successfully!");
+      toast.success("Student profile updated successfully!");
     } catch (error) {
       console.error("Error updating student:", error);
 
       // axios puts the backend's JSON error body on error.response.data
-      alert(
+      toast.error(
         error.response?.data?.message ||
           error.message ||
           "Failed to update profile",
@@ -126,58 +158,55 @@ const StudentDashboard = () => {
   // ============================================================
 
   const handleSendResult = async (testId) => {
-  console.log("SEND BUTTON TEST ID:", testId);
+    console.log("SEND BUTTON TEST ID:", testId);
 
-  if (!testId || testId === "-") {
-    alert("This exam is missing a valid test id and cannot be sent.");
-    return;
-  }
-
-  if (!student?.admissionNo) {
-    alert("Admission number not found for this student.");
-    return;
-  }
-
-  setSendingId(testId);
-
-  try {
-    console.log("Sending student result:", {
-      testId,
-      admissionNo: student.admissionNo,
-    });
-
-    const data = await sendStudentResult(
-      testId,
-      student.admissionNo
-    );
-
-    console.log("studentresult response:", data);
-
-    if (!data.success) {
-      throw new Error(
-        data.message || "Failed to send result"
-      );
+    if (!testId || testId === "-") {
+      toast.warning("This exam is missing a valid test id and cannot be sent.");
+      return;
     }
 
-    setTestResults((prevResults) =>
-      prevResults.map((test) =>
-        test.testId === testId
-          ? { ...test, status: "Sent" }
-          : test
-      )
-    );
-  } catch (error) {
-    console.error("Error sending result:", error);
+    if (!student?.admissionNo) {
+      toast.warning("Admission number not found for this student.");
+      return;
+    }
 
-    alert(
-      error.response?.data?.message ||
-        error.message ||
-        "Failed to send result"
-    );
-  } finally {
-    setSendingId(null);
-  }
-};
+    setSendingId(testId);
+
+    try {
+      console.log("Sending student result:", {
+        testId,
+        admissionNo: student.admissionNo,
+      });
+
+      const data = await sendStudentResult(testId, student.admissionNo);
+
+      console.log("studentresult response:", data);
+
+      if (!data.success) {
+        throw new Error(data.message || "Failed to send result");
+      }
+
+      // Persist so a refresh doesn't let this be sent again —
+      // only clears on logout.
+      markResultSent(student.admissionNo, testId);
+
+      setTestResults((prevResults) =>
+        prevResults.map((test) =>
+          test.testId === testId ? { ...test, status: "Sent" } : test,
+        ),
+      );
+    } catch (error) {
+      console.error("Error sending result:", error);
+
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to send result",
+      );
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   // ============================================================
   // FETCH STUDENT + EXAMS
@@ -205,7 +234,7 @@ const StudentDashboard = () => {
         // Authorization header. If your backend requires it here, add
         // it via an interceptor in services/api.js instead of per-call.
         const result = await getStudent(username);
-        console.log("result:",result);
+        console.log("result:", result);
 
         if (!result.success) {
           throw new Error(result.message || "Failed to fetch student data");
@@ -230,59 +259,57 @@ const StudentDashboard = () => {
         // two rows resolve to the same id and both got marked "Sent"
         // when only one was clicked.
         const backendExams = Array.isArray(result.exams)
-  ? result.exams
-  : Array.isArray(result.data?.exams)
-    ? result.data.exams
-    : [];
+          ? result.exams
+          : Array.isArray(result.data?.exams)
+            ? result.data.exams
+            : [];
 
-console.log("BACKEND EXAMS:", backendExams);
+        console.log("BACKEND EXAMS:", backendExams);
 
-const formattedTestResults = backendExams.map((exam) => {
-  const examId =
-    typeof exam._id === "object"
-      ? exam._id?.$oid || String(exam._id)
-      : exam._id || "";
+        // Anything sent earlier in this login session should still show
+        // as "Sent" after a refresh.
+        const sentTestIds = getSentResults(result.student.admissionNo);
 
-  const testId =
-    typeof exam.testId === "object"
-      ? exam.testId?.$oid || String(exam.testId)
-      : exam.testId || "";
+        const formattedTestResults = backendExams.map((exam) => {
+          const examId =
+            typeof exam._id === "object"
+              ? exam._id?.$oid || String(exam._id)
+              : exam._id || "";
 
-  console.log("Exam being formatted:", exam);
-  console.log("Exam ID:", examId);
-  console.log("Test ID:", testId);
+          const testId =
+            typeof exam.testId === "object"
+              ? exam.testId?.$oid || String(exam.testId)
+              : exam.testId || "";
 
-  return {
-    // Unique exam document ID
-    id: examId || "-",
+          console.log("Exam being formatted:", exam);
+          console.log("Exam ID:", examId);
+          console.log("Test ID:", testId);
 
-    // IMPORTANT:
-    // This is the ID required by /student/studentresult
-    testId: testId || "-",
+          return {
+            // Unique exam document ID
+            id: examId || "-",
 
-    // Question Code
-    questionCode: exam.questionCode || "-",
+            // IMPORTANT:
+            // This is the ID required by /student/studentresult
+            testId: testId || "-",
 
-    // Existing Exam column
-    cie: exam.cie || exam.category || "-",
+            // Question Code
+            questionCode: exam.questionCode || "-",
 
-    // Existing Mark column
-    mark:
-      exam.obtainedMarks !== undefined &&
-      exam.totalMarks !== undefined
-        ? `${exam.obtainedMarks}/${exam.totalMarks}`
-        : "-",
+            // Existing Exam column
+            cie: exam.cie || exam.category || "-",
 
-    status: "Pending",
-  };
-});
+            // Existing Mark column
+            mark:
+              exam.obtainedMarks !== undefined && exam.totalMarks !== undefined
+                ? `${exam.obtainedMarks}/${exam.totalMarks}`
+                : "-",
 
-console.log(
-  "FINAL TEST RESULTS:",
-  formattedTestResults
-);
+            status: sentTestIds.includes(testId) ? "Sent" : "Pending",
+          };
+        });
 
-setTestResults(formattedTestResults);
+        console.log("FINAL TEST RESULTS:", formattedTestResults);
 
         setTestResults(formattedTestResults);
       } catch (error) {
@@ -679,7 +706,7 @@ setTestResults(formattedTestResults);
               <tbody>
                 {testResults.map((test, index) => (
                   <tr
-                    key={test.id || index}
+                    key={test.testId !== "-" ? test.testId : `row-${index}`}
                     className="
                       border-b
                       last:border-b-0
@@ -739,7 +766,7 @@ setTestResults(formattedTestResults);
                         ) : (
                           <button
                             onClick={() => handleSendResult(test.testId)}
-disabled={sendingId === test.testId}
+                            disabled={sendingId === test.testId}
                             className="
                               flex
                               items-center
@@ -1261,6 +1288,13 @@ disabled={sendingId === test.testId}
       ======================================================== */}
 
       <Footer />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+      />
     </div>
   );
 };

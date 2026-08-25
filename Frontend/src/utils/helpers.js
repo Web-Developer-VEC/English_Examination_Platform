@@ -185,6 +185,9 @@ export function getStudentSession() {
 }
 
 export function clearStudentSession() {
+    Object.keys(sessionStorage)
+        .filter((key) => key.startsWith("sentResults:"))
+        .forEach((key) => sessionStorage.removeItem(key));
     sessionStorage.removeItem(
         "studentSession"
     );
@@ -223,4 +226,32 @@ export function clearAdminSession() {
     window.dispatchEvent(
         new Event("adminSessionChanged")
     );
+}
+// =====================================================
+// Sent Result Tracking Helpers
+// (per admissionNo — "already sent" persists across
+// refresh but resets on logout/login)
+// =====================================================
+
+export function getSentResults(admissionNo) {
+    if (!admissionNo) return [];
+
+    const saved = sessionStorage.getItem(
+        `sentResults:${admissionNo}`
+    );
+
+    return saved ? JSON.parse(saved) : [];
+}
+
+export function markResultSent(admissionNo, testId) {
+    if (!admissionNo || !testId) return;
+
+    const current = getSentResults(admissionNo);
+
+    if (!current.includes(testId)) {
+        sessionStorage.setItem(
+            `sentResults:${admissionNo}`,
+            JSON.stringify([...current, testId])
+        );
+    }
 }
