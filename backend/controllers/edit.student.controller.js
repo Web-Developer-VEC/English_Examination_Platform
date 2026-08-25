@@ -4,6 +4,23 @@ const updateStudent = async (req, res) => {
     try {
 
         const db = getDB();
+        const settings =
+            await db.collection("adminSettings").findOne({
+                _id: "academic_settings"
+            });
+
+        if (
+            !settings ||
+            settings.studentEditEnabled !== true
+        ) {
+
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Student editing is currently disabled by admin."
+            });
+        }
+
 
         const {
             admissionNo,
