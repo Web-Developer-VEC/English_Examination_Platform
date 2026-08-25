@@ -259,7 +259,7 @@ const StudentDashboard = () => {
       <div
         className="
         w-full
-        h-[calc(100dvh-172px)]
+        h-[calc(100dvh-1px)]
         bg-gray-50
         p-6
         font-sans

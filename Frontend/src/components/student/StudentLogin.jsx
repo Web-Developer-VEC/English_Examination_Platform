@@ -61,7 +61,7 @@ const StudentLogin = () => {
   };
 
   return (<>
-    <div className="flex pt-20 justify-center"><div className="login-card">
+    <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
         <User className="login-heading__icon" size={22} />
@@ -123,7 +123,7 @@ const StudentLogin = () => {
           Login
         </button>
 
-        <div className="login-footer">
+        {/*<div className="login-footer">
           <>
             <p className="login-footer__link">Forgot your password?</p>
             <p className="login-footer__link">Contact your mentor</p>
@@ -131,7 +131,7 @@ const StudentLogin = () => {
               New Student? Sign Up
             </button>
           </>
-        </div>
+        </div>*/}
       </form>
     </div>
     </div>
