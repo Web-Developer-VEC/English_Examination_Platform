@@ -36,12 +36,10 @@
 
     height: 5px;
 
-    background: linear-gradient(
-        90deg,
-        #f5b301,
-        #ffd873,
-        #f5b301
-    );
+    background: linear-gradient(90deg,
+            #f5b301,
+            #ffd873,
+            #f5b301);
 }
 
 
@@ -178,15 +176,13 @@
 
 .vec-header__account {
     position: absolute;
-
     right: 18px;
     top: 50%;
-
     transform: translateY(-50%);
 
     display: flex;
     align-items: center;
-
+    justify-content: center;
     gap: 10px;
 
     z-index: 20;
@@ -201,11 +197,9 @@
     position: static;
 
     min-width: 170px;
-
     padding: 12px 18px;
 
     background: #fffdf5;
-
     border: 2px solid #f5b301;
     border-radius: 12px;
 
@@ -214,49 +208,57 @@
     display: flex;
     flex-direction: column;
 
-    align-items: flex-start;
+    /* IMPORTANT */
+    align-items: center;
     justify-content: center;
 
-    text-align: left;
+    /* IMPORTANT */
+    text-align: center;
 
     box-sizing: border-box;
 }
 
 
-/* USER NAME */
+/* =========================================================
+   USER NAME
+   ========================================================= */
 
 .vec-header__user-name {
     margin: 0;
 
+    width: 100%;
+
     font-size: 18px;
     font-weight: 700;
-
     color: #800000;
-
     line-height: 1.2;
 
-    text-align: left;
+    /* IMPORTANT */
+    text-align: center;
     text-transform: uppercase;
 
     white-space: nowrap;
 }
 
 
-/* DEPARTMENT / SECTION */
+/* =========================================================
+   DEPARTMENT / SECTION
+   ========================================================= */
 
 .vec-header__user-details {
     margin-top: 5px;
 
+    width: 100%;
+
     font-size: 14px;
     font-weight: 600;
-
     color: #555;
 
-    text-align: left;
+    /* IMPORTANT */
+    text-align: center;
 
     white-space: nowrap;
 }
-
 
 /* =========================================================
    LOGOUT BUTTON
@@ -383,6 +385,14 @@
     .vec-header__user {
         min-width: 125px;
         padding: 8px 10px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .vec-header__user-name,
+    .vec-header__user-details {
+        width: 100%;
+        text-align: center;
     }
 
     .vec-header__user-name {
