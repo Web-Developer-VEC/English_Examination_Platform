@@ -76,6 +76,9 @@ const register = async (req, res) => {
             await collection.insertOne({
                 username,
                 password: hashedPassword,
+                name,
+                email,
+                phone
             });
         }
         res.status(201).json({

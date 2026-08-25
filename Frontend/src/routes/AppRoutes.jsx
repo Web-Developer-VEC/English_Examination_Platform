@@ -16,7 +16,7 @@ import AudioTest from "../pages/student/AudioTest";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import StudentDashboard from "../pages/student/StudentDashboard";
 import Admins from "../pages/admin/Admins";
-import Questionupload from "../pages/admin/QuestionUpload";
+import QuestionUpload from "../pages/admin/QuestionUpload";
 import Schedule from "../pages/admin/Schedule";
 import Results from "../pages/admin/StudentResult";
 import Students from "../pages/admin/Students";
@@ -49,7 +49,7 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="admins" element={<Admins />} />
-          <Route path="QuestionUpload" element={<QuestionUpload />} />
+          <Route path="questionupload" element={<QuestionUpload />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="results" element={<Results />} />
           <Route path="students" element={<Students />} />

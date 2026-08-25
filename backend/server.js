@@ -5,7 +5,6 @@ const {connectDB} = require("./config/db");
 const indexRoutes = require("./routes/index.routes");
 const startExamCron = require("./middleware/cron_middleware");
 
-
 const app = express();
 const port = process.env.PORT || 5000;
 

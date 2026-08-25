@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     // ==========================================================
 
     const filteredTests = useMemo(() => {
-        return tests.filter((test) => {
+        const filtered = tests.filter((test) => {
 
             const matchDepartment =
                 department === "All" ||
@@ -153,6 +153,44 @@ export default function AdminDashboard() {
                 matchDate
             );
         });
+
+        // Ongoing → Upcoming → Completed
+        const statusPriority = {
+            Ongoing: 1,
+            Upcoming: 2,
+            Completed: 3,
+        };
+
+        filtered.sort((a, b) => {
+
+            // First sort by status
+            const statusDifference =
+                statusPriority[a.status] - statusPriority[b.status];
+
+            if (statusDifference !== 0) {
+                return statusDifference;
+            }
+
+            // Ongoing → earliest end time first
+            if (a.status === "Ongoing") {
+                return new Date(a.endTime) - new Date(b.endTime);
+            }
+
+            // Upcoming → earliest start time first
+            if (a.status === "Upcoming") {
+                return new Date(a.startTime) - new Date(b.startTime);
+            }
+
+            // Completed → latest completed test first
+            if (a.status === "Completed") {
+                return new Date(b.endTime) - new Date(a.endTime);
+            }
+
+            return 0;
+        });
+
+        return filtered;
+
     }, [tests, department, category, status, selectedDate]);
 
     // ==========================================================
@@ -201,6 +239,48 @@ Status: ${test.status}
         document.body.removeChild(link);
 
         URL.revokeObjectURL(url);
+    };
+
+    const handleCancel = async (test) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to cancel test ${test.testCode}?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(
+                "http://localhost:5000/api/staff/schedule/delete-scheduled-exam",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        testId: test.id,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Failed to cancel the test."
+                );
+            }
+
+            // Remove the cancelled test from the table
+            setTests((prevTests) =>
+                prevTests.filter((item) => item.id !== test.id)
+            );
+
+            alert("Test cancelled successfully.");
+
+        } catch (error) {
+            console.error("Error cancelling test:", error);
+            alert(error.message || "Unable to cancel the test.");
+        }
     };
 
 
@@ -459,7 +539,7 @@ Status: ${test.status}
                         className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
                         style={{
                             gridTemplateColumns:
-                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
+                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
                         }}
                     >
                         <TableHeading>
@@ -496,6 +576,10 @@ Status: ${test.status}
 
                         <TableHeading>
                             Download
+                        </TableHeading>
+
+                        <TableHeading>
+                            Action
                         </TableHeading>
                     </div>
 
@@ -534,7 +618,7 @@ Status: ${test.status}
     "
                                 style={{
                                     gridTemplateColumns:
-                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
+                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
                                 }}
                             >
 
@@ -647,7 +731,7 @@ Status: ${test.status}
                 border
                 border-[#FDCC03]
                 text-black
-                hover:bg-red-700
+                hover:bg-[#7a1f2b]
                 hover:border-red-500
                 hover:text-white
                 transition
@@ -672,6 +756,33 @@ Status: ${test.status}
 
                                 </div>
 
+                                {/* ACTION */}
+
+                                <div className="flex items-center justify-center">
+                                    {test.status === "Upcoming" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCancel(test)}
+                                            className="
+                px-3
+                py-2
+                rounded-lg
+                border
+                border-red-200
+                bg-red-50
+                text-red-600
+                text-xs
+                font-semibold
+                hover:bg-red-600
+                hover:text-white
+                transition-all
+                duration-200
+            "
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                         ))
@@ -872,7 +983,7 @@ function SummaryCard({ title, value, type }) {
                     font-medium
                     text-gray-400
                 ">
-                    2026
+                    {new Date().getFullYear()}
                 </span>
 
             </div>

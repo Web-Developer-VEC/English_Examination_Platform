@@ -14,6 +14,7 @@ const getformdata = async (req, res) => {
       .sort({
         batch:  1,
                 academicYear: 1,
+        // Removed academicYear since it's not in the student document
         department:  1,
         section: 1,
         gender: 1, // Groups by gender first (Female -> Male -> Other)
@@ -23,18 +24,17 @@ const getformdata = async (req, res) => {
 
     const groupMap = new Map();
 
-        students
-            .filter(
-                student =>
-                    student.batch &&
-                    student.academicYear &&
-                    student.department &&
-                    student.section
-            )
-            .forEach(student => {
-
-                const key =
-                    `${student.batch}_${student.academicYear}_${student.department}_${student.section}`;
+    students
+      .filter(
+        (student) =>
+          student.batch &&
+          student.department &&
+          student.section
+          // Removed student.academicYear check here
+      )
+      .forEach((student) => {
+        // Removed academicYear from the unique key
+        const key = `${student.batch}_${student.department}_${student.section}`;
 
                 if (!groupMap.has(key)) {
 
@@ -55,12 +55,11 @@ const getformdata = async (req, res) => {
           groupMap.get(key).students.push({
             username: student.username,
             name: student.name,
-            gender: student.gender || "Unknown" // Fallback just in case
+            gender: student.gender || "Unknown", // Fallback just in case
           });
         }
       });
-      for(student of students){
-      }
+
     const batchDepartmentSections = [...groupMap.values()];
 
     const questions = await db
@@ -72,7 +71,7 @@ const getformdata = async (req, res) => {
             _id: 1,
             questionCode: 1,
           },
-        },
+        }
       )
       .toArray();
 
@@ -128,35 +127,24 @@ const getScheduledExams = async (req, res) => {
             projection: {
               testcode: 1,
             },
-          },
+          }
         );
 
         return {
           examId: exam._id,
-
           category: exam.category,
-
           questionSetId: exam.questionSetId,
-
           testcode: exam?.testcode !== undefined ? exam.testcode : null,
-
           department: exam.eligibility.department,
-
           batch: exam.eligibility.batch,
-
           section: exam.eligibility.section,
-
           admissionNo: exam.eligibility.admissionNo || [],
-
           duration: exam.duration,
-
           startTime: exam.startTime,
-
           endTime: exam.endTime,
-
           status: exam.status,
         };
-      }),
+      })
     );
 
     return res.status(200).json({
@@ -172,6 +160,7 @@ const getScheduledExams = async (req, res) => {
     });
   }
 };
+
 const getStudentsByDepartmentAndBatch = async (req, res) => {
   try {
     const { department, batch } = req.body;

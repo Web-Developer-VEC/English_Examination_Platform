@@ -426,6 +426,7 @@ export default function Schedule() {
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
   const admissionPickerRef = useRef(null);
   const [admissionSearch, setAdmissionSearch] = useState("");
+  const [showAllAdmissions, setShowAllAdmissions] = useState(false);
 
   // everything in between (inclusive), based on ADMISSION_NO_OPTIONS order.
   const [rangeFrom, setRangeFrom] = useState("");
@@ -1283,48 +1284,77 @@ export default function Schedule() {
                 )}
 
                 {selectedAdmissionNos.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#000000]">
-                        Selected ({selectedAdmissionNos.length})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleClearAllAdmission}
-                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-                      >
-                        <Undo2 className="h-3 w-3" />
-                        Clear All
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {selectedAdmissionNos.map((no) => {
-                        const details = ADMISSION_DETAILS.get(no);
-                        const label = details ? `${no} - ${details.name}` : no;
+  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
 
-                        return (
-                          <div
-                            key={no}
-                            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-                          >
-                            <span className="flex items-center gap-2">
-                              <BadgeCheck className="h-3.5 w-3.5 text-[#800000]" />
-                              {label}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAdmission(no)}
-                              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                              aria-label={`Remove ${no}`}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+    {/* Header */}
+    <div className="mb-2 flex items-center justify-between">
+      <span className="text-xs font-semibold text-[#000000]">
+        Selected ({selectedAdmissionNos.length})
+      </span>
+
+      <button
+        type="button"
+        onClick={handleClearAllAdmission}
+        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+      >
+        <Undo2 className="h-3 w-3" />
+        Clear All
+      </button>
+    </div>
+
+    {/* First 4 selected students */}
+    <div className="flex flex-col gap-1.5">
+      {(showAllAdmissions
+        ? selectedAdmissionNos
+        : selectedAdmissionNos.slice(0, 4)
+      ).map((no) => {
+        const details = ADMISSION_DETAILS.get(no);
+
+        const label = details
+          ? `${no} - ${details.name}`
+          : no;
+
+        return (
+          <div
+            key={no}
+            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
+
+              <span className="truncate">
+                {label}
+              </span>
+            </span>
+
+            <button
+              type="button"
+              onClick={() => handleRemoveAdmission(no)}
+              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+              aria-label={`Remove ${no}`}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* View More */}
+    {selectedAdmissionNos.length > 4 && (
+      <button
+        type="button"
+        onClick={() => setShowAllAdmissions((prev) => !prev)}
+        className="mt-2 w-full text-center text-xs font-semibold text-[#800000] hover:underline"
+      >
+        {showAllAdmissions
+          ? "View Less"
+          : `View More (${selectedAdmissionNos.length - 4} more)`}
+      </button>
+    )}
+
+  </div>
+)}
               </div>
 
               {/* Test Code */}
