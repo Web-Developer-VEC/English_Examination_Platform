@@ -18,10 +18,10 @@ const {
 // ==========================================================
 
 router.post(
-    "/exam/studentresult",
+    "/studentresult",
     generateStudentExamPDF
 );
 
-router.get("/getstudent", getStudentByUsername);
+router.post("/getstudent", getStudentByUsername);
 
 module.exports = router;
