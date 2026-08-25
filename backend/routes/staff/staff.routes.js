@@ -15,6 +15,36 @@ const scheduleRoutes = require("./schedule.routes");
 const { generateExamReport } = require("../../controllers/result.controller");
 const{deleteQuestionSet}=require("../../controllers/delete.question.controller");
 const { updateStaff,getStaff } = require("../../controllers/staff.controller");
+const {
+    updateAcademicYear,
+    updateStudentEditPermission,
+    getAdminSettings,getStudentEditPermission
+} = require("../../controllers/admin.controller");
+
+router.put(
+    "/academic-year",
+    updateAcademicYear
+);
+
+
+// Enable / disable student editing
+router.put(
+    "/student-edit",
+    updateStudentEditPermission
+);
+
+
+// Get current settings
+router.get(
+    "/settings",
+    getAdminSettings
+);
+router.get(
+    "/admin/student-edit/:admissionNo",
+    getStudentEditPermission
+);
+
+
 
 // Upload Student Excel
 router.post("/studentsupload", student_upload_Middleware, studentsUpload);
