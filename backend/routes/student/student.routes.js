@@ -11,6 +11,12 @@ const{ studentAuth} =
 const {
   getStudentByUsername
 } = require("../../controllers/student.controller");
+const {
+    updateStudent
+} = require("../../controllers/edit.student.controller");
+
+router.put("/updatestudent", updateStudent);
+
 
 
 // ==========================================================
@@ -18,7 +24,7 @@ const {
 // ==========================================================
 
 router.post(
-    "/exam/studentresult",
+    "/studentresult",
     generateStudentExamPDF
 );
 
