@@ -19,7 +19,6 @@ import api from "../../services/api";
 
 import "./FacultyList.css";
 
-
 const GET_SCHEDULE_DATA_ENDPOINT =
   "/staff/schedule/getformdata";
 
