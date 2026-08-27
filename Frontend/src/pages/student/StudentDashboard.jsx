@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import Footer from "../../components/common/footer";
 //import { getStudentSession, saveStudentSession } from "../../utils/helpers";
 import {
@@ -18,6 +19,20 @@ import {
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
+  const handleLogout = () => {
+    // Clear student login/session data
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("studentSession");
+
+    // Go back to login page
+    navigate("/login");
+  };
 
   // ============================================================
   // STUDENT STATE
@@ -531,105 +546,148 @@ const StudentDashboard = () => {
             STUDENT PROFILE
         ====================================================== */}
 
-        <div
-          className="
-            w-1/4
-            flex
-            flex-col
-            bg-white
-            rounded-xl
-            shadow-sm
-            p-6
-            border
-            border-gray-100
-            min-h-0
-            overflow-hidden
-          "
-        >
-          <h2
-            className="
-              flex-none
-              text-xl
-              font-bold
-              text-gray-800
-              mb-6
-              border-b
-              pb-2
-            "
-          >
-            Student Profile
-          </h2>
+       {/* ======================================================
+    STUDENT PROFILE
+====================================================== */}
 
-          <div className="flex-none space-y-6 pr-1">
-            {/* Name */}
+<div
+  className="
+    w-1/4
+    flex
+    flex-col
+    bg-white
+    rounded-xl
+    shadow-sm
+    p-6
+    border
+    border-gray-100
+    min-h-0
+    overflow-hidden
+  "
+>
+  <h2
+    className="
+      flex-none
+      text-xl
+      font-bold
+      text-gray-800
+      mb-6
+      border-b
+      pb-2
+    "
+  >
+    Student Profile
+  </h2>
 
-            <div>
-              <p
-                className="
-                  text-sm
-                  text-gray-500
-                  font-medium
-                  uppercase
-                  tracking-wider
-                "
-              >
-                Name
-              </p>
+  <div className="flex-none space-y-6 pr-1">
 
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {student.name}
-              </p>
-            </div>
+    {/* Name */}
 
-            {/* Department + Section */}
+    <div>
+      <p
+        className="
+          text-sm
+          text-gray-500
+          font-medium
+          uppercase
+          tracking-wider
+        "
+      >
+        Name
+      </p>
 
-            <div>
-              <p
-                className="
-                  text-sm
-                  text-gray-500
-                  font-medium
-                  uppercase
-                  tracking-wider
-                "
-              >
-                Department & Section
-              </p>
+      <p className="text-lg font-semibold text-gray-900 mt-1">
+        {student.name}
+      </p>
+    </div>
 
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {student.department} - {student.section}
-              </p>
-            </div>
+    {/* Department + Section */}
 
-            {/* Email */}
+    <div>
+      <p
+        className="
+          text-sm
+          text-gray-500
+          font-medium
+          uppercase
+          tracking-wider
+        "
+      >
+        Department & Section
+      </p>
 
-            <div>
-              <p
-                className="
-                  text-sm
-                  text-gray-500
-                  font-medium
-                  uppercase
-                  tracking-wider
-                "
-              >
-                Email
-              </p>
+      <p className="text-lg font-semibold text-gray-900 mt-1">
+        {student.department} - {student.section}
+      </p>
+    </div>
 
-              <p
-                className="
-                  text-lg
-                  font-semibold
-                  text-gray-900
-                  break-all
-                  mt-1
-                "
-              >
-                {student.email}
-              </p>
-            </div>
-          </div>
-        </div>
+    {/* Email */}
+
+    <div>
+      <p
+        className="
+          text-sm
+          text-gray-500
+          font-medium
+          uppercase
+          tracking-wider
+        "
+      >
+        Email
+      </p>
+
+      <p
+        className="
+          text-lg
+          font-semibold
+          text-gray-900
+          break-all
+          mt-1
+        "
+      >
+        {student.email}
+      </p>
+    </div>
+
+  </div>
+
+  {/* ======================================================
+      LOGOUT BUTTON
+  ====================================================== */}
+
+  <div className="mt-auto pt-6">
+    <button
+      type="button"
+      onClick={handleLogout}
+      className="
+        w-full
+        flex
+        items-center
+        justify-center
+        gap-3
+        px-5
+        py-3
+        bg-yellow-400
+        text-black
+        font-semibold
+        rounded-xl
+        shadow-sm
+        hover:bg-[#800000]
+        hover:text-white
+        transition-colors
+        duration-300
+        cursor-pointer
+      "
+    >
+      <LogOut size={19} />
+
+      <span>
+        Logout
+      </span>
+    </button>
+  </div>
+
+</div>
 
         {/* ======================================================
             TEST RESULTS
