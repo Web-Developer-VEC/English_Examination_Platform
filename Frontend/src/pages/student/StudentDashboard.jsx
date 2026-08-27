@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer";
-import { toast, ToastContainer } from 'react-toastify';
-import { getStudentSession } from "../../utils/helpers";
+//import { getStudentSession, saveStudentSession } from "../../utils/helpers";
 import {
   getStudent,
   updateStudent,
@@ -103,6 +102,8 @@ const StudentDashboard = () => {
 
       // Backend returns the updated student under `data.data`,
       // not `data.student`.
+      // Backend returns the updated student under `data.data`,
+      // not `data.student`.
       console.log("Updated student:", data.data);
 
       if (data.data) {
@@ -136,7 +137,6 @@ const StudentDashboard = () => {
 
       toast.success("Student profile updated successfully!");
     } catch (error) {
-
       console.error("Error updating student:", error);
 
       // axios puts the backend's JSON error body on error.response.data
@@ -146,9 +146,7 @@ const StudentDashboard = () => {
           "Failed to update profile",
       );
     } finally {
-
       setIsSaving(false);
-
     }
   };
 
@@ -223,17 +221,13 @@ const StudentDashboard = () => {
         const session = getStudentSession();
 
         if (!session || !session.user) {
-          throw new Error(
-            "No logged-in student found. Please log in again."
-          );
+          throw new Error("No logged-in student found. Please log in again.");
         }
 
         const username = session.user.username;
 
         if (!username) {
-          throw new Error(
-            "No logged-in student found. Please log in again."
-          );
+          throw new Error("No logged-in student found. Please log in again.");
         }
 
         // NOTE: this service call does not attach session.token as an
@@ -327,14 +321,11 @@ const StudentDashboard = () => {
             "Failed to load student data",
         );
       } finally {
-
         setIsLoading(false);
-
       }
     };
 
     fetchStudent();
-
   }, []);
 
   // ============================================================
@@ -444,12 +435,10 @@ const StudentDashboard = () => {
   // ============================================================
 
   return (
-    <>
-      <ToastContainer position="bottom-right" autoClose='3000' />
-      <div
-        className="
+    <div
+      className="
         w-full
-        h-[calc(100dvh-1px)]
+        h-[calc(100dvh-172px)]
         bg-gray-50
         p-6
         font-sans
@@ -472,13 +461,13 @@ const StudentDashboard = () => {
           items-center
           mb-6
         "
-        >
-          <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
+      >
+        <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="
               px-6
               py-2
               bg-white
@@ -491,13 +480,13 @@ const StudentDashboard = () => {
               transition
               cursor-pointer
             "
-            >
-              Edit Profile
-            </button>
+          >
+            Edit Profile
+          </button>
 
-            <button
-              onClick={() => navigate("/exam/instruction")}
-              className="
+          <button
+            onClick={() => navigate("/exam/instruction")}
+            className="
               px-6
               py-2
               bg-yellow-400
@@ -511,11 +500,11 @@ const StudentDashboard = () => {
               shadow-sm
               cursor-pointer
             "
-            >
-              Take Test
-            </button>
-          </div>
+          >
+            Take Test
+          </button>
         </div>
+      </div>
 
       {/* ========================================================
           CONTENT
@@ -554,9 +543,9 @@ const StudentDashboard = () => {
             min-h-0
             overflow-hidden
           "
-          >
-            <h2
-              className="
+        >
+          <h2
+            className="
               flex-none
               text-xl
               font-bold
@@ -565,9 +554,9 @@ const StudentDashboard = () => {
               border-b
               pb-2
             "
-            >
-              Student Profile
-            </h2>
+          >
+            Student Profile
+          </h2>
 
           <div className="flex-none space-y-6 pr-1">
             {/* Name */}
@@ -633,12 +622,12 @@ const StudentDashboard = () => {
                   break-all
                   mt-1
                 "
-                >
-                  {student.email}
-                </p>
-              </div>
+              >
+                {student.email}
+              </p>
             </div>
           </div>
+        </div>
 
         {/* ======================================================
             TEST RESULTS
@@ -664,9 +653,9 @@ const StudentDashboard = () => {
             min-h-0
             overflow-hidden
           "
-          >
-            <h2
-              className="
+        >
+          <h2
+            className="
               flex-none
               text-xl
               font-bold
@@ -675,12 +664,12 @@ const StudentDashboard = () => {
               border-b
               pb-2
             "
-            >
-              Test Results
-            </h2>
+          >
+            Test Results
+          </h2>
 
-            <div
-              className="
+          <div
+            className="
               flex-1
               min-h-0
               overflow-y-auto
@@ -689,17 +678,17 @@ const StudentDashboard = () => {
               border-gray-200
               rounded-lg
             "
-            >
-              <table
-                className="
+          >
+            <table
+              className="
                 w-full
                 min-w-[700px]
                 text-left
                 border-collapse
               "
-              >
-                <thead
-                  className="
+            >
+              <thead
+                className="
                   bg-gray-100
                   sticky
                   top-0
@@ -767,6 +756,12 @@ const StudentDashboard = () => {
                               font-bold
                               shadow-sm
                             "
+                          >
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
                               <path
                                 strokeLinecap="round"
@@ -774,7 +769,7 @@ const StudentDashboard = () => {
                                 strokeWidth="2"
                                 d="M5 13l4 4L19 7"
                               />
-                            <svg/>
+                            </svg>
                             Sent
                           </span>
                         ) : (
@@ -841,6 +836,7 @@ const StudentDashboard = () => {
             </table>
           </div>
         </div>
+      </div>
 
       {/* ========================================================
           EDIT PROFILE MODAL
@@ -889,9 +885,9 @@ const StudentDashboard = () => {
               border-t-4
               border-yellow-400
             "
-            >
-              <div
-                className="
+          >
+            <div
+              className="
                 flex
                 justify-between
                 items-center
@@ -903,15 +899,15 @@ const StudentDashboard = () => {
                 bg-white
                 z-10
               "
-              >
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                  Edit Profile
-                </h2>
+            >
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                Edit Profile
+              </h2>
 
-                <button
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                  className="
+              <button
+                onClick={() => setIsEditing(false)}
+                disabled={isSaving}
+                className="
                   text-gray-500
                   hover:text-red-500
                   transition
@@ -919,49 +915,23 @@ const StudentDashboard = () => {
                   disabled:opacity-50
                   disabled:cursor-not-allowed
                 "
-                  aria-label="Close"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <form
-                onSubmit={handleSave}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                aria-label="Close"
               >
-                <div className="col-span-1 sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Admission No (Cannot be changed)
-                  </label>
-                  <input
-                    type="text"
-                    name="admissionNo"
-                    value={editForm.admissionNo}
-                    disabled
-                    className="
-                    w-full
-                    p-2
-                    border
-                    border-gray-300
-                    rounded-lg
-                    bg-gray-100
-                    text-gray-500
-                    cursor-not-allowed
-                  "
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
                   />
-                </div>
+                </svg>
+              </button>
+            </div>
 
             <form
               onSubmit={handleSave}
@@ -989,8 +959,8 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                  />
-                </div>
+                />
+              </div>
 
               {/* Name */}
 
@@ -1124,8 +1094,8 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                  />
-                </div>
+                />
+              </div>
 
               {/* Section */}
 
@@ -1151,8 +1121,8 @@ const StudentDashboard = () => {
                     text-gray-500
                     cursor-not-allowed
                   "
-                  />
-                </div>
+                />
+              </div>
 
               {/* Gender */}
 
@@ -1285,12 +1255,12 @@ const StudentDashboard = () => {
                   border-t
                   pt-4
                 "
-                >
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    disabled={isSaving}
-                    className="
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                  className="
                     px-4
                     py-2
                     border
@@ -1302,14 +1272,14 @@ const StudentDashboard = () => {
                     disabled:opacity-50
                     disabled:cursor-not-allowed
                   "
-                  >
-                    Cancel
-                  </button>
+                >
+                  Cancel
+                </button>
 
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="
                     px-6
                     py-2
                     bg-yellow-400
@@ -1323,12 +1293,11 @@ const StudentDashboard = () => {
                     disabled:opacity-70
                     disabled:cursor-wait
                   "
-                  >
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            </div>
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
