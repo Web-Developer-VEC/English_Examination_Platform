@@ -72,39 +72,45 @@ const updateStudent = async (req, res) => {
         }
 
         // =====================================================
-        // REGISTER NUMBER
-        // =====================================================
+// REGISTER NUMBER
+// =====================================================
 
-        
+if (
+    registerNo !== undefined &&
+    registerNo !== null &&
+    String(registerNo).trim() !== ""
+) {
 
-            const newRegisterNo =
-                String(registerNo).trim();
+    const newRegisterNo = String(registerNo).trim();
 
-            
+    // ---------------------------------------------
+    // CHECK DUPLICATE REGISTER NUMBER
+    // ---------------------------------------------
 
-            // Check duplicate register number
-            const existingStudent =
-                await db.collection("students").findOne({
-                    registerNo: newRegisterNo,
-                    admissionNo: {
-                        $ne: admissionNo.trim()
-                    }
-                });
+    const existingStudent = await db.collection("students").findOne({
+        registerNo: newRegisterNo,
+        admissionNo: {
+            $ne: admissionNo.trim()
+        }
+    });
 
-            if (existingStudent) {
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "Register Number already belongs to another student."
-                });
-            }
+    if (existingStudent) {
+        return res.status(409).json({
+            success: false,
+            message:
+                "Register Number already belongs to another student."
+        });
+    }
 
-            updateData.registerNo = newRegisterNo;
+    // ---------------------------------------------
+    // UPDATE REGISTER NUMBER
+    // ---------------------------------------------
 
-            // Username follows register number
-            updateData.username = newRegisterNo;
-        
+    updateData.registerNo = newRegisterNo;
 
+    // Username follows register number
+    updateData.username = newRegisterNo;
+}
         // =====================================================
         // UPDATED TIME
         // =====================================================

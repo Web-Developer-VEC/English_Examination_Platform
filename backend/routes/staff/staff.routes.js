@@ -23,7 +23,6 @@ const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
 router.put(
     "/academic-year",
-    roleByAccess(["admin"]),
     updateAcademicYear
 );
 
@@ -39,12 +38,12 @@ router.put(
 // Get current settings
 router.get(
     "/settings",
-    roleByAccess(["admin"]),
+    
     getAdminSettings
 );
 router.get(
     "/admin/student-edit/:admissionNo",
-    roleByAccess(["admin"]),
+    
     getStudentEditPermission
 );
 
