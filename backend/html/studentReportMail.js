@@ -372,7 +372,7 @@ const getEmailTemplate = (studentName, examTitle, questionCode) => {
 
             Your detailed
             <strong>
-              ${examTitle || "English Laboratory Test Report"} [${questionCode || "N/A"}]
+              ${examTitle || "English Laboratory Test Report"} ${questionCode || "N/A"}
             </strong>
             is attached as a PDF document.
 

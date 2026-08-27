@@ -55,10 +55,10 @@ export default function AppRoutes() {
           <Route path="schedule" element={<Schedule />} />
           <Route path="results" element={<Results />} />
           <Route path="students" element={<Students />} />
-          <Route path="faculty" element={<FacultyList />} />
-          <Route path="student-data" element={<StudentDataUpload />} />
+          <Route path="FacultyIncharge" element={<FacultyList />} />
+          <Route path="studentData" element={<StudentDataUpload />} />
           <Route path="student-result" element={<StudentResult />} />
-          <Route path="profile-edit" element={<ProfileEdit/>}/>
+          <Route path="StudentProfileAccess" element={<ProfileEdit/>}/>
         </Route>
       </Route>
 
