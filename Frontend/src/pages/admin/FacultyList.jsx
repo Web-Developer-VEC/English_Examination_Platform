@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  getScheduleFormData,
+  getStaff,
+  updateStaff,
+} from "../../services/adminService";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -14,14 +19,6 @@ import {
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
 import "./FacultyList.css";
-
-const API_BASE_URL = "http://localhost:5000";
-const GET_SCHEDULE_DATA_ENDPOINT =
-  `${API_BASE_URL}/api/staff/schedule/getformdata`;
-const GET_STAFF_ENDPOINT =
-  `${API_BASE_URL}/api/staff/getstaff`;
-const STAFF_UPDATE_ENDPOINT =
-  `${API_BASE_URL}/api/staff/updatestaff`;
 
 const MAX_ORIGINAL_IMAGE_SIZE = 1024 * 1024;
 
@@ -164,16 +161,12 @@ const FacultyList = () => {
     try {
       setLoadingScheduleData(true);
 
-      const response = await fetch(
-        GET_SCHEDULE_DATA_ENDPOINT
-      );
+      const result = await getScheduleFormData();
 
-      const result = await readResponse(response);
-
-      if (!response.ok || result?.success === false) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load department and section data"
+          "Unable to load department and section data"
         );
       }
 
@@ -189,40 +182,27 @@ const FacultyList = () => {
       setBatchDepartmentSections(
         Array.isArray(rows) ? rows : []
       );
+
     } catch (error) {
-      console.error("Schedule data error:", error);
+
+      console.error(
+        "Schedule data error:",
+        error
+      );
 
       showToast(
         "error",
         error?.message ||
-          "Unable to load department and section"
+        "Unable to load department and section"
       );
 
       setBatchDepartmentSections([]);
+
     } finally {
       setLoadingScheduleData(false);
     }
   };
-
-  const readResponse = async (response) => {
-    const text = await response.text();
-
-    if (!text) {
-      return {
-        success: response.ok,
-      };
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      return {
-        success: response.ok,
-        message: text,
-      };
-    }
-  };
-
+  
   const extractArray = (result, keys = []) => {
     const candidates = [
       ...keys.map((key) => result?.data?.[key]),
@@ -242,16 +222,13 @@ const FacultyList = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch(
-        GET_STAFF_ENDPOINT
-      );
 
-      const result = await readResponse(response);
+      const result = await getStaff();
 
-      if (!response.ok || result?.success === false) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load staff"
+          "Unable to load staff"
         );
       }
 
@@ -269,28 +246,37 @@ const FacultyList = () => {
         (Array.isArray(rows) ? rows : []).map(
           (member, index) => ({
             ...member,
+
             id:
               member?.id ||
               member?._id ||
               `staff-${index}-${Date.now()}`,
+
             phoneNo:
               member?.phoneNo ||
               member?.phone ||
               "",
+
             role: "staff",
           })
         )
       );
+
     } catch (error) {
-      console.error("Get staff error:", error);
+
+      console.error(
+        "Get staff error:",
+        error
+      );
 
       showToast(
         "error",
         error?.message ||
-          "Unable to load staff"
+        "Unable to load staff"
       );
 
       setFaculty([]);
+
     }
   };
 
@@ -505,7 +491,7 @@ const FacultyList = () => {
     );
   };
 
-  
+
   const handlePhoneChange = (event) => {
     const value =
       event.target.value
@@ -525,7 +511,7 @@ const FacultyList = () => {
     }));
   };
 
-  
+
   const handleDepartmentSectionChange = (value) => {
     const parsed = parseDepartmentSectionOption(value);
 
@@ -672,15 +658,15 @@ const FacultyList = () => {
       image.naturalHeight ||
       image.height;
 
-    
+
 
     const scale =
       Math.min(
         MAX_IMAGE_WIDTH /
-          width,
+        width,
 
         MAX_IMAGE_HEIGHT /
-          height,
+        height,
 
         1
       );
@@ -717,7 +703,7 @@ const FacultyList = () => {
       );
     }
 
-    
+
     const qualities = [
       0.8,
       0.7,
@@ -751,7 +737,7 @@ const FacultyList = () => {
         currentHeight
       );
 
-      
+
 
       context.fillStyle =
         "#ffffff";
@@ -808,7 +794,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentWidth *
-              0.75
+            0.75
           )
         );
 
@@ -817,7 +803,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentHeight *
-              0.75
+            0.75
           )
         );
     }
@@ -827,7 +813,7 @@ const FacultyList = () => {
     );
   };
 
-  
+
   const handlePhotoChange =
     async (event) => {
       const file =
@@ -869,7 +855,7 @@ const FacultyList = () => {
       }
 
       try {
-        
+
         showToast(
           "success",
           "Compressing photo..."
@@ -901,7 +887,7 @@ const FacultyList = () => {
         showToast(
           "error",
           error?.message ||
-            "Unable to compress photo"
+          "Unable to compress photo"
         );
       } finally {
 
@@ -910,7 +896,7 @@ const FacultyList = () => {
       }
     };
 
-  
+
   const validateForm = () => {
     if (!form.name.trim()) {
       showToast("error", "Staff name is required");
@@ -1008,18 +994,14 @@ const FacultyList = () => {
         payload
       );
 
-      const response = await fetch(
-        STAFF_UPDATE_ENDPOINT,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const result = await updateStaff(payload);
 
-      const result = await readResponse(response);
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+          "Unable to save staff"
+        );
+      }
 
       if (response.status === 413) {
         throw new Error(
@@ -1088,14 +1070,14 @@ const FacultyList = () => {
       showToast(
         "error",
         error?.message ||
-          "Unable to save staff"
+        "Unable to save staff"
       );
     } finally {
       setSaving(false);
     }
   };
 
-const handleDeleteClick =
+  const handleDeleteClick =
     (member) => {
       setFacultyToDelete(
         member
@@ -1146,23 +1128,19 @@ const handleDeleteClick =
         payload
       );
 
-      const response = await fetch(
-        STAFF_UPDATE_ENDPOINT,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const result = await updateStaff(payload);
 
-      const result = await readResponse(response);
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+          "Unable to delete staff"
+        );
+      }
 
       if (!response.ok || result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to delete staff"
+          "Unable to delete staff"
         );
       }
 
@@ -1196,7 +1174,7 @@ const handleDeleteClick =
       showToast(
         "error",
         error?.message ||
-          "Unable to delete staff"
+        "Unable to delete staff"
       );
     } finally {
       setSaving(false);
@@ -1292,7 +1270,7 @@ const handleDeleteClick =
           <div className="faculty-card-content">
 
             <span className="faculty-role">
-              { "FACULTY" }
+              {"FACULTY"}
             </span>
 
             <h3>
@@ -1769,7 +1747,7 @@ const handleDeleteClick =
                       <span className="static-role-value">
                         Staff
                       </span>
-                      
+
                     </div>
                   </div>
                 </div>
@@ -1981,7 +1959,6 @@ const handleDeleteClick =
                   disabled={
                     saving ||
                     loadingScheduleData ||
-                    form.assignments.length === 0 &&
                     form.assignments.length === 0
                   }
                 >

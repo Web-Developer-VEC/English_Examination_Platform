@@ -141,20 +141,99 @@ export const getExistingStudents = async ({
 // =====================================================
 // GET BATCH / DEPARTMENT / SECTION
 // =====================================================
-export const getScheduleFormData = async () => {
-
-    const response = await api.get(
-        `${API_URL}/schedule/getformdata`
-    );
-
-    return response.data;
-};
 
 // SCHEDULE EXAM
 export const scheduleExam = async (payload) => {
     const response = await api.post(
         `${API_URL}/schedule/scheduleexam`,
         payload
+    );
+
+    return response.data;
+};
+
+// =====================================================
+// GET DEPARTMENT / SECTION DATA
+// =====================================================
+
+export const getScheduleFormData = async () => {
+    const response = await api.get(
+        `${STAFF_API}/schedule/getformdata`
+    );
+
+    return response.data;
+};
+
+
+// =====================================================
+// GET ALL STAFF
+// =====================================================
+
+export const getStaff = async () => {
+    const response = await api.get(
+        `${STAFF_API}/getstaff`
+    );
+
+    return response.data;
+};
+
+
+// =====================================================
+// ADD / UPDATE / DELETE STAFF
+// =====================================================
+
+export const updateStaff = async (payload) => {
+    const response = await api.post(
+        `${STAFF_API}/updatestaff`,
+        payload
+    );
+
+    return response.data;
+};
+
+// =====================================================
+// UPDATE STUDENT PROFILE ACCESS
+// =====================================================
+
+export const updateStudentProfileAccess = async (
+    students
+) => {
+    const response = await api.put(
+        `${API_URL}/student-edit`,
+        {
+            students,
+        }
+    );
+
+    return response.data;
+};
+
+
+// =====================================================
+// GET ACADEMIC YEAR
+// =====================================================
+
+export const getAcademicYear = async () => {
+    const response = await api.get(
+        `${API_URL}/academic-year`
+    );
+
+    return response.data;
+};
+
+
+// =====================================================
+// UPDATE ACADEMIC YEAR
+// =====================================================
+
+export const updateAcademicYear = async (
+    academicYear
+) => {
+    const response = await api.put(
+        `${API_URL}/academic-year`,
+        {
+            academicYear,
+        }
     );
 
     return response.data;

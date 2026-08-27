@@ -4,7 +4,7 @@ import {
   sendForgotPasswordOtp,
   validateForgotPasswordOtp,
   resetForgotPassword,
-} from "../../services/forgotPassword.service";
+} from "../../services/authService";
 
 const ForgetPassword = () => {
   // =========================
