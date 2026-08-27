@@ -19,14 +19,17 @@ import { syncExam, submitExam, reportMalpractice } from "../../services/studentS
 export default function AudioTest() {
 
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const audioRef = useRef(null);
+    const examClosedRef = useRef(false);
+    const malpracticeReportingRef = useRef(false);
+
     const [examRemaining, setExamRemaining] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const audioRef = useRef(null);
-    const malpracticeReportingRef = useRef(false);
-    const examClosedRef = useRef(false);
     const [questions, setQuestions] = useState([]);
     const [answers, setAnswers] = useState({});
     const [syncingQuestions, setSyncingQuestions] = useState({});
@@ -39,8 +42,11 @@ export default function AudioTest() {
     const [warningMessage, setWarningMessage] = useState("");
     const [showWarning, setShowWarning] = useState(false);
     const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
-    const location = useLocation();
+    
     const examData = location.state;
+    const studentSession = getStudentSession();
+    const admissionNo = studentSession?.user?.admissionNo;
+    const testId = examData?.testId;
     const MAX_PLAYS = 2;
     const remainingTime = Math.max(duration - currentTime, 0);
     const audioProgress = duration > 0 ? ((duration - currentTime) / duration) * 100 : 0;
@@ -59,10 +65,7 @@ export default function AudioTest() {
             return true;
         } catch (error) {
 
-            console.error(
-                "Exam fullscreen request failed:",
-                error
-            );
+            console.error("Exam fullscreen request failed:", error);
 
             return false;
         }
@@ -102,19 +105,9 @@ export default function AudioTest() {
             reason
         };
 
-        console.log(
-            "🔥 MALPRACTICE PAYLOAD:",
-            payload
-        );
-
         try {
 
             const response = await reportMalpractice(payload);
-
-            console.log(
-                "🔥 MALPRACTICE RESPONSE:",
-                response
-            );
 
             const violationNo =
                 response?.malpractice?.violationNo || 0;
@@ -123,16 +116,6 @@ export default function AudioTest() {
                 response?.malpractice?.remaining || 0;
 
             setViolations(violationNo);
-
-            console.log(
-                "🔥 VIOLATION NUMBER:",
-                violationNo
-            );
-
-            console.log(
-                "🔥 REMAINING CHANCES:",
-                remaining
-            );
 
             // ==========================================
             // EXAM CLOSED
@@ -172,20 +155,11 @@ export default function AudioTest() {
 
         } catch (error) {
 
-            console.error(
-                "🔥 MALPRACTICE REPORT FAILED:",
-                error
-            );
+            console.error("MALPRACTICE REPORT FAILED:",error);
 
-            console.error(
-                "🔥 SERVER RESPONSE:",
-                error.response?.data
-            );
+            console.error("SERVER RESPONSE:",error.response?.data);
 
-            console.error(
-                "🔥 STATUS:",
-                error.response?.status
-            );
+            console.error("STATUS:",error.response?.status);
 
             /*
              * IMPORTANT:
@@ -209,8 +183,10 @@ export default function AudioTest() {
 
                     setViolations(violationNo);
 
-                    clearTestState();
-
+                    clearTestState(
+                        admissionNo,
+                        testId
+                    );
                     setWarningMessage(
                         data?.message ||
                         "Malpractice limit exceeded. Examination has been closed."
@@ -277,36 +253,17 @@ export default function AudioTest() {
             studentAnswer: answer
         };
 
-        console.log(
-            "🔥 SYNC ANSWER PAYLOAD:",
-            payload
-        );
-
         try {
 
             const response = await syncExam(payload);
 
-            console.log(
-                "🔥 SYNC ANSWER RESPONSE:",
-                response
-            );
-
         } catch (error) {
 
-            console.error(
-                "🔥 ANSWER SYNC FAILED:",
-                error
-            );
+            console.error("ANSWER SYNC FAILED:",error);
 
-            console.error(
-                "🔥 SERVER RESPONSE:",
-                error.response?.data
-            );
+            console.error("SERVER RESPONSE:",error.response?.data);
 
-            console.error(
-                "🔥 STATUS:",
-                error.response?.status
-            );
+            console.error("STATUS:",error.response?.status);
         } finally {
             setSyncingQuestions(prev => ({
                 ...prev,
@@ -320,9 +277,7 @@ export default function AudioTest() {
         if (isSubmitting) return;
 
         if (examClosedRef.current) {
-            console.error(
-                "Exam already closed due to malpractice."
-            );
+            console.error("Exam already closed due to malpractice.");
             return;
         }
 
@@ -349,16 +304,8 @@ export default function AudioTest() {
             testId: examData.testId,
             admissionNo: session.user.admissionNo
         };
-        console.log(
-            "🔥 SUBMIT EXAM PAYLOAD:",
-            payload
-        );
         try {
             const response = await submitExam(payload);
-            console.log(
-                "🔥 SUBMIT EXAM RESPONSE:",
-                response
-            );
             if (!response?.success) {
                 throw new Error(
                     response?.message ||
@@ -369,7 +316,10 @@ export default function AudioTest() {
             setSubmitted(true);
             setShowSuccess(true);
             // Stop saving old exam state
-            clearTestState();
+            clearTestState(
+                admissionNo,
+                testId
+            );
             // Redirect countdown
             let seconds = 7;
             setCountdown(seconds);
@@ -378,22 +328,13 @@ export default function AudioTest() {
                 setCountdown(seconds);
                 if (seconds <= 0) {
                     clearInterval(timer);
-                    navigate("/");
+                    navigate("/student/dashboard");
                 }
             }, 1000);
         } catch (error) {
-            console.error(
-                "🔥 EXAM SUBMISSION FAILED:",
-                error
-            );
-            console.error(
-                "🔥 SERVER RESPONSE:",
-                error.response?.data
-            );
-            console.error(
-                "🔥 STATUS:",
-                error.response?.status
-            );
+            console.error("EXAM SUBMISSION FAILED:",error);
+            console.error("SERVER RESPONSE:",error.response?.data);
+            console.error("STATUS:",error.response?.status);
             // Allow the student to try submitting again
             setIsSubmitting(false);
         }
@@ -414,13 +355,7 @@ export default function AudioTest() {
         const handleFullscreenChange = () => {
 
             if (!document.fullscreenElement) {
-
-                console.log(
-                    "⚠️ Exam fullscreen exited."
-                );
-
                 setShowFullscreenPopup(true);
-
             }
 
         };
@@ -435,7 +370,7 @@ export default function AudioTest() {
             document.removeEventListener(
                 "fullscreenchange",
                 handleFullscreenChange
-        );
+            );
 
         };
 
@@ -444,42 +379,104 @@ export default function AudioTest() {
 
     useEffect(() => {
 
-        const saved = getTestState();
-
-        if (saved) {
-
-            setQuestions(saved.questions);
-            setAnswers(saved.answers);
-            setPlayCount(saved.playCount);
-            setCurrentTime(saved.currentTime);
-            setIsRestored(true);
-
-            return;
-        }
+        // ==========================================
+        // CHECK EXAM DATA
+        // ==========================================
 
         if (!examData) {
 
             console.error("No exam data received.");
 
-            navigate("/student/start-test");
+            navigate("/exam/instruction");
 
             return;
         }
 
-        console.log(
-            "Exam data received:",
-            examData
+
+        // ==========================================
+        // CHECK STUDENT SESSION
+        // ==========================================
+
+        const session = getStudentSession();
+
+        if (!session?.user?.admissionNo) {
+
+            console.error("Student session not found.");
+
+            navigate("/studentlogin");
+
+            return;
+        }
+
+
+        // ==========================================
+        // CHECK TEST ID
+        // ==========================================
+
+        if (!examData.testId) {
+
+            console.error("Test ID not found.");
+
+            navigate("/exam/instruction");
+
+            return;
+        }
+
+
+        const currentAdmissionNo =
+            session.user.admissionNo;
+
+        const currentTestId =
+            examData.testId;
+
+
+        // ==========================================
+        // RESTORE THIS STUDENT'S TEST STATE
+        // ==========================================
+
+        const saved = getTestState(
+            currentAdmissionNo,
+            currentTestId
         );
 
-        const finalQuestions = examData.questions.map(
-            (question) => {
 
-                const optionArray = Object.entries(
-                    question.options
-                ).map(([key, value]) => ({
-                    key,
-                    value
-                }));
+        if (saved) {
+            setQuestions(
+                saved.questions || []
+            );
+
+            setAnswers(
+                saved.answers || {}
+            );
+
+            setPlayCount(
+                saved.playCount || 0
+            );
+
+            setCurrentTime(
+                saved.currentTime || 0
+            );
+
+            setIsRestored(true);
+
+            return;
+        }
+
+
+        // ==========================================
+        // CREATE QUESTIONS FOR THIS TEST
+        // ==========================================
+
+        const finalQuestions =
+            examData.questions.map((question) => {
+
+                const optionArray =
+                    Object.entries(
+                        question.options
+                    ).map(([key, value]) => ({
+                        key,
+                        value
+                    }));
 
                 const questionData = {
                     id: question.questionNo,
@@ -487,48 +484,115 @@ export default function AudioTest() {
                     options: optionArray
                 };
 
-                return shuffleOptions(questionData);
-            }
-        );
+                return shuffleOptions(
+                    questionData
+                );
+            });
+
 
         setQuestions(finalQuestions);
+
+        // New student/test = no answers
+        setAnswers({});
+
+        setPlayCount(0);
+
+        setCurrentTime(0);
 
     }, [examData, navigate]);
 
     useEffect(() => {
-        if (questions.length === 0) return;
-        saveTestState({
-            questions,
-            answers,
-            playCount,
-            currentTime
-        });
-    }, [questions, answers, playCount]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (!audioRef.current) return;
-            saveTestState({
+        if (
+            questions.length === 0 ||
+            !admissionNo ||
+            !testId
+        ) {
+            return;
+        }
+
+        saveTestState(
+            {
                 questions,
                 answers,
                 playCount,
-                currentTime: audioRef.current.currentTime
-            });
+                currentTime
+            },
+            admissionNo,
+            testId
+        );
+
+    }, [
+        questions,
+        answers,
+        playCount,
+        currentTime,
+        admissionNo,
+        testId
+    ]);
+    useEffect(() => {
+
+        if (
+            !admissionNo ||
+            !testId
+        ) {
+            return;
+        }
+
+        const interval = setInterval(() => {
+
+            if (!audioRef.current) {
+                return;
+            }
+
+            saveTestState(
+                {
+                    questions,
+                    answers,
+                    playCount,
+                    currentTime:
+                        audioRef.current.currentTime
+                },
+                admissionNo,
+                testId
+            );
+
         }, 1000);
-        return () => clearInterval(interval);
-    }, [questions, answers, playCount]);
+
+        return () => {
+            clearInterval(interval);
+        };
+
+    }, [
+        questions,
+        answers,
+        playCount,
+        admissionNo,
+        testId
+    ]);
 
     useEffect(() => {
+
+        // ==========================================
+        // TAB / WINDOW SWITCH
+        // ==========================================
 
         const visibilityHandler = () => {
 
             if (document.hidden) {
+
                 handleViolation(
                     "Tab switched or window minimized."
                 );
+
             }
 
         };
+
+
+        // ==========================================
+        // RIGHT CLICK
+        // ==========================================
 
         const contextMenuHandler = (e) => {
 
@@ -540,9 +604,95 @@ export default function AudioTest() {
 
         };
 
+
+        // ==========================================
+        // KEYBOARD
+        // ==========================================
+
         const keyHandler = (e) => {
 
             const key = e.key.toLowerCase();
+            const code = e.code;
+
+            // ==========================================
+            // MEDIA KEYS
+            // BLOCK ONLY - NO VIOLATION
+            // ==========================================
+
+            const mediaKeys = [
+                "MediaPlayPause",
+                "MediaTrackNext",
+                "MediaTrackPrevious",
+                "MediaStop",
+                "AudioVolumeUp",
+                "AudioVolumeDown",
+                "AudioVolumeMute"
+            ];
+
+            if (
+                mediaKeys.includes(e.key) ||
+                mediaKeys.includes(code)
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+
+            // ==========================================
+            // PRINT SCREEN
+            // VIOLATION
+            // ==========================================
+
+            if (
+                e.key === "PrintScreen" ||
+                e.code === "PrintScreen"
+            ) {
+                e.preventDefault();
+
+                handleViolation(
+                    "Print Screen key pressed."
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // CTRL
+            // VIOLATION
+            // ==========================================
+
+            if (e.key === "Control") {
+                e.preventDefault();
+
+                handleViolation(
+                    "Ctrl key pressed."
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // SHIFT
+            // VIOLATION
+            // ==========================================
+
+            if (e.key === "Shift") {
+                e.preventDefault();
+
+                handleViolation(
+                    "Shift key pressed."
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // EXISTING RESTRICTED SHORTCUTS
+            // ==========================================
 
             if (
                 key === "f12" ||
@@ -551,16 +701,54 @@ export default function AudioTest() {
                 (e.ctrlKey && e.shiftKey && key === "i") ||
                 (e.ctrlKey && e.shiftKey && key === "j")
             ) {
-
                 e.preventDefault();
 
                 handleViolation(
                     "Restricted keyboard shortcut detected."
+                );
+
+                return;
+            }
+        };
+
+        // ==========================================
+        // KEY UP
+        // ==========================================
+
+        const keyUpHandler = (e) => {
+
+            const mediaKeys = [
+                "MediaPlayPause",
+                "MediaTrackNext",
+                "MediaTrackPrevious",
+                "MediaStop",
+            ];
+
+            if (
+                mediaKeys.includes(e.key) ||
+                mediaKeys.includes(e.code)
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        // ==========================================
+        // PRINT
+        // ==========================================
+
+        const beforePrintHandler = () => {
+
+            handleViolation(
+                "Print action detected."
             );
 
-            }
-
         };
+
+
+        // ==========================================
+        // REGISTER EVENTS
+        // ==========================================
 
         document.addEventListener(
             "visibilitychange",
@@ -574,8 +762,25 @@ export default function AudioTest() {
 
         window.addEventListener(
             "keydown",
-            keyHandler
+            keyHandler,
+            true
         );
+
+        window.addEventListener(
+            "keyup",
+            keyUpHandler,
+            true
+        );
+
+        window.addEventListener(
+            "beforeprint",
+            beforePrintHandler
+        );
+
+
+        // ==========================================
+        // CLEANUP
+        // ==========================================
 
         return () => {
 
@@ -591,7 +796,19 @@ export default function AudioTest() {
 
             window.removeEventListener(
                 "keydown",
-                keyHandler
+                keyHandler,
+                true
+            );
+
+            window.removeEventListener(
+                "keyup",
+                keyUpHandler,
+                true
+            );
+
+            window.removeEventListener(
+                "beforeprint",
+                beforePrintHandler
             );
 
         };
@@ -614,8 +831,11 @@ export default function AudioTest() {
 
             if (remaining === 0) {
                 // Exam time finished
-                clearTestState();
-                navigate("/");
+                clearTestState(
+                    admissionNo,
+                    testId
+                );
+                navigate("/studentlogin");
             }
         };
 
@@ -1009,8 +1229,8 @@ export default function AudioTest() {
                                 className="h-full bg-green-500 rounded-full transition-all duration-300"
                                 style={{
                                     width: `${questions.length > 0
-                                            ? (answeredCount(answers) / questions.length) * 100
-                                            : 0
+                                        ? (answeredCount(answers) / questions.length) * 100
+                                        : 0
                                         }%`
                                 }}
                             />
@@ -1025,9 +1245,9 @@ export default function AudioTest() {
                                 !isAllQuestionsAnswered(answers, questions)
                             }
                             className={`w-25 py-4 ml-auto rounded-xl font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting ||
-                                    !isAllQuestionsAnswered(answers, questions)
-                                    ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                                    : "bg-[#800000] text-white hover:bg-[#6b0000] shadow-md hover:shadow-lg shadow-red-900/20 transform hover:-translate-y-0.5"
+                                !isAllQuestionsAnswered(answers, questions)
+                                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                : "bg-[#800000] text-white hover:bg-[#6b0000] shadow-md hover:shadow-lg shadow-red-900/20 transform hover:-translate-y-0.5"
                                 }`}
                         >
 

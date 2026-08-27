@@ -1,0 +1,16 @@
+{
+    "students": [
+        {
+            "admissionNo": "24VEC_586",
+            "editEnabled": true
+        },
+        {
+            "admissionNo": "24VEC_586",
+            "editEnabled": true
+        },
+        {
+            "admissionNo": "24VEC_900",
+            "editEnabled": false
+        }
+    ]
+}
