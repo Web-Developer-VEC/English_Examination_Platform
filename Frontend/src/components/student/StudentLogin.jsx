@@ -37,13 +37,13 @@ const StudentLogin = () => {
       );
 
       if (response.success) {
+        sessionStorage.removeItem(
+          "adminSession"
+        );
         saveStudentSession({
           token: response.token,
           user: response.user
         });
-        sessionStorage.removeItem(
-          "adminSession"
-        );
 
         navigate("/student/dashboard");
       }
@@ -61,7 +61,7 @@ const StudentLogin = () => {
   };
 
   return (<>
-    <div className="flex pt-20 justify-center"><div className="login-card">
+    <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
         <User className="login-heading__icon" size={22} />
@@ -132,10 +132,10 @@ const StudentLogin = () => {
 >
   Forgot your password?
 </button>           
- {/* <p className="login-footer__link">Contact your mentor</p> */}
-            <button type="button" className="login-signup" onClick={() => navigate("/register")} >
+ {/* <p className="login-footer__link">Contact your mentor</p>  */}
+            {/* <button type="button" className="login-signup" onClick={() => navigate("/register")} >
               New Student? Sign Up
-            </button>
+            </button> */}
           </>
         </div>
       </form>

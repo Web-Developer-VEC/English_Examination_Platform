@@ -11,6 +11,10 @@ const updateAcademicYear = async (req, res) => {
 
         const { academicYear } = req.body;
 
+        // =================================================
+        // VALIDATION
+        // =================================================
+
         if (!academicYear || !academicYear.trim()) {
             return res.status(400).json({
                 success: false,
@@ -18,13 +22,19 @@ const updateAcademicYear = async (req, res) => {
             });
         }
 
-        const result = await db.collection("settings").updateOne(
+        const cleanAcademicYear = academicYear.trim();
+
+        // =================================================
+        // UPDATE ADMIN SETTINGS
+        // =================================================
+
+        await db.collection("admin_settings").updateOne(
             {
-                type: "academic"
+                type: "academic_year"
             },
             {
                 $set: {
-                    academicYear: academicYear.trim(),
+                    academicYear: cleanAcademicYear,
                     updatedAt: new Date()
                 }
             },
@@ -33,24 +43,32 @@ const updateAcademicYear = async (req, res) => {
             }
         );
 
+        // =================================================
+        // RESPONSE
+        // =================================================
+
         return res.status(200).json({
             success: true,
             message: "Academic year updated successfully.",
             data: {
-                academicYear: academicYear.trim()
+                current_academic_year: cleanAcademicYear
             }
         });
 
     } catch (error) {
 
-        console.error("UPDATE ACADEMIC YEAR ERROR:", error);
+        console.error(
+            "UPDATE ACADEMIC YEAR ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || "Internal Server Error"
         });
     }
 };
+
 
 
 // =====================================================
@@ -69,35 +87,62 @@ const getAdminSettings = async (req, res) => {
 
         const db = getDB();
 
-        const academic = await db.collection("settings").findOne({
-            type: "academic"
+        // =================================================
+        // GET ACADEMIC YEAR
+        // =================================================
+
+        const academic = await db.collection("admin_settings").findOne({
+            type: "academic_year"
         });
 
-        const studentEdit = await db.collection("settings").findOne({
-            type: "studentEdit"
+        // =================================================
+        // GET STUDENT EDIT SETTING
+        // =================================================
+
+        const studentEdit = await db.collection("admin_settings").findOne({
+            type: "student_edit"
         });
+
+        // =================================================
+        // RESPONSE
+        // =================================================
 
         return res.status(200).json({
+
             success: true,
+
             data: {
+
                 academicYear:
                     academic?.academicYear || null,
 
                 studentEditEnabled:
                     studentEdit?.enabled || false
+
             }
+
         });
 
     } catch (error) {
 
-        console.error("GET ADMIN SETTINGS ERROR:", error);
+        console.error(
+            "GET ADMIN SETTINGS ERROR:",
+            error
+        );
 
         return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                error.message ||
+                "Internal Server Error"
+
         });
     }
 };
+
+
 
 
 
