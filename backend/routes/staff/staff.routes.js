@@ -58,8 +58,8 @@ router.delete("/delete-question-set", roleByAccess(["admin"]),deleteQuestionSet)
 
 router.post("/exam-results",roleByAccess(["admin","staff"]), generateExamReport);
 router.post("/student-data",roleByAccess(["admin"]),getStudentsByDepartmentAndBatch);
-router.get("/getstaff", getStaff);
-router.post("/updatestaff", updateStaff);
+router.get("/getstaff",roleByAccess(["admin"]), getStaff);
+router.post("/updatestaff",roleByAccess(["admin"]), updateStaff);
 router.use("/schedule",scheduleRoutes);
 
 module.exports = router;
