@@ -1,4 +1,4 @@
-const MAX_EMAILS_PER_SECOND = 10;
+ const MAX_EMAILS_PER_SECOND = 30;
 
 let queue = [];
 let processing = false;
