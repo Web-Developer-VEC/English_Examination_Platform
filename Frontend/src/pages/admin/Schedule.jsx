@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
+  getScheduleFormData,
+  scheduleExam,
+} from "../../services/adminService";
+import {
   ClipboardClock,
   GraduationCap,
   ShieldCheck,
@@ -24,11 +28,6 @@ import {
   Search,
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown"
-
-// API CONFIG
-const API_BASE_URL = "http://localhost:5000";
-const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
-const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 
 // PROJECT COLOR TOKENS
 export const colors = {
@@ -96,10 +95,9 @@ const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
 
 const dropdownOptionRowClasses = (isSelected) =>
-  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
-    isSelected
-      ? "bg-[#fdcc03]/15 font-semibold text-black"
-      : "font-medium text-black hover:bg-[#fff8d6]"
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
+    ? "bg-[#fdcc03]/15 font-semibold text-black"
+    : "font-medium text-black hover:bg-[#fff8d6]"
   }`;
 
 // SEARCHABLE SELECT FOR RANGE PICKER
@@ -144,25 +142,25 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
         </span>
         <ChevronDown size={14} className="text-gray-500 shrink-0" />
       </button>
-      
+
       {isOpen && (
         <div className="absolute z-[60] left-0 mt-1 w-full min-w-[220px] rounded-md border border-gray-200 bg-white shadow-xl">
           <div className="p-2 border-b border-gray-100">
-             <div className="relative">
-               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-               <input
-                 type="text"
-                 autoFocus
-                 placeholder="Search..."
-                 value={search}
-                 onChange={(e) => setSearch(e.target.value)}
-                 className="w-full rounded border border-gray-300 pl-6 pr-2 py-1 text-xs focus:border-[#800000] focus:outline-none"
-               />
-             </div>
+            <div className="relative">
+              <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded border border-gray-300 pl-6 pr-2 py-1 text-xs focus:border-[#800000] focus:outline-none"
+              />
+            </div>
           </div>
           <div className="max-h-48 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
-               <div className="px-2 py-3 text-xs text-gray-500 text-center">No results</div>
+              <div className="px-2 py-3 text-xs text-gray-500 text-center">No results</div>
             ) : (
               filteredOptions.map((no) => {
                 const d = detailsMap.get(no);
@@ -199,6 +197,21 @@ function polarPoint(index, radius, cx, cy) {
   };
 }
 
+function to24Hour(hour, minute, period) {
+  let h = parseInt(hour, 10) % 12;
+  if (period === "PM") h += 12;
+
+  return {
+    h,
+    m: parseInt(minute, 10),
+  };
+}
+
+function toMinutesSinceMidnight(hour, minute, period) {
+  const { h, m } = to24Hour(hour, minute, period);
+  return h * 60 + m;
+}
+
 function AnalogClockPicker({
   label,
   IconComponent,
@@ -206,6 +219,8 @@ function AnalogClockPicker({
   minute,
   period,
   onChange,
+  selectedDate,
+  minDateTime,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState("hour"); // "hour" | "minute"
@@ -226,7 +241,23 @@ function AnalogClockPicker({
     hour && minute !== "" ? `${hour}:${minute} ${period}` : "";
 
   const pad2 = (n) => String(n).padStart(2, "0");
+  const isToday = (() => {
+    if (!selectedDate) return false;
 
+    const today = new Date();
+    const todayString =
+      `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+
+    return selectedDate === todayString;
+  })();
+
+  const isTimePast = (h, m, p) => {
+    if (!isToday || !minDateTime) return false;
+
+    const selectedMinutes = toMinutesSinceMidnight(h, m, p);
+
+    return selectedMinutes < minDateTime;
+  };
   const handlePickHour = (h) => {
     onChange({ hour: pad2(h), minute, period });
     setMode("minute");
@@ -335,63 +366,80 @@ function AnalogClockPicker({
 
               {mode === "hour"
                 ? HOUR_VALUES.map((h) => {
-                    const { x, y } = polarPoint(h, outerRadius, cx, cy);
-                    const isSelected = hour === pad2(h);
-                    return (
-                      <g
-                        key={h}
-                        onClick={() => handlePickHour(h)}
-                        className="cursor-pointer"
-                      >
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r="13"
-                          fill={isSelected ? "#800000" : "transparent"}
-                        />
-                        <text
-                          x={x}
-                          y={y}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fontSize="12"
-                          fontWeight="600"
-                          fill={isSelected ? "#FFFFFF" : "#000000"}
-                        >
-                          {h}
-                        </text>
-                      </g>
+                  const { x, y } = polarPoint(h, outerRadius, cx, cy);
+
+                  const isSelected = hour === pad2(h);
+
+                  // Check if this entire hour is already in the past
+                  const hourIsPast =
+                    isToday &&
+                    PERIOD_OPTIONS.every((p) =>
+                      MINUTE_VALUES.every((m) => isTimePast(h, m, p))
                     );
-                  })
+
+                  return (
+                    <g
+                      key={h}
+                      onClick={() => {
+                        if (!hourIsPast) {
+                          handlePickHour(h);
+                        }
+                      }}
+                      className={
+                        hourIsPast
+                          ? "cursor-not-allowed opacity-30"
+                          : "cursor-pointer"
+                      }
+                    >
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="13"
+                        fill={isSelected ? "#800000" : "transparent"}
+                      />
+                      <text
+                        x={x}
+                        y={y}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize="12"
+                        fontWeight="600"
+                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                      >
+                        {h}
+                      </text>
+                    </g>
+                  );
+                })
                 : MINUTE_VALUES.map((m, idx) => {
-                    const { x, y } = polarPoint(idx, outerRadius, cx, cy);
-                    const isSelected = minute === pad2(m);
-                    return (
-                      <g
-                        key={m}
-                        onClick={() => handlePickMinute(m)}
-                        className="cursor-pointer"
+                  const { x, y } = polarPoint(idx, outerRadius, cx, cy);
+                  const isSelected = minute === pad2(m);
+                  return (
+                    <g
+                      key={m}
+                      onClick={() => handlePickMinute(m)}
+                      className="cursor-pointer"
+                    >
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="13"
+                        fill={isSelected ? "#800000" : "transparent"}
+                      />
+                      <text
+                        x={x}
+                        y={y}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize="12"
+                        fontWeight="600"
+                        fill={isSelected ? "#FFFFFF" : "#000000"}
                       >
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r="13"
-                          fill={isSelected ? "#800000" : "transparent"}
-                        />
-                        <text
-                          x={x}
-                          y={y}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fontSize="12"
-                          fontWeight="600"
-                          fill={isSelected ? "#FFFFFF" : "#000000"}
-                        >
-                          {pad2(m)}
-                        </text>
-                      </g>
-                    );
-                  })}
+                        {pad2(m)}
+                      </text>
+                    </g>
+                  );
+                })}
             </svg>
 
             <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
@@ -457,60 +505,98 @@ export default function Schedule() {
   const questionCodeRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     let cancelled = false;
 
-    async function fetchScheduleData() {
+    const fetchScheduleData = async () => {
       setIsLoadingScheduleData(true);
       setScheduleDataError("");
+
       try {
-        const res = await fetch(GET_SCHEDULE_DATA_ENDPOINT, {
-          method: "GET",
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const body = await res.json();
-        console.log("GET SCHEDULE DATA STATUS:", res.status);
-        console.log("GET SCHEDULE DATA RESPONSE:", body);
-        console.log("TESTS FROM BACKEND:", body?.data?.tests);
+        const body = await getScheduleFormData();
+
+        console.log(
+          "GET SCHEDULE DATA RESPONSE:",
+          body
+        );
+
+        console.log(
+          "TESTS FROM BACKEND:",
+          body?.data?.tests
+        );
+
         console.log(
           "BATCH DEPARTMENT SECTIONS:",
           body?.data?.batchDepartmentSections
         );
 
-        if (!res.ok || !body.success) {
-          throw new Error(body.message || `Request failed (${res.status})`);
-        }
-        if (!cancelled) {
-          setScheduleData({
-            batchDepartmentSections: body.data.batchDepartmentSections || [],
-            tests: body.data.tests || [],
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setScheduleDataError(
-            err.message || "Failed to load batches/departments/test codes.",
+        if (body?.success === false) {
+          throw new Error(
+            body?.message ||
+            "Failed to load batches/departments/test codes."
           );
         }
+
+        if (!cancelled) {
+          setScheduleData({
+            batchDepartmentSections:
+              body?.data?.batchDepartmentSections || [],
+
+            tests:
+              body?.data?.tests || [],
+          });
+        }
+
+      } catch (error) {
+
+        if (!cancelled) {
+          console.error(
+            "Schedule data fetch error:",
+            error
+          );
+
+          setScheduleDataError(
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load batches/departments/test codes."
+          );
+        }
+
       } finally {
-        if (!cancelled) setIsLoadingScheduleData(false);
+
+        if (!cancelled) {
+          setIsLoadingScheduleData(false);
+        }
       }
-    }
+    };
 
     fetchScheduleData();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const BATCH_OPTIONS = useMemo(
-    () => [
-      ...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch)),
-    ],
-    [scheduleData.batchDepartmentSections],
-  );
+  const BATCH_OPTIONS = useMemo(() => {
+    if (!academicYear) return [];
+
+    const startYear = academicYear.split("-")[0];
+
+    const expectedBatch = `${startYear}-${Number(startYear) + 4}`;
+
+    return [
+      ...new Set(
+        scheduleData.batchDepartmentSections
+          .map((c) => c.batch)
+          .filter((batch) => batch === expectedBatch)
+      ),
+    ];
+  }, [scheduleData.batchDepartmentSections, academicYear]);
+
+  useEffect(() => {
+    if (batch && !BATCH_OPTIONS.includes(batch)) {
+      setBatch("");
+    }
+  }, [academicYear, BATCH_OPTIONS, batch]);
 
   const DEPT_SECTION_OPTIONS = useMemo(() => {
     return scheduleData.batchDepartmentSections
@@ -797,11 +883,45 @@ export default function Schedule() {
       problems.push("Select at least one Department & Section");
     if (!questionCode) problems.push("Test Code is required");
     if (!date) problems.push("Date is required");
+    if (date) {
+      const today = new Date();
+
+      const todayString =
+        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      if (date < todayString) {
+        problems.push("Date cannot be in the past");
+      }
+    }
 
     const hasStartTime = startHour && startMinute && startPeriod;
     const hasEndTime = endHour && endMinute && endPeriod;
     if (!hasStartTime) problems.push("Start Time is required");
     if (!hasEndTime) problems.push("End Time is required");
+    // Start time cannot be in the past when scheduling for today
+    if (date && hasStartTime) {
+      const now = new Date();
+
+      const todayString =
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      if (date === todayString) {
+        const currentMinutes =
+          now.getHours() * 60 + now.getMinutes();
+
+        const startMinutes = toMinutesSinceMidnight(
+          startHour,
+          startMinute,
+          startPeriod
+        );
+
+        if (startMinutes <= currentMinutes) {
+          problems.push(
+            "Start Time must be later than the current time"
+          );
+        }
+      }
+    }
 
     if (hasStartTime && hasEndTime) {
       const startMinutes = toMinutesSinceMidnight(
@@ -858,7 +978,6 @@ export default function Schedule() {
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
 
-    const token = localStorage.getItem("token");
 
     setIsSubmitting(true);
     setErrorMessage("");
@@ -883,26 +1002,17 @@ export default function Schedule() {
         if (category === "Normal") {
           payload.cie = cie;
         }
-        return fetch(SCHEDULE_EXAM_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(payload),
-        }).then(async (res) => {
-          let body = null;
-          try {
-            body = await res.json();
-          } catch {
-            // no JSON body — leave as null
+        return scheduleExam(payload).then((body) => {
+
+          if (body?.success === false) {
+            throw new Error(
+              `${combo.label}: ${body?.message ||
+              body?.error ||
+              "Request failed"
+              }`
+            );
           }
-          if (!res.ok) {
-            const message =
-              (body && (body.message || body.error)) ||
-              `Request failed (${res.status})`;
-            throw new Error(`${combo.label}: ${message}`);
-          }
+
           return body;
         });
       }),
@@ -1022,8 +1132,13 @@ export default function Schedule() {
                   value={batch}
                   options={BATCH_OPTIONS}
                   onChange={setBatch}
-                  placeholder="Select Batch"
+                  placeholder={
+                    academicYear
+                      ? "Select Batch"
+                      : "Select Academic Year first"
+                  }
                   loading={isLoadingScheduleData}
+                  disabled={!academicYear}
                 />
               </div>
 
@@ -1155,11 +1270,10 @@ export default function Schedule() {
                     className={dropdownIconClasses(isAdmissionPickerOpen)}
                   />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedAdmissionNos.length
-                        ? "text-black"
-                        : "text-black/45"
-                    }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length
+                      ? "text-black"
+                      : "text-black/45"
+                      }`}
                   >
                     {selectedAdmissionNos.length
                       ? `${selectedAdmissionNos.length} Selected`
@@ -1284,77 +1398,77 @@ export default function Schedule() {
                 )}
 
                 {selectedAdmissionNos.length > 0 && (
-  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
 
-    {/* Header */}
-    <div className="mb-2 flex items-center justify-between">
-      <span className="text-xs font-semibold text-[#000000]">
-        Selected ({selectedAdmissionNos.length})
-      </span>
+                    {/* Header */}
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#000000]">
+                        Selected ({selectedAdmissionNos.length})
+                      </span>
 
-      <button
-        type="button"
-        onClick={handleClearAllAdmission}
-        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-      >
-        <Undo2 className="h-3 w-3" />
-        Clear All
-      </button>
-    </div>
+                      <button
+                        type="button"
+                        onClick={handleClearAllAdmission}
+                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        Clear All
+                      </button>
+                    </div>
 
-    {/* First 4 selected students */}
-    <div className="flex flex-col gap-1.5">
-      {(showAllAdmissions
-        ? selectedAdmissionNos
-        : selectedAdmissionNos.slice(0, 4)
-      ).map((no) => {
-        const details = ADMISSION_DETAILS.get(no);
+                    {/* First 4 selected students */}
+                    <div className="flex flex-col gap-1.5">
+                      {(showAllAdmissions
+                        ? selectedAdmissionNos
+                        : selectedAdmissionNos.slice(0, 4)
+                      ).map((no) => {
+                        const details = ADMISSION_DETAILS.get(no);
 
-        const label = details
-          ? `${no} - ${details.name}`
-          : no;
+                        const label = details
+                          ? `${no} - ${details.name}`
+                          : no;
 
-        return (
-          <div
-            key={no}
-            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
+                        return (
+                          <div
+                            key={no}
+                            className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
+                          >
+                            <span className="flex min-w-0 items-center gap-2">
+                              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
 
-              <span className="truncate">
-                {label}
-              </span>
-            </span>
+                              <span className="truncate">
+                                {label}
+                              </span>
+                            </span>
 
-            <button
-              type="button"
-              onClick={() => handleRemoveAdmission(no)}
-              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-              aria-label={`Remove ${no}`}
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        );
-      })}
-    </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAdmission(no)}
+                              className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+                              aria-label={`Remove ${no}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
 
-    {/* View More */}
-    {selectedAdmissionNos.length > 4 && (
-      <button
-        type="button"
-        onClick={() => setShowAllAdmissions((prev) => !prev)}
-        className="mt-2 w-full text-center text-xs font-semibold text-[#800000] hover:underline"
-      >
-        {showAllAdmissions
-          ? "View Less"
-          : `View More (${selectedAdmissionNos.length - 4} more)`}
-      </button>
-    )}
+                    {/* View More */}
+                    {selectedAdmissionNos.length > 4 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllAdmissions((prev) => !prev)}
+                        className="mt-2 w-full text-center text-xs font-semibold text-[#800000] hover:underline"
+                      >
+                        {showAllAdmissions
+                          ? "View Less"
+                          : `View More (${selectedAdmissionNos.length - 4} more)`}
+                      </button>
+                    )}
 
-  </div>
-)}
+                  </div>
+                )}
               </div>
 
               {/* Test Code */}
@@ -1379,6 +1493,13 @@ export default function Schedule() {
                     <input
                       type="date"
                       value={date}
+                      min={(() => {
+                        const today = new Date();
+
+                        return `${today.getFullYear()}-${String(
+                          today.getMonth() + 1
+                        ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                      })()}
                       onChange={(e) => setDate(e.target.value)}
                       className={boxClasses + " pr-2"}
                     />
@@ -1391,6 +1512,13 @@ export default function Schedule() {
                   hour={startHour}
                   minute={startMinute}
                   period={startPeriod}
+                  selectedDate={date}
+                  minDateTime={
+                    (() => {
+                      const now = new Date();
+                      return now.getHours() * 60 + now.getMinutes();
+                    })()
+                  }
                   onChange={({ hour, minute, period }) => {
                     setStartHour(hour);
                     setStartMinute(minute);

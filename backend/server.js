@@ -1,16 +1,18 @@
 const cors = require("cors");
 const express = require("express");
 require("dotenv").config();
-const {connectDB} = require("./config/db");
+const { connectDB } = require("./config/db");
 const indexRoutes = require("./routes/index.routes");
 const startExamCron = require("./middleware/cron_middleware");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors({
-    origin: "http://localhost:5173"
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 app.use(express.json());
 
 // Connect to MongoDB
@@ -20,20 +22,11 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
 app.use((req, res, next) => {
   const start = Date.now();
 
   res.on("finish", () => {
-    console.log({
-      timestamp: new Date().toISOString(),
-      method: req.method,
-      path: req.originalUrl,
-      status: res.statusCode,
-      durationMs: Date.now() - start,
-      requestId: req.headers["x-request-id"],
-    });
+    console.log("Hits :",req.originalUrl);
   });
 
   next();
@@ -43,24 +36,24 @@ app.use("/api", indexRoutes);
 
 // 404 Handler
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: "Route not found"
-    });
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
 });
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err);
+  console.error(err);
 
-    res.status(err.status || 500).json({
-        success: false,
-        message: err.message || "Internal Server Error"
-    });
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
 });
 
 // Start Server
 app.listen(port, () => {
-    console.log(`🚀 Server running on http://localhost:${port}`);
-     startExamCron();
+  console.log(`🚀 Server running on http://localhost:${port}`);
+  startExamCron();
 });

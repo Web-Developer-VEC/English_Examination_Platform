@@ -14,7 +14,7 @@ import {
   ClipboardList,
   BarChart3,
 } from "lucide-react";
-
+import { getFormData, getExamResults } from "../../services/adminService";
 // -----------------------------------------------------
 // PROJECT COLORS
 // -----------------------------------------------------
@@ -25,12 +25,6 @@ const colors = {
   text: "#000000",
   gray: "#808080",
 };
-
-// -----------------------------------------------------
-// API
-// -----------------------------------------------------
-const API_ENDPOINT = "http://localhost:5000/api/staff/schedule/getformdata";
-const EXAM_RESULTS_ENDPOINT = "http://localhost:5000/api/staff/exam-results";
 
 // -----------------------------------------------------
 // DEFAULT CIE + SEMESTER OPTIONS
@@ -507,18 +501,13 @@ export default function StudentResult() {
       setError("");
 
       try {
-        const response = await fetch(API_ENDPOINT, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
+        const data = await getFormData();
 
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
+        if (!data.success) {
+          throw new Error(
+            data.message || "Failed to fetch form data."
+          );
         }
-
-        const data = await response.json();
         console.log("GETSCHEDULEDATA RESPONSE:", data);
 
         const rawArray = findArrayInResponse(data);
@@ -614,29 +603,21 @@ export default function StudentResult() {
   // FETCH / PREPARE RESULTS
   // ---------------------------------------------------
   const fetchStudentResults = async (filters) => {
-    // ---------------------------------------------------
-    // CONVERT FRONTEND VALUES TO BACKEND VALUES
-    // ---------------------------------------------------
 
-    // Frontend displays:
-    // I / II / III
-    // Backend expects:
-    // 1 / 2 / 3
     const cieMapping = {
-      "I": 1,
-      "II": 2,
-      "III": 3
+      I: 1,
+      II: 2,
+      III: 3,
     };
-    
-    const cieNumber = filters.cie ? cieMapping[filters.cie] : null;
 
-    // Frontend displays: Odd / Even
-    // Backend expects: odd / even
-    const semesterValue = filters.sem ? filters.sem.toLowerCase() : "";
+    const cieNumber = filters.cie
+      ? cieMapping[filters.cie]
+      : null;
 
-    // ---------------------------------------------------
-    // REQUEST BODY
-    // ---------------------------------------------------
+    const semesterValue = filters.sem
+      ? filters.sem.toLowerCase()
+      : "";
+
     const requestBody = {
       batch: filters.batch,
       department: filters.dept,
@@ -645,54 +626,46 @@ export default function StudentResult() {
       semester: semesterValue,
     };
 
-    console.log("EXAM REPORT REQUEST:", requestBody);
+    console.log(
+      "EXAM REPORT REQUEST:",
+      requestBody
+    );
 
-    // ---------------------------------------------------
-    // CALL BACKEND PDF API
-    // ---------------------------------------------------
-    const response = await fetch(EXAM_RESULTS_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const responseData =
+      await getExamResults(requestBody);
 
-    // ---------------------------------------------------
-    // CHECK RESPONSE
-    // ---------------------------------------------------
-    if (!response.ok) {
-      throw new Error(`Report API Error: ${response.status}`);
-    }
+    console.log(
+      "EXAM REPORT RESPONSE:",
+      responseData
+    );
 
-    const responseData = await response.json();
-    console.log("EXAM REPORT RESPONSE:", responseData);
-
-    if (!responseData.success || !responseData.data || !responseData.data.url) {
+    if (
+      !responseData.success ||
+      !responseData.data ||
+      !responseData.data.url
+    ) {
       throw new Error(
-        responseData.message || "PDF URL was not returned by the server.",
+        responseData.message ||
+        "PDF URL was not returned by the server."
       );
     }
 
-    // ---------------------------------------------------
-    // GET PDF URL
-    // ---------------------------------------------------
-    const pdfUrl = responseData.data.url;
-    console.log("PDF URL:", pdfUrl);
+    const pdfUrl =
+      responseData.data.url;
 
-    // ---------------------------------------------------
-    // DOWNLOAD PDF
-    // ---------------------------------------------------
+    console.log(
+      "PDF URL:",
+      pdfUrl
+    );
+
     window.open(
-  pdfUrl,
-  "_blank",
-  "noopener,noreferrer"
-);
+      pdfUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
 
     return responseData;
   };
-
   // ---------------------------------------------------
   // VIEW RESULT
   // ---------------------------------------------------
@@ -728,7 +701,7 @@ export default function StudentResult() {
       console.error("PDF download error:", err);
       setError(
         err.message ||
-          "Something went wrong while generating or downloading the PDF.",
+        "Something went wrong while generating or downloading the PDF.",
       );
       setShowResults(false);
     } finally {
@@ -763,9 +736,9 @@ export default function StudentResult() {
 
     const average = numericMarks.length
       ? (
-          numericMarks.reduce((sum, mark) => sum + mark, 0) /
-          numericMarks.length
-        ).toFixed(1)
+        numericMarks.reduce((sum, mark) => sum + mark, 0) /
+        numericMarks.length
+      ).toFixed(1)
       : "0.0";
 
     return {

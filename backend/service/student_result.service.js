@@ -5,7 +5,7 @@ const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
 
 // IMPORT YOUR EMAIL SERVICE HERE
-const { sendExamPDFEmail } = require("./mail.service");
+const { sendExamPDFEmail } = require("./report_mail.service");
 
 // ============================================================
 // HTML ESCAPE
