@@ -9,6 +9,7 @@ import {
   CalendarClock,
   UploadCloud,
   ClipboardList,
+  ShieldCheck,
   Menu,
   X,
   PanelLeftClose,
@@ -28,6 +29,12 @@ const NAV_ITEMS = [
     icon: Users,
     children: [
       {
+        key: "faculty-list",
+        label: "Faculty Incharge",
+        icon: UserCog,
+        location: "/admin/faculty-list",
+      },
+      {
         key: "QuestionUpload",
         label: "Question Upload",
         icon: ClipboardPlus,
@@ -39,11 +46,17 @@ const NAV_ITEMS = [
         icon: CalendarClock,
         location: "/admin/schedule",
       },
-      {
+            {
         key: "student-data-upload",
         label: "Student Data Upload",
         icon: UploadCloud,
         location: "/admin/student-data",
+      },
+      {
+        key: "student-profile-access",
+        label: "Student Profile Access",
+        icon: ShieldCheck,
+        location: "/admin/student-profile-access",
       },
       {
         key: "student-result",
@@ -88,7 +101,6 @@ export default function AdminSidebar() {
 
   return (
     <div className="vec-shell">
-
       {/* Mobile topbar */}
       <div className="vec-topbar">
         <button
@@ -99,24 +111,18 @@ export default function AdminSidebar() {
           <Menu size={19} />
         </button>
 
-        <span className="vec-topbar-title">
-          Admin Panel
-        </span>
+        <span className="vec-topbar-title">Admin Panel</span>
       </div>
 
       {/* Overlay for mobile drawer */}
       <div
-        className={`vec-overlay ${
-          mobileOpen ? "mobile-open" : ""
-        }`}
+        className={`vec-overlay ${mobileOpen ? "mobile-open" : ""}`}
         onClick={() => setMobileOpen(false)}
       />
 
       {/* Sidebar */}
       <aside
-        className={`vec-sidebar ${
-          mobileOpen ? "mobile-open" : ""
-        } ${
+        className={`vec-sidebar ${mobileOpen ? "mobile-open" : ""} ${
           collapsed && !hovering ? "collapsed" : ""
         }`}
         onMouseEnter={() => setHovering(true)}
@@ -125,11 +131,7 @@ export default function AdminSidebar() {
         <div className="vec-sidebar-header">
           <button
             className="vec-collapse-btn"
-            aria-label={
-              collapsed
-                ? "Expand sidebar"
-                : "Collapse sidebar"
-            }
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => {
               setCollapsed((c) => {
                 const next = !c;
@@ -152,16 +154,10 @@ export default function AdminSidebar() {
           >
             <X size={20} />
           </button>
-
         </div>
 
-        <nav
-          className="vec-nav"
-          aria-label="Main navigation"
-        >
-
+        <nav className="vec-nav" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
-
             const Icon = item.icon;
             const hasChildren = !!item.children;
 
@@ -169,8 +165,7 @@ export default function AdminSidebar() {
              * Check the current URL.
              */
             const isDirectActive =
-              !hasChildren &&
-              location.pathname === item.location;
+              !hasChildren && location.pathname === item.location;
 
             /*
              * Check if one of the child routes
@@ -179,117 +174,74 @@ export default function AdminSidebar() {
             const isParentActive =
               hasChildren &&
               item.children.some(
-                (child) =>
-                  location.pathname === child.location
+                (child) => location.pathname === child.location,
               );
 
             const isOpen = !!expanded[item.key];
 
             return (
               <div key={item.key}>
-
                 {/* Main menu item */}
                 <button
                   className={`vec-item-btn ${
                     isDirectActive
                       ? "active"
                       : isParentActive
-                      ? "parent-active-only"
-                      : ""
+                        ? "parent-active-only"
+                        : ""
                   }`}
                   onClick={() =>
-                    handleSelect(
-                      item.key,
-                      hasChildren,
-                      item.location
-                    )
+                    handleSelect(item.key, hasChildren, item.location)
                   }
-                  aria-expanded={
-                    hasChildren
-                      ? isOpen
-                      : undefined
-                  }
-                  title={
-                    collapsed
-                      ? item.label
-                      : undefined
-                  }
+                  aria-expanded={hasChildren ? isOpen : undefined}
+                  title={collapsed ? item.label : undefined}
                 >
-
                   <Icon className="vec-icon" />
 
-                  <span className="vec-label">
-                    {item.label}
-                  </span>
+                  <span className="vec-label">{item.label}</span>
 
                   {hasChildren && (
                     <ChevronDown
-                      className={`vec-chevron ${
-                        isOpen ? "open" : ""
-                      }`}
+                      className={`vec-chevron ${isOpen ? "open" : ""}`}
                     />
                   )}
-
                 </button>
 
                 {/* Submenu */}
                 {hasChildren && (
-                  <div
-                    className={`vec-submenu ${
-                      isOpen ? "open" : ""
-                    }`}
-                  >
-
+                  <div className={`vec-submenu ${isOpen ? "open" : ""}`}>
                     {item.children.map((child) => {
-
                       const ChildIcon = child.icon;
 
                       /*
                        * THIS is the important part.
                        * Active state comes from URL.
                        */
-                      const childActive =
-                        location.pathname ===
-                        child.location;
+                      const childActive = location.pathname === child.location;
 
                       return (
                         <button
                           key={child.key}
                           className={`vec-subitem-btn ${
-                            childActive
-                              ? "active"
-                              : ""
+                            childActive ? "active" : ""
                           }`}
                           onClick={() =>
-                            handleSelect(
-                              child.key,
-                              false,
-                              child.location
-                            )
+                            handleSelect(child.key, false, child.location)
                           }
                         >
-
                           <ChildIcon className="vec-subicon" />
 
-                          <span>
-                            {child.label}
-                          </span>
-
+                          <span>{child.label}</span>
                         </button>
                       );
                     })}
-
                   </div>
                 )}
-
               </div>
             );
           })}
-
         </nav>
-
       </aside>
-
     </div>
   );
 }
