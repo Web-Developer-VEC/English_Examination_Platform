@@ -4,32 +4,12 @@ const { getDB } = require("../config/db");
 const SALT_ROUNDS = 10;
 
 
-// =====================================================
-// REPLACE ALL STAFF (DELETE ALL + INSERT ALL)
-//
-// Expected req.body:
-// [
-//     {
-//         name: "John Doe",
-//         department: "CSE",
-//         section: "A",
-//         academicYear: "2025-2026",
-//         semester: "5",
-//         email: "john.doe@college.edu",
-//         phoneNo: "9876543210"
-//     },
-//     { ... },
-//     { ... }
-// ]
-//
-// WARNING: this wipes the ENTIRE staff collection and
-// replaces it with the array sent in the request body.
-// =====================================================
 const updateStaff = async (req, res) => {
     try {
 
-        const {data} = req.body;
-const staffList = data;
+        const { data } = req.body;
+        const staffList = data;
+
         // =====================================================
         // VALIDATION
         // =====================================================
@@ -43,6 +23,16 @@ const staffList = data;
 
         const db = getDB();
         const now = new Date();
+
+        // =====================================================
+        // FIND THE ADMIN (SO WE CAN PROTECT IT)
+        // =====================================================
+
+        const admin = await db.collection("staff").findOne({
+            role: "admin"
+        });
+
+        const adminEmail = admin ? admin.email : null;
 
         const staffDocs = [];
         const errors = [];
@@ -85,6 +75,17 @@ const staffList = data;
             const normalizedPhone = String(phoneNo).trim();
 
             // ----------------------------
+            // Never allow this endpoint to touch the admin account
+            // ----------------------------
+            if (adminEmail && normalizedEmail === adminEmail) {
+                errors.push({
+                    email: normalizedEmail,
+                    message: "This email belongs to the admin account and cannot be modified here."
+                });
+                continue;
+            }
+
+            // ----------------------------
             // Skip duplicate emails within the same payload
             // ----------------------------
             if (seenEmails.has(normalizedEmail)) {
@@ -111,6 +112,7 @@ const staffList = data;
                 phoneNo: normalizedPhone,
                 username: normalizedEmail,
                 password: hashedPassword,
+                role: "staff",
                 createdAt: now,
                 updatedAt: now
             });
@@ -125,10 +127,14 @@ const staffList = data;
         }
 
         // =====================================================
-        // DELETE ALL EXISTING STAFF
+        // DELETE ALL EXISTING NON-ADMIN STAFF
         // =====================================================
+        // The admin document (role: "admin") is explicitly
+        // excluded and stays untouched.
 
-        await db.collection("staff").deleteMany({});
+        await db.collection("staff").deleteMany({
+            role: { $ne: "admin" }
+        });
 
         // =====================================================
         // INSERT ALL NEW STAFF
@@ -144,7 +150,7 @@ const staffList = data;
 
         return res.status(200).json({
             success: true,
-            message: "Staff collection replaced successfully.",
+            message: "Staff collection replaced successfully. Admin account preserved.",
             insertedCount: insertResult.insertedCount,
             failedCount: errors.length,
             errors
@@ -165,9 +171,6 @@ const staffList = data;
 };
 
 
-
-
-
 // =====================================================
 // GET STAFF (ARRAY OF ALL STAFF RECORDS)
 // =====================================================
@@ -182,7 +185,7 @@ const getStaff = async (req, res) => {
 
         const staffList = await db
             .collection("staff")
-            .find({})
+            .find({role:"staff"})
             .project({ password: 0 })
             .toArray();
 
@@ -211,5 +214,5 @@ const getStaff = async (req, res) => {
 };
 
 module.exports = {
-    updateStaff,getStaff
+    updateStaff, getStaff
 };
