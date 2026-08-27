@@ -125,8 +125,14 @@ const StudentLogin = () => {
 
         <div className="login-footer">
           <>
-            <p className="login-footer__link">Forgot your password?</p>
-            <p className="login-footer__link">Contact your mentor</p>
+<button
+  type="button"
+  className="login-footer__link"
+  onClick={() => navigate("/forgot-password")}
+>
+  Forgot your password?
+</button>           
+ {/* <p className="login-footer__link">Contact your mentor</p> */}
             <button type="button" className="login-signup" onClick={() => navigate("/register")} >
               New Student? Sign Up
             </button>
