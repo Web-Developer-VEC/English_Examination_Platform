@@ -1,3 +1,7 @@
+/* =========================================================
+   HEADER
+   ========================================================= */
+
 .vec-header {
     position: fixed;
     top: 0;
@@ -11,310 +15,555 @@
     align-items: center;
     justify-content: space-between;
 
-    background: white;
-    z-index: 1000;
+    padding: 0 30px;
 
+    background: #ffffff;
+
+    z-index: 1000;
     box-sizing: border-box;
 }
+
+
+/* =========================================================
+   HEADER UNDERLINE
+   ========================================================= */
+
 .vec-header__underline {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
+
     height: 5px;
 
-    background: linear-gradient(
-        90deg,
-        #f5b301,
-        #ffd873,
-        #f5b301
-    );
+    background: linear-gradient(90deg,
+            #f5b301,
+            #ffd873,
+            #f5b301);
 }
 
-.vec-header__user {
+
+/* =========================================================
+   LEFT - COLLEGE BRAND
+   ========================================================= */
+
+.vec-header__brand {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+
+    width: 240px;
+    flex-shrink: 0;
+
+    z-index: 2;
+}
+
+.vec-header__logo {
+    width: 55px;
+    height: 55px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vec-logo-image {
+    width: 70px;
+    height: auto;
+}
+
+.vec-header__text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 2px;
+}
+
+.vec-header__college {
+    margin: 0;
+
+    font-family: "Playfair Display", serif;
+    font-size: 20px;
+    font-weight: 600;
+
+    color: #4b1e1e;
+
+    line-height: 1.1;
+}
+
+.vec-header__department {
+    margin: 0;
+
+    font-size: 13px;
+    color: #222;
+
+    letter-spacing: 0.5px;
+}
+
+.vec-header__tagline {
+    margin: 0;
+
+    font-size: 11px;
+    font-style: italic;
+
+    color: #666;
+}
+
+.vec-header__autonomy {
+    margin: 0;
+
+    font-size: 10px;
+    font-style: italic;
+
+    color: #777;
+}
+
+
+/* =========================================================
+   CENTER - PORTAL TITLE
+   ========================================================= */
+
+.vec-header__portal {
     position: absolute;
-    right: 30px;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 10px;
+
+    width: calc(100% - 600px);
+    max-width: 850px;
+
+    pointer-events: none;
+}
+
+.vec-header__portal-icon {
+    color: #800000;
+    flex-shrink: 0;
+}
+
+.vec-header__portal-title {
+    margin: 0;
+
+    font-family: "Poppins", sans-serif;
+
+    font-size: 30px;
+    font-weight: 700;
+
+    color: #800000;
+
+    text-align: center;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   RIGHT - USER ACCOUNT
+   ========================================================= */
+
+.vec-header__account {
+    position: absolute;
+    right: 18px;
     top: 50%;
     transform: translateY(-50%);
 
-    min-width: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    z-index: 20;
+}
+
+
+/* =========================================================
+   USER CARD
+   ========================================================= */
+
+.vec-header__user {
+    position: static;
+
+    width: fit-content;
+    min-width: unset;
+
     padding: 12px 18px;
 
     background: #fffdf5;
     border: 2px solid #f5b301;
     border-radius: 12px;
 
-    text-align: center;
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
 
-    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    box-sizing: border-box;
 }
 
+
+/* =========================================================
+   USER NAME
+   ========================================================= */
+
 .vec-header__user-name {
+    margin: 0;
+
+    width: 100%;
+
     font-size: 18px;
     font-weight: 700;
     color: #800000;
     line-height: 1.2;
+
+    /* IMPORTANT */
+    text-align: center;
+    text-transform: uppercase;
+
+    white-space: nowrap;
 }
+
+
+/* =========================================================
+   DEPARTMENT / SECTION
+   ========================================================= */
 
 .vec-header__user-details {
     margin-top: 5px;
+
+    width: 100%;
+
     font-size: 14px;
     font-weight: 600;
     color: #555;
+
+    /* IMPORTANT */
+    text-align: center;
+
+    white-space: nowrap;
 }
 
-/* ================= LEFT ================= */
+/* =========================================================
+   LOGOUT BUTTON
+   ========================================================= */
 
-.vec-header__brand{
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    width:240px;
-    flex-shrink:0;
-    z-index:2;
+.vec-header__logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    height: 42px;
+
+    padding: 0 14px;
+
+    border: 1px solid #800000;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #800000;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease;
 }
 
-.vec-header__logo{
-    width:55px;
-    height:55px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+.vec-header__logout:hover {
+    background: #800000;
+    color: #ffffff;
 }
 
-.vec-logo-image{
-    width:70px;
-    height:auto;
+.vec-header__logout:active {
+    transform: scale(0.97);
 }
 
-.vec-header__text{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:2px;
+
+/* =========================================================
+   LARGE LAPTOP
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+    .vec-header {
+        padding: 0 24px;
+    }
+
+    .vec-header__brand {
+        width: 220px;
+    }
+
+    .vec-header__portal {
+        width: calc(100% - 520px);
+    }
+
+    .vec-header__portal-title {
+        font-size: 26px;
+    }
+
+    .vec-header__user {
+        min-width: 150px;
+        padding: 10px 14px;
+    }
+
+    .vec-header__user-name {
+        font-size: 16px;
+    }
+
+    .vec-header__user-details {
+        font-size: 13px;
+    }
+
+    .vec-header__logout {
+        height: 40px;
+        padding: 0 12px;
+    }
 }
 
-.vec-header__college{
-    margin:0;
-    font-family:"Playfair Display",serif;
-    font-size:20px;
-    font-weight:600;
-    color:#4B1E1E;
-    line-height:1.1;
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .vec-header {
+        padding: 0 20px;
+    }
+
+    .vec-header__brand {
+        width: 190px;
+    }
+
+    .vec-header__portal {
+        width: calc(100% - 440px);
+    }
+
+    .vec-header__portal-title {
+        font-size: 22px;
+    }
+
+    .vec-logo-image {
+        width: 60px;
+    }
+
+    .vec-header__college {
+        font-size: 18px;
+    }
+
+    .vec-header__account {
+        right: 12px;
+        gap: 6px;
+    }
+
+    .vec-header__user {
+        min-width: 125px;
+        padding: 8px 10px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .vec-header__user-name,
+    .vec-header__user-details {
+        width: 100%;
+        text-align: center;
+    }
+
+    .vec-header__user-name {
+        font-size: 14px;
+    }
+
+    .vec-header__user-details {
+        font-size: 11px;
+    }
+
+    .vec-header__logout {
+        height: 36px;
+        padding: 0 9px;
+
+        font-size: 12px;
+    }
 }
 
-.vec-header__department{
-    margin:0;
-    font-size:13px;
-    color:#222;
-    letter-spacing:.5px;
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .vec-header {
+        height: auto;
+
+        flex-direction: column;
+        justify-content: center;
+
+        padding: 18px 16px;
+
+        gap: 16px;
+    }
+
+    .vec-header__brand {
+        width: 100%;
+    }
+
+    .vec-header__portal {
+        position: static;
+
+        transform: none;
+
+        width: 100%;
+        max-width: 100%;
+
+        pointer-events: auto;
+    }
+
+    .vec-header__portal-title {
+        white-space: normal;
+        font-size: 22px;
+    }
+
+
+    /* User section becomes normal-flow content */
+
+    .vec-header__account {
+        position: static;
+
+        transform: none;
+
+        width: 100%;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        margin-top: 4px;
+    }
+
+    .vec-header__user {
+        min-width: 170px;
+    }
 }
 
-.vec-header__tagline{
-    margin:0;
-    font-size:11px;
-    font-style:italic;
-    color:#666;
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .vec-header {
+        padding: 14px 12px;
+    }
+
+    .vec-logo-image {
+        width: 55px;
+    }
+
+    .vec-header__college {
+        font-size: 17px;
+    }
+
+    .vec-header__department {
+        font-size: 11px;
+    }
+
+    .vec-header__tagline {
+        font-size: 10px;
+    }
+
+    .vec-header__autonomy {
+        font-size: 9px;
+    }
+
+    .vec-header__portal-title {
+        font-size: 19px;
+    }
+
+    .vec-header__portal-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .vec-header__account {
+        gap: 6px;
+    }
+
+    .vec-header__user {
+        min-width: 0;
+        padding: 8px 10px;
+    }
+
+    .vec-header__user-name {
+        font-size: 14px;
+    }
+
+    .vec-header__user-details {
+        font-size: 11px;
+    }
+
+    .vec-header__logout {
+        height: 36px;
+        padding: 0 10px;
+
+        font-size: 12px;
+    }
 }
 
-.vec-header__autonomy{
-    margin:0;
-    font-size:10px;
-    font-style:italic;
-    color:#777;
-}
 
-/* ================= CENTER ================= */
+/* =========================================================
+   EXTRA SMALL
+   ========================================================= */
 
-.vec-header__portal{
+@media (max-width: 360px) {
 
-    position:absolute;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:10px;
-    width:calc(100% - 300px);
-    max-width:850px;
-    pointer-events:none;
-}
-
-.vec-header__portal-icon{
-
-    color:#800;
-    flex-shrink:0;
-}
-
-.vec-header__portal-title{
-
-    margin:0;
-    font-family:"Poppins",sans-serif;
-    font-size:30px;
-    font-weight:700;
-    color:#800;
-    text-align:center;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-
-/* ================= UNDERLINE ================= */
-
-.vec-header__underline{
-
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:0;
-    height:5px;
-    background:linear-gradient(
-        90deg,
-        #f5b301,
-        #ffd873,
-        #f5b301
-    );
-}
-
-/* ================= LARGE LAPTOP ================= */
-
-@media(max-width:1200px){
-
-    .vec-header{
-       padding:16px 24px;
+    .vec-header__portal-title {
+        font-size: 17px;
     }
 
-    .vec-header__brand{
-        width:220px;
+    .vec-header__college {
+        font-size: 15px;
     }
 
-    .vec-header__portal{
-        width:calc(100% - 280px);
+    .vec-header__account {
+        flex-direction: column;
     }
 
-    .vec-header__portal-title{
-        font-size:26px;
+    .vec-header__user {
+        width: 100%;
+        align-items: center;
     }
 
-}
-
-/* ================= TABLET ================= */
-
-@media(max-width:992px){
-
-    .vec-header{
-        padding:16px 20px;
+    .vec-header__user-name,
+    .vec-header__user-details {
+        text-align: center;
     }
 
-    .vec-header__brand{
-        width:190px;
+    .vec-header__logout {
+        width: 100%;
     }
-
-    .vec-header__portal{
-        width:calc(100% - 240px);
-    }
-
-    .vec-header__portal-title{
-        font-size:22px;
-    }
-
-    .vec-logo-image{
-        width:60px;
-    }
-
-    .vec-header__college{
-        font-size:18px;
-    }
-
-}
-
-/* ================= MOBILE ================= */
-
-@media(max-width:768px){
-
-    .vec-header{
-        flex-direction:column;
-        justify-content:center;
-        padding:18px 16px;
-        gap:16px;
-        min-height:auto;
-    }
-
-    .vec-header__brand{
-        width:100%;
-    }
-
-    .vec-header__portal{
-
-        position:static;
-        transform:none;
-        width:100%;
-        max-width:100%;
-        pointer-events:auto;
-    }
-
-    .vec-header__portal-title{
-
-        white-space:normal;
-        font-size:22px;
-    }
-
-}
-
-/* ================= SMALL MOBILE ================= */
-
-@media(max-width:480px){
-
-    .vec-header{
-        padding:14px 12px;
-    }
-
-    .vec-logo-image{
-        width:55px;
-    }
-
-    .vec-header__college{
-        font-size:17px;
-    }
-
-    .vec-header__department{
-        font-size:11px;
-    }
-
-    .vec-header__tagline{
-        font-size:10px;
-    }
-
-    .vec-header__autonomy{
-        font-size:9px;
-    }
-
-    .vec-header__portal-title{
-        font-size:19px;
-    }
-
-    .vec-header__portal-icon{
-        width:22px;
-        height:22px;
-    }
-
-}
-
-/* ================= EXTRA SMALL ================= */
-
-@media(max-width:360px){
-
-    .vec-header__portal-title{
-        font-size:17px;
-    }
-
-    .vec-header__college{
-        font-size:15px;
-    }
-
 }

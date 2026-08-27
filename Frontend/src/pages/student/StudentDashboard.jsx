@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer";
+import { toast, ToastContainer } from 'react-toastify';
 import { getStudentSession } from "../../utils/helpers";
 import {
   getStudent,
@@ -103,8 +104,10 @@ const StudentDashboard = () => {
 
       setIsEditing(false);
 
-      alert("Student profile updated successfully!");
+      toast.success("Student profile updated successfully!");
+
     } catch (error) {
+
       console.error("Error updating student:", error);
 
       // axios puts the backend's JSON error body on error.response.data
@@ -114,7 +117,9 @@ const StudentDashboard = () => {
           "Failed to update profile",
       );
     } finally {
+
       setIsSaving(false);
+
     }
   };
 
@@ -192,13 +197,17 @@ const StudentDashboard = () => {
         const session = getStudentSession();
 
         if (!session || !session.user) {
-          throw new Error("No logged-in student found. Please log in again.");
+          throw new Error(
+            "No logged-in student found. Please log in again."
+          );
         }
 
         const username = session.user.username;
 
         if (!username) {
-          throw new Error("No logged-in student found. Please log in again.");
+          throw new Error(
+            "No logged-in student found. Please log in again."
+          );
         }
 
         // NOTE: this service call does not attach session.token as an
@@ -294,11 +303,14 @@ setTestResults(formattedTestResults);
             "Failed to load student data",
         );
       } finally {
+
         setIsLoading(false);
+
       }
     };
 
     fetchStudent();
+
   }, []);
 
   // ============================================================
@@ -408,10 +420,12 @@ setTestResults(formattedTestResults);
   // ============================================================
 
   return (
-    <div
-      className="
+    <>
+      <ToastContainer position="bottom-right" autoClose='3000' />
+      <div
+        className="
         w-full
-        h-[calc(100dvh-172px)]
+        h-[calc(100dvh-1px)]
         bg-gray-50
         p-6
         font-sans
@@ -434,13 +448,13 @@ setTestResults(formattedTestResults);
           items-center
           mb-6
         "
-      >
-        <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
+        >
+          <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="
               px-6
               py-2
               bg-white
@@ -453,13 +467,13 @@ setTestResults(formattedTestResults);
               transition
               cursor-pointer
             "
-          >
-            Edit Profile
-          </button>
+            >
+              Edit Profile
+            </button>
 
-          <button
-            onClick={() => navigate("/exam/instruction")}
-            className="
+            <button
+              onClick={() => navigate("/exam/instruction")}
+              className="
               px-6
               py-2
               bg-yellow-400
@@ -473,11 +487,11 @@ setTestResults(formattedTestResults);
               shadow-sm
               cursor-pointer
             "
-          >
-            Take Test
-          </button>
+            >
+              Take Test
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* ========================================================
           CONTENT
@@ -512,9 +526,9 @@ setTestResults(formattedTestResults);
             min-h-0
             overflow-hidden
           "
-        >
-          <h2
-            className="
+          >
+            <h2
+              className="
               flex-none
               text-xl
               font-bold
@@ -523,9 +537,9 @@ setTestResults(formattedTestResults);
               border-b
               pb-2
             "
-          >
-            Student Profile
-          </h2>
+            >
+              Student Profile
+            </h2>
 
           <div className="flex-none space-y-6 pr-1">
             {/* Name */}
@@ -591,12 +605,12 @@ setTestResults(formattedTestResults);
                   break-all
                   mt-1
                 "
-              >
-                {student.email}
-              </p>
+                >
+                  {student.email}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* ======================================================
             TEST RESULTS
@@ -617,9 +631,9 @@ setTestResults(formattedTestResults);
             min-h-0
             overflow-hidden
           "
-        >
-          <h2
-            className="
+          >
+            <h2
+              className="
               flex-none
               text-xl
               font-bold
@@ -628,12 +642,12 @@ setTestResults(formattedTestResults);
               border-b
               pb-2
             "
-          >
-            Test Results
-          </h2>
+            >
+              Test Results
+            </h2>
 
-          <div
-            className="
+            <div
+              className="
               flex-1
               min-h-0
               overflow-y-auto
@@ -642,17 +656,17 @@ setTestResults(formattedTestResults);
               border-gray-200
               rounded-lg
             "
-          >
-            <table
-              className="
+            >
+              <table
+                className="
                 w-full
                 min-w-[700px]
                 text-left
                 border-collapse
               "
-            >
-              <thead
-                className="
+              >
+                <thead
+                  className="
                   bg-gray-100
                   sticky
                   top-0
@@ -720,12 +734,6 @@ setTestResults(formattedTestResults);
                               font-bold
                               shadow-sm
                             "
-                          >
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
                             >
                               <path
                                 strokeLinecap="round"
@@ -733,7 +741,7 @@ setTestResults(formattedTestResults);
                                 strokeWidth="2"
                                 d="M5 13l4 4L19 7"
                               />
-                            </svg>
+                            <svg/>
                             Sent
                           </span>
                         ) : (
@@ -800,7 +808,6 @@ disabled={sendingId === test.testId}
             </table>
           </div>
         </div>
-      </div>
 
       {/* ========================================================
           EDIT PROFILE MODAL
@@ -845,9 +852,9 @@ disabled={sendingId === test.testId}
               border-t-4
               border-yellow-400
             "
-          >
-            <div
-              className="
+            >
+              <div
+                className="
                 flex
                 justify-between
                 items-center
@@ -859,15 +866,15 @@ disabled={sendingId === test.testId}
                 bg-white
                 z-10
               "
-            >
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                Edit Profile
-              </h2>
+              >
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                  Edit Profile
+                </h2>
 
-              <button
-                onClick={() => setIsEditing(false)}
-                disabled={isSaving}
-                className="
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                  className="
                   text-gray-500
                   hover:text-red-500
                   transition
@@ -875,28 +882,54 @@ disabled={sendingId === test.testId}
                   disabled:opacity-50
                   disabled:cursor-not-allowed
                 "
-                aria-label="Close"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  aria-label="Close"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSave}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+              >
+                <div className="col-span-1 sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Admission No (Cannot be changed)
+                  </label>
+                  <input
+                    type="text"
+                    name="admissionNo"
+                    value={editForm.admissionNo}
+                    disabled
+                    className="
+                    w-full
+                    p-2
+                    border
+                    border-gray-300
+                    rounded-lg
+                    bg-gray-100
+                    text-gray-500
+                    cursor-not-allowed
+                  "
                   />
-                </svg>
-              </button>
-            </div>
+                </div>
 
             <form
               onSubmit={handleSave}
               className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-            >
+            />
               {/* Admission No */}
 
               <div className="col-span-1 sm:col-span-2">
@@ -919,8 +952,8 @@ disabled={sendingId === test.testId}
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
               {/* Name */}
 
@@ -1052,8 +1085,8 @@ disabled={sendingId === test.testId}
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
               {/* Section */}
 
@@ -1077,8 +1110,8 @@ disabled={sendingId === test.testId}
                     text-gray-500
                     cursor-not-allowed
                   "
-                />
-              </div>
+                  />
+                </div>
 
               {/* Gender */}
 
@@ -1209,12 +1242,12 @@ disabled={sendingId === test.testId}
                   border-t
                   pt-4
                 "
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                  className="
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={isSaving}
+                    className="
                     px-4
                     py-2
                     border
@@ -1226,14 +1259,14 @@ disabled={sendingId === test.testId}
                     disabled:opacity-50
                     disabled:cursor-not-allowed
                   "
-                >
-                  Cancel
-                </button>
+                  >
+                    Cancel
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="
                     px-6
                     py-2
                     bg-yellow-400
@@ -1247,14 +1280,15 @@ disabled={sendingId === test.testId}
                     disabled:opacity-70
                     disabled:cursor-wait
                   "
-                >
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-      )}
+      )
 
       {/* ========================================================
           FOOTER
