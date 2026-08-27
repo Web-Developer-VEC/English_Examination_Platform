@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import api from "../../services/api";
 
 import "./ProfileEdit.css";
 
@@ -69,7 +70,7 @@ const toArray = (value) => {
   }
 
   if (Array.isArray(value?.records)) {
-    return value.records;
+    return value.reco 
   }
 
   if (Array.isArray(value?.academicYears)) {
@@ -830,7 +831,7 @@ const StudentProfileAccess = () => {
             <div>
 
               <h2>
-                Select Student Group
+                Select Student Details
               </h2>
 
               <p>
@@ -985,7 +986,7 @@ const StudentProfileAccess = () => {
               <div>
 
                 <h2>
-                  Student Access Management
+                  Student Profile Management
                 </h2>
 
                 <p>
