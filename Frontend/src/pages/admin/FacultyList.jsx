@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  getScheduleFormData,
+  getStaff,
+  updateStaff,
+} from "../../services/adminService";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -12,16 +17,13 @@ import {
   Users,
   Image as ImageIcon,
 } from "lucide-react";
-import ThemeDropdown from "../../components/common/ThemeDropDown";
-import "./FacultyList.css";
 
-const API_BASE_URL = "http://localhost:5000";
-const GET_SCHEDULE_DATA_ENDPOINT =
-  `${API_BASE_URL}/api/staff/schedule/getformdata`;
-const GET_STAFF_ENDPOINT =
-  `${API_BASE_URL}/api/staff/getstaff`;
-const STAFF_UPDATE_ENDPOINT =
-  `${API_BASE_URL}/api/staff/updatestaff`;
+import ThemeDropdown from "../../components/common/ThemeDropDown";
+
+
+import api from "../../services/api";
+
+import "./FacultyList.css";
 
 const MAX_ORIGINAL_IMAGE_SIZE = 1024 * 1024;
 
@@ -46,14 +48,20 @@ const EMPTY_FORM = {
 
 const FacultyList = () => {
   const [faculty, setFaculty] = useState([]);
+
   const [batchDepartmentSections, setBatchDepartmentSections] =
     useState([]);
+
   const [loadingScheduleData, setLoadingScheduleData] =
     useState(true);
+
   const [search, setSearch] = useState("");
+
   const [modalOpen, setModalOpen] = useState(false);
+
   const [deleteModalOpen, setDeleteModalOpen] =
     useState(false);
+
   const [saving, setSaving] = useState(false);
 
   const [editingFaculty, setEditingFaculty] =
@@ -61,14 +69,19 @@ const FacultyList = () => {
 
   const [facultyToDelete, setFacultyToDelete] =
     useState(null);
+
   const [form, setForm] = useState(EMPTY_FORM);
-  const [assignmentSelection, setAssignmentSelection] = useState("");
+
+  const [assignmentSelection, setAssignmentSelection] =
+    useState("");
 
   const [toast, setToast] = useState({
     show: false,
     type: "",
     message: "",
   });
+
+
 
   const showToast = (type, message) => {
     setToast({
@@ -85,6 +98,8 @@ const FacultyList = () => {
       });
     }, 3000);
   };
+
+
 
   const normalize = (value) => {
     return String(value || "")
@@ -108,48 +123,87 @@ const FacultyList = () => {
 
   const parseDepartmentSectionOption = (value) => {
     const separator = " – Section ";
+
     const index = value.lastIndexOf(separator);
 
     if (index === -1) return null;
 
     return {
-      department: value.substring(0, index).trim(),
-      section: value.substring(index + separator.length).trim(),
+      department: value
+        .substring(0, index)
+        .trim(),
+
+      section: value
+        .substring(index + separator.length)
+        .trim(),
     };
   };
+
+  // ============================================================
+  // GET ASSIGNMENTS
+  // ============================================================
 
   const getAssignments = (member) => {
     if (Array.isArray(member?.assignments)) {
       return member.assignments
-        .filter((item) => item?.department && item?.section)
+        .filter(
+          (item) =>
+            item?.department &&
+            item?.section
+        )
         .map((item) => ({
-          department: String(item.department).trim(),
-          section: String(item.section).trim(),
+          department: String(
+            item.department
+          ).trim(),
+
+          section: String(
+            item.section
+          ).trim(),
         }));
     }
 
-    if (member?.department && member?.section) {
-      const departments = String(member.department)
+    if (
+      member?.department &&
+      member?.section
+    ) {
+      const departments = String(
+        member.department
+      )
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
 
-      const sections = String(member.section)
+      const sections = String(
+        member.section
+      )
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
 
-      if (departments.length === sections.length && departments.length > 1) {
-        return departments.map((department, index) => ({
-          department,
-          section: sections[index],
-        }));
+      if (
+        departments.length ===
+          sections.length &&
+        departments.length > 1
+      ) {
+        return departments.map(
+          (department, index) => ({
+            department,
+            section: sections[index],
+          })
+        );
       }
 
-      return [{
-        department: String(member.department).trim(),
-        section: String(member.section).trim(),
-      }];
+      return [
+        {
+          department: String(
+            member.department
+          ).trim(),
+
+          section: String(
+            member.section
+          ).trim(),
+        },
+      ];
     }
 
     return [];
@@ -157,72 +211,66 @@ const FacultyList = () => {
 
   const getAssignmentLabels = (member) =>
     getAssignments(member).map((item) =>
-      makeDepartmentSectionLabel(item.department, item.section)
+      makeDepartmentSectionLabel(
+        item.department,
+        item.section
+      )
     );
+
+
 
   const fetchScheduleData = async () => {
     try {
       setLoadingScheduleData(true);
 
-      const response = await fetch(
-        GET_SCHEDULE_DATA_ENDPOINT
-      );
+      const result = await getScheduleFormData();
 
-      const result = await readResponse(response);
-
-      if (!response.ok || result?.success === false) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load department and section data"
+          "Unable to load department and section data"
         );
       }
 
-      console.log("SCHEDULE DATA:", result);
+      console.log(
+        "SCHEDULE DATA:",
+        result
+      );
 
       const rows =
-        result?.data?.batchDepartmentSections ||
-        result?.data?.departmentSections ||
+        result?.data
+          ?.batchDepartmentSections ||
+        result?.data
+          ?.departmentSections ||
         result?.data?.sections ||
         result?.data ||
         [];
 
       setBatchDepartmentSections(
-        Array.isArray(rows) ? rows : []
+        Array.isArray(rows)
+          ? rows
+          : []
       );
+
     } catch (error) {
-      console.error("Schedule data error:", error);
+      console.error(
+        "Schedule data error:",
+        error
+      );
 
       showToast(
         "error",
         error?.message ||
-          "Unable to load department and section"
+        "Unable to load department and section"
       );
 
       setBatchDepartmentSections([]);
+
     } finally {
       setLoadingScheduleData(false);
     }
   };
-
-  const readResponse = async (response) => {
-    const text = await response.text();
-
-    if (!text) {
-      return {
-        success: response.ok,
-      };
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      return {
-        success: response.ok,
-        message: text,
-      };
-    }
-  };
-
+  
   const extractArray = (result, keys = []) => {
     const candidates = [
       ...keys.map((key) => result?.data?.[key]),
@@ -242,20 +290,20 @@ const FacultyList = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch(
-        GET_STAFF_ENDPOINT
-      );
 
-      const result = await readResponse(response);
+      const result = await getStaff();
 
-      if (!response.ok || result?.success === false) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load staff"
+          "Unable to load staff"
         );
       }
 
-      console.log("STAFF DATA:", result);
+      console.log(
+        "STAFF DATA:",
+        result
+      );
 
       const rows =
         result?.data?.staff ||
@@ -266,39 +314,58 @@ const FacultyList = () => {
         [];
 
       setFaculty(
-        (Array.isArray(rows) ? rows : []).map(
+        (
+          Array.isArray(rows)
+            ? rows
+            : []
+        ).map(
           (member, index) => ({
             ...member,
+
             id:
               member?.id ||
               member?._id ||
               `staff-${index}-${Date.now()}`,
+
             phoneNo:
               member?.phoneNo ||
               member?.phone ||
               "",
+
             role: "staff",
           })
         )
       );
+
     } catch (error) {
-      console.error("Get staff error:", error);
+      console.error(
+        "Get staff error:",
+        error
+      );
 
       showToast(
         "error",
         error?.message ||
-          "Unable to load staff"
+        "Unable to load staff"
       );
 
       setFaculty([]);
+
     }
   };
+
+  // ============================================================
+  // INITIAL LOAD
+  // ============================================================
 
   useEffect(() => {
     fetchScheduleData();
     fetchStaff();
   }, []);
 
+  // ============================================================
+  // ALL DEPARTMENT / SECTION OPTIONS
+  // ============================================================
 
   const allDepartmentSectionOptions =
     useMemo(() => {
@@ -350,53 +417,78 @@ const FacultyList = () => {
       batchDepartmentSections,
     ]);
 
+  // ============================================================
+  // ASSIGNED DEPARTMENT / SECTION
+  // ============================================================
+
   const assignedDepartmentSections =
     useMemo(() => {
       const assigned = new Set();
 
       faculty.forEach((member) => {
-        getAssignments(member).forEach((item) => {
-          assigned.add(
-            getDepartmentSectionKey(
-              item.department,
-              item.section
-            )
-          );
-        });
+        getAssignments(member).forEach(
+          (item) => {
+            assigned.add(
+              getDepartmentSectionKey(
+                item.department,
+                item.section
+              )
+            );
+          }
+        );
       });
 
       return assigned;
     }, [faculty]);
 
+  // ============================================================
+  // AVAILABLE DEPARTMENT / SECTION
+  // ============================================================
+
   const availableDepartmentSectionOptions =
     useMemo(() => {
-      return allDepartmentSectionOptions.filter((option) => {
-        const parsed = parseDepartmentSectionOption(option);
-        if (!parsed) return false;
+      return allDepartmentSectionOptions.filter(
+        (option) => {
+          const parsed =
+            parseDepartmentSectionOption(
+              option
+            );
 
-        const key = getDepartmentSectionKey(
-          parsed.department,
-          parsed.section
-        );
+          if (!parsed) return false;
 
-        const isAlreadySelected = form.assignments.some(
-          (item) =>
+          const key =
             getDepartmentSectionKey(
-              item.department,
-              item.section
-            ) === key
-        );
+              parsed.department,
+              parsed.section
+            );
 
-        if (isAlreadySelected) return true;
+          const isAlreadySelected =
+            form.assignments.some(
+              (item) =>
+                getDepartmentSectionKey(
+                  item.department,
+                  item.section
+                ) === key
+            );
 
-        return !assignedDepartmentSections.has(key);
-      });
+          if (isAlreadySelected) {
+            return true;
+          }
+
+          return !assignedDepartmentSections.has(
+            key
+          );
+        }
+      );
     }, [
       allDepartmentSectionOptions,
       assignedDepartmentSections,
       form.assignments,
     ]);
 
+  // ============================================================
+  // FILTER FACULTY
+  // ============================================================
 
   const filteredFaculty =
     useMemo(() => {
@@ -433,8 +525,13 @@ const FacultyList = () => {
 
   const staff = filteredFaculty;
 
+  // ============================================================
+  // ADD
+  // ============================================================
+
   const handleAdd = () => {
     setEditingFaculty(null);
+
     setAssignmentSelection("");
 
     setForm({
@@ -447,28 +544,53 @@ const FacultyList = () => {
     setModalOpen(true);
   };
 
+  // ============================================================
+  // EDIT
+  // ============================================================
+
   const handleEdit = (member) => {
     setEditingFaculty(member);
+
     setAssignmentSelection("");
 
     setForm({
       name: member?.name || "",
+
       photo: member?.photo || "",
-      assignments: getAssignments(member),
-      department: member?.department || "",
-      section: member?.section || "",
-      academicYear: member?.academicYear || "2023-2027",
-      semester: member?.semester || "1",
-      email: member?.email || "",
+
+      assignments:
+        getAssignments(member),
+
+      department:
+        member?.department || "",
+
+      section:
+        member?.section || "",
+
+      academicYear:
+        member?.academicYear ||
+        "2023-2027",
+
+      semester:
+        member?.semester || "1",
+
+      email:
+        member?.email || "",
+
       phoneNo:
         member?.phoneNo ||
         member?.phone ||
         "",
+
       role: "staff",
     });
 
     setModalOpen(true);
   };
+
+  // ============================================================
+  // CLOSE MODAL
+  // ============================================================
 
   const closeModal = () => {
     if (saving) {
@@ -478,6 +600,7 @@ const FacultyList = () => {
     setModalOpen(false);
 
     setEditingFaculty(null);
+
     setAssignmentSelection("");
 
     setForm({
@@ -488,6 +611,9 @@ const FacultyList = () => {
     });
   };
 
+  // ============================================================
+  // FORM CHANGE
+  // ============================================================
 
   const handleChange = (
     event
@@ -505,27 +631,35 @@ const FacultyList = () => {
     );
   };
 
-  
+
   const handlePhoneChange = (event) => {
     const value =
       event.target.value
         .replace(/\D/g, "")
         .slice(0, 10);
 
-    setForm((previous) => ({
-      ...previous,
-      phoneNo: value,
-    }));
+    setForm(
+      (previous) => ({
+        ...previous,
+        phoneNo: value,
+      })
+    );
   };
+
+  // ============================================================
+  // ROLE
+  // ============================================================
 
   const handleRoleChange = () => {
-    setForm((previous) => ({
-      ...previous,
-      role: "staff",
-    }));
+    setForm(
+      (previous) => ({
+        ...previous,
+        role: "staff",
+      })
+    );
   };
 
-  
+
   const handleDepartmentSectionChange = (value) => {
     const parsed = parseDepartmentSectionOption(value);
 
@@ -533,68 +667,112 @@ const FacultyList = () => {
       return;
     }
 
-    const key = getDepartmentSectionKey(
-      parsed.department,
-      parsed.section
-    );
-
-    setForm((previous) => {
-      const exists = previous.assignments.some(
-        (item) =>
-          getDepartmentSectionKey(
-            item.department,
-            item.section
-          ) === key
+    const key =
+      getDepartmentSectionKey(
+        parsed.department,
+        parsed.section
       );
 
-      if (exists) {
-        return previous;
+    setForm(
+      (previous) => {
+        const exists =
+          previous.assignments.some(
+            (item) =>
+              getDepartmentSectionKey(
+                item.department,
+                item.section
+              ) === key
+          );
+
+        if (exists) {
+          return previous;
+        }
+
+        const assignments = [
+          ...previous.assignments,
+          parsed,
+        ];
+
+        return {
+          ...previous,
+
+          assignments,
+
+          department:
+            assignments
+              .map(
+                (item) =>
+                  item.department
+              )
+              .join(", "),
+
+          section:
+            assignments
+              .map(
+                (item) =>
+                  item.section
+              )
+              .join(", "),
+        };
       }
+    );
 
-      const assignments = [
-        ...previous.assignments,
-        parsed,
-      ];
-
-      return {
-        ...previous,
-        assignments,
-        department: assignments
-          .map((item) => item.department)
-          .join(", "),
-        section: assignments
-          .map((item) => item.section)
-          .join(", "),
-      };
-    });
-
-    // Reset the dropdown after adding the class.
     setAssignmentSelection("");
   };
 
-  const removeDepartmentSection = (department, section) => {
-    setForm((previous) => {
-      const key = getDepartmentSectionKey(
-        department,
-        section
-      );
+  // ============================================================
+  // REMOVE DEPARTMENT / SECTION
+  // ============================================================
 
-      const assignments = previous.assignments.filter(
-        (item) =>
+  const removeDepartmentSection = (
+    department,
+    section
+  ) => {
+    setForm(
+      (previous) => {
+        const key =
           getDepartmentSectionKey(
-            item.department,
-            item.section
-          ) !== key
-      );
+            department,
+            section
+          );
 
-      return {
-        ...previous,
-        assignments,
-        department: assignments.map((item) => item.department).join(", "),
-        section: assignments.map((item) => item.section).join(", "),
-      };
-    });
+        const assignments =
+          previous.assignments.filter(
+            (item) =>
+              getDepartmentSectionKey(
+                item.department,
+                item.section
+              ) !== key
+          );
+
+        return {
+          ...previous,
+
+          assignments,
+
+          department:
+            assignments
+              .map(
+                (item) =>
+                  item.department
+              )
+              .join(", "),
+
+          section:
+            assignments
+              .map(
+                (item) =>
+                  item.section
+              )
+              .join(", "),
+        };
+      }
+    );
   };
+
+  // ============================================================
+  // BLOB TO DATA URL
+  // ============================================================
 
   const blobToDataURL = (
     blob
@@ -619,6 +797,10 @@ const FacultyList = () => {
       }
     );
   };
+
+  // ============================================================
+  // LOAD IMAGE
+  // ============================================================
 
   const loadImage = (
     file
@@ -658,6 +840,10 @@ const FacultyList = () => {
     );
   };
 
+  // ============================================================
+  // COMPRESS IMAGE
+  // ============================================================
+
   const compressImage = async (
     file
   ) => {
@@ -672,15 +858,15 @@ const FacultyList = () => {
       image.naturalHeight ||
       image.height;
 
-    
+
 
     const scale =
       Math.min(
         MAX_IMAGE_WIDTH /
-          width,
+        width,
 
         MAX_IMAGE_HEIGHT /
-          height,
+        height,
 
         1
       );
@@ -717,7 +903,6 @@ const FacultyList = () => {
       );
     }
 
-    
     const qualities = [
       0.8,
       0.7,
@@ -751,7 +936,7 @@ const FacultyList = () => {
         currentHeight
       );
 
-      
+
 
       context.fillStyle =
         "#ffffff";
@@ -794,7 +979,6 @@ const FacultyList = () => {
             blob
           );
 
-
         if (
           dataURL.length <=
           TARGET_BASE64_SIZE
@@ -808,7 +992,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentWidth *
-              0.75
+            0.75
           )
         );
 
@@ -817,7 +1001,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentHeight *
-              0.75
+            0.75
           )
         );
     }
@@ -827,7 +1011,7 @@ const FacultyList = () => {
     );
   };
 
-  
+
   const handlePhotoChange =
     async (event) => {
       const file =
@@ -869,7 +1053,6 @@ const FacultyList = () => {
       }
 
       try {
-        
         showToast(
           "success",
           "Compressing photo..."
@@ -883,8 +1066,7 @@ const FacultyList = () => {
         setForm(
           (previous) => ({
             ...previous,
-            photo:
-              compressed,
+            photo: compressed,
           })
         );
 
@@ -901,54 +1083,103 @@ const FacultyList = () => {
         showToast(
           "error",
           error?.message ||
-            "Unable to compress photo"
+          "Unable to compress photo"
         );
       } finally {
-
         event.target.value =
           "";
       }
     };
 
-  
+
   const validateForm = () => {
     if (!form.name.trim()) {
-      showToast("error", "Staff name is required");
+      showToast(
+        "error",
+        "Staff name is required"
+      );
+
       return false;
     }
 
     if (!form.email.trim()) {
-      showToast("error", "Email is required");
+      showToast(
+        "error",
+        "Email is required"
+      );
+
       return false;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      showToast("error", "Enter a valid email address");
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        form.email.trim()
+      )
+    ) {
+      showToast(
+        "error",
+        "Enter a valid email address"
+      );
+
       return false;
     }
 
-    if (!/^[0-9]{10}$/.test(form.phoneNo)) {
-      showToast("error", "Enter a valid 10 digit phone number");
+    if (
+      !/^[0-9]{10}$/.test(
+        form.phoneNo
+      )
+    ) {
+      showToast(
+        "error",
+        "Enter a valid 10 digit phone number"
+      );
+
       return false;
     }
 
-    if (!Array.isArray(form.assignments) || form.assignments.length === 0) {
-      showToast("error", "Please select at least one department & section");
+    if (
+      !Array.isArray(
+        form.assignments
+      ) ||
+      form.assignments.length ===
+        0
+    ) {
+      showToast(
+        "error",
+        "Please select at least one department & section"
+      );
+
       return false;
     }
 
-    if (!form.academicYear.trim()) {
-      showToast("error", "Academic year is required");
+    if (
+      !form.academicYear.trim()
+    ) {
+      showToast(
+        "error",
+        "Academic year is required"
+      );
+
       return false;
     }
 
-    if (!form.semester.trim()) {
-      showToast("error", "Semester is required");
+    if (
+      !form.semester.trim()
+    ) {
+      showToast(
+        "error",
+        "Semester is required"
+      );
+
       return false;
     }
 
     return true;
   };
+
+  // ============================================================
+  // BUILD PAYLOAD
+  // ============================================================
 
   const buildPayload = (
     operation,
@@ -961,30 +1192,66 @@ const FacultyList = () => {
     };
   };
 
+  // ============================================================
+  // SUBMIT
+  // ============================================================
 
-
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (
+    event
+  ) => {
     event.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       setSaving(true);
 
-      const isEditing = Boolean(editingFaculty);
+      const isEditing =
+        Boolean(editingFaculty);
 
       const staffData = {
         name: form.name.trim(),
-        assignments: form.assignments.map((item) => ({
-          department: item.department.trim(),
-          section: item.section.trim(),
-        })),
-        department: form.assignments.map((item) => item.department.trim()).join(", "),
-        section: form.assignments.map((item) => item.section.trim()).join(", "),
-        academicYear: form.academicYear.trim(),
-        semester: form.semester.trim(),
-        email: form.email.trim(),
-        phoneNo: form.phoneNo.trim(),
+
+        assignments:
+          form.assignments.map(
+            (item) => ({
+              department:
+                item.department.trim(),
+
+              section:
+                item.section.trim(),
+            })
+          ),
+
+        department:
+          form.assignments
+            .map(
+              (item) =>
+                item.department.trim()
+            )
+            .join(", "),
+
+        section:
+          form.assignments
+            .map(
+              (item) =>
+                item.section.trim()
+            )
+            .join(", "),
+
+        academicYear:
+          form.academicYear.trim(),
+
+        semester:
+          form.semester.trim(),
+
+        email:
+          form.email.trim(),
+
+        phoneNo:
+          form.phoneNo.trim(),
       };
 
       const id =
@@ -992,15 +1259,26 @@ const FacultyList = () => {
         editingFaculty?._id;
 
       const staffRecord = {
-        ...(isEditing && id ? { id } : {}),
+        ...(isEditing && id
+          ? { id }
+          : {}),
+
         ...staffData,
+
         role: "staff",
       };
 
       const payload = {
         action: "update",
-        operation: isEditing ? "update" : "insert",
-        data: [staffRecord],
+
+        operation:
+          isEditing
+            ? "update"
+            : "insert",
+
+        data: [
+          staffRecord,
+        ],
       };
 
       console.log(
@@ -1008,41 +1286,46 @@ const FacultyList = () => {
         payload
       );
 
-      const response = await fetch(
-        STAFF_UPDATE_ENDPOINT,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const result = await updateStaff(payload);
 
-      const result = await readResponse(response);
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+          "Unable to save staff"
+        );
+      }
 
       if (response.status === 413) {
         throw new Error(
-          "Request payload is too large."
+          error?.response?.data
+            ?.message ||
+            error?.message ||
+            "Unable to save staff"
         );
       }
 
-      if (!response.ok || result?.success === false) {
-        throw new Error(
-          result?.message || "Unable to save staff"
-        );
-      }
+      // ========================================================
+      // UPDATE LOCAL STATE
+      // ========================================================
 
       if (isEditing) {
-        setFaculty((previous) =>
-          previous.map((member) => {
-            const memberId =
-              member?.id || member?._id;
+        setFaculty(
+          (previous) =>
+            previous.map(
+              (member) => {
+                const memberId =
+                  member?.id ||
+                  member?._id;
 
-            return memberId === id
-              ? { ...member, ...staffData }
-              : member;
-          })
+                return memberId ===
+                  id
+                  ? {
+                      ...member,
+                      ...staffData,
+                    }
+                  : member;
+              }
+            )
         );
       } else {
         const returnedData =
@@ -1051,24 +1334,35 @@ const FacultyList = () => {
           result?.staff ||
           result?.data;
 
-        const returned = Array.isArray(returnedData)
-          ? returnedData[0]
-          : returnedData;
+        const returned =
+          Array.isArray(
+            returnedData
+          )
+            ? returnedData[0]
+            : returnedData;
 
-        setFaculty((previous) => [
-          ...previous,
-          {
-            ...staffData,
-            id:
-              result?.data?.id ||
-              result?.data?._id ||
-              returned?.id ||
-              returned?._id ||
-              `staff-${Date.now()}`,
-            role: "staff",
-            photo: returned?.photo || "",
-          },
-        ]);
+        setFaculty(
+          (previous) => [
+            ...previous,
+
+            {
+              ...staffData,
+
+              id:
+                result?.data?.id ||
+                result?.data?._id ||
+                returned?.id ||
+                returned?._id ||
+                `staff-${Date.now()}`,
+
+              role: "staff",
+
+              photo:
+                returned?.photo ||
+                "",
+            },
+          ]
+        );
       }
 
       showToast(
@@ -1088,14 +1382,14 @@ const FacultyList = () => {
       showToast(
         "error",
         error?.message ||
-          "Unable to save staff"
+        "Unable to save staff"
       );
     } finally {
       setSaving(false);
     }
   };
 
-const handleDeleteClick =
+  const handleDeleteClick =
     (member) => {
       setFacultyToDelete(
         member
@@ -1106,8 +1400,14 @@ const handleDeleteClick =
       );
     };
 
+  // ============================================================
+  // DELETE
+  // ============================================================
+
   const handleDelete = async () => {
-    if (!facultyToDelete) return;
+    if (!facultyToDelete) {
+      return;
+    }
 
     try {
       setSaving(true);
@@ -1117,12 +1417,30 @@ const handleDeleteClick =
         facultyToDelete?._id;
 
       const staffData = {
-        name: facultyToDelete?.name || "",
-        department: facultyToDelete?.department || "",
-        section: facultyToDelete?.section || "",
-        academicYear: facultyToDelete?.academicYear || "",
-        semester: facultyToDelete?.semester || "",
-        email: facultyToDelete?.email || "",
+        name:
+          facultyToDelete?.name ||
+          "",
+
+        department:
+          facultyToDelete?.department ||
+          "",
+
+        section:
+          facultyToDelete?.section ||
+          "",
+
+        academicYear:
+          facultyToDelete?.academicYear ||
+          "",
+
+        semester:
+          facultyToDelete?.semester ||
+          "",
+
+        email:
+          facultyToDelete?.email ||
+          "",
+
         phoneNo:
           facultyToDelete?.phoneNo ||
           facultyToDelete?.phone ||
@@ -1130,15 +1448,23 @@ const handleDeleteClick =
       };
 
       const staffRecord = {
-        ...(id ? { id } : {}),
+        ...(id
+          ? { id }
+          : {}),
+
         ...staffData,
+
         role: "staff",
       };
 
       const payload = {
         action: "update",
+
         operation: "delete",
-        data: [staffRecord],
+
+        data: [
+          staffRecord,
+        ],
       };
 
       console.log(
@@ -1146,42 +1472,46 @@ const handleDeleteClick =
         payload
       );
 
-      const response = await fetch(
-        STAFF_UPDATE_ENDPOINT,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const result = await updateStaff(payload);
 
-      const result = await readResponse(response);
-
-      if (!response.ok || result?.success === false) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to delete staff"
+          "Unable to delete staff"
         );
       }
+        
+      setFaculty(
+        (previous) =>
+          previous.filter(
+            (member) => {
+              const memberId =
+                member?.id ||
+                member?._id;
 
-      setFaculty((previous) =>
-        previous.filter((member) => {
-          const memberId =
-            member?.id || member?._id;
+              if (id) {
+                return (
+                  memberId !== id
+                );
+              }
 
-          if (id) return memberId !== id;
-
-          return !(
-            member?.name === facultyToDelete?.name &&
-            member?.email === facultyToDelete?.email
-          );
-        })
+              return !(
+                member?.name ===
+                  facultyToDelete?.name &&
+                member?.email ===
+                  facultyToDelete?.email
+              );
+            }
+          )
       );
 
-      setDeleteModalOpen(false);
-      setFacultyToDelete(null);
+      setDeleteModalOpen(
+        false
+      );
+
+      setFacultyToDelete(
+        null
+      );
 
       showToast(
         "success",
@@ -1196,18 +1526,27 @@ const handleDeleteClick =
       showToast(
         "error",
         error?.message ||
-          "Unable to delete staff"
+        "Unable to delete staff"
       );
     } finally {
       setSaving(false);
     }
   };
 
+  // ============================================================
+  // SECTION DISPLAY
+  // ============================================================
 
-  const getSectionDisplay = (member) => {
-    const assignments = getAssignments(member);
+  const getSectionDisplay = (
+    member
+  ) => {
+    const assignments =
+      getAssignments(member);
 
-    if (assignments.length === 0) {
+    if (
+      assignments.length ===
+      0
+    ) {
       return "Not Assigned";
     }
 
@@ -1218,6 +1557,10 @@ const handleDeleteClick =
       )
       .join("  |  ");
   };
+
+  // ============================================================
+  // FACULTY CARD
+  // ============================================================
 
   const FacultyCard =
     ({ member }) => {
@@ -1292,7 +1635,7 @@ const handleDeleteClick =
           <div className="faculty-card-content">
 
             <span className="faculty-role">
-              { "FACULTY" }
+              {"FACULTY"}
             </span>
 
             <h3>
@@ -1320,10 +1663,12 @@ const handleDeleteClick =
       );
     };
 
+  // ============================================================
+  // UI
+  // ============================================================
 
   return (
     <div className="faculty-page">
-
 
       <header className="faculty-header">
 
@@ -1342,7 +1687,7 @@ const handleDeleteClick =
             </p>
 
             <h1>
-              Faculty List
+              Faculty Incharge
             </h1>
 
             <p className="faculty-subtitle">
@@ -1386,6 +1731,7 @@ const handleDeleteClick =
           </div>
 
           <div>
+
             <span>
               Total Faculty
             </span>
@@ -1393,6 +1739,7 @@ const handleDeleteClick =
             <strong>
               {faculty.length}
             </strong>
+
           </div>
 
         </div>
@@ -1406,6 +1753,7 @@ const handleDeleteClick =
           </div>
 
           <div>
+
             <span>
               Assigned Sections
             </span>
@@ -1415,30 +1763,45 @@ const handleDeleteClick =
                 assignedDepartmentSections.size
               }
             </strong>
+
           </div>
 
         </div>
 
         <div className="summary-card">
-          <div className="summary-icon">
-            <UserRound size={21} />
-          </div>
-
-          <div>
-            <span>Staff</span>
-            <strong>{staff.length}</strong>
-          </div>
-        </div>
-
-        <div className="summary-card">
 
           <div className="summary-icon">
-            <Plus
+            <UserRound
               size={21}
             />
           </div>
 
           <div>
+
+            <span>
+              Staff
+            </span>
+
+            <strong>
+              {staff.length}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="summary-card">
+
+          <div className="summary-icon">
+
+            <Plus
+              size={21}
+            />
+
+          </div>
+
+          <div>
+
             <span>
               Available Sections
             </span>
@@ -1448,6 +1811,7 @@ const handleDeleteClick =
                 availableDepartmentSectionOptions.length
               }
             </strong>
+
           </div>
 
         </div>
@@ -1534,9 +1898,11 @@ const handleDeleteClick =
           <div className="faculty-empty">
 
             <div className="empty-icon">
+
               <Users
                 size={28}
               />
+
             </div>
 
             <h3>
@@ -1569,6 +1935,11 @@ const handleDeleteClick =
         )}
 
       </section>
+
+      {/* ======================================================
+          ADD / EDIT MODAL
+          ====================================================== */}
+
       {modalOpen && (
         <div
           className="faculty-modal-overlay"
@@ -1634,6 +2005,8 @@ const handleDeleteClick =
 
               <div className="modal-body">
 
+                {/* PHOTO */}
+
                 <div className="photo-upload-area">
 
                   <div className="form-photo-preview">
@@ -1686,6 +2059,8 @@ const handleDeleteClick =
 
                 </div>
 
+                {/* NAME */}
+
                 <div className="input-wrapper">
 
                   <UserRound
@@ -1706,6 +2081,7 @@ const handleDeleteClick =
 
                 </div>
 
+                {/* EMAIL / PHONE */}
 
                 <div className="form-row">
 
@@ -1754,58 +2130,87 @@ const handleDeleteClick =
 
                 </div>
 
+                {/* ROLE */}
 
                 <div className="form-group">
+
                   <label className="static-field-label">
                     Role
                   </label>
 
                   <div className="static-role-field">
+
                     <div className="static-role-icon">
-                      <UserRound size={17} />
+
+                      <UserRound
+                        size={17}
+                      />
+
                     </div>
 
                     <div className="static-role-content">
+
                       <span className="static-role-value">
                         Staff
                       </span>
-                      
+
                     </div>
+
                   </div>
+
                 </div>
 
+                {/* ASSIGNMENT */}
 
                 <div className="form-group faculty-assignment-group">
+
                   <div className="assignment-selector-card">
+
                     <div className="assignment-selector-header">
+
                       <div>
+
                         <label className="assignment-label">
                           Department & Section
                         </label>
+
                         <p className="assignment-selector-hint">
                           Select any remaining Department & Section classes
                         </p>
+
                       </div>
 
                       <span className="assignment-count-badge">
-                        {form.assignments.length}
-                        {" "}
-                        {form.assignments.length === 1 ? "Class" : "Classes"}
+
+                        {form.assignments.length}{" "}
+
+                        {form.assignments.length ===
+                        1
+                          ? "Class"
+                          : "Classes"}
+
                       </span>
+
                     </div>
 
                     <ThemeDropdown
-                      icon={GraduationCap}
-                      value={assignmentSelection}
+                      icon={
+                        GraduationCap
+                      }
+                      value={
+                        assignmentSelection
+                      }
                       options={availableDepartmentSectionOptions.filter(
                         (option) => {
                           const parsed =
-                            parseDepartmentSectionOption(option);
+                            parseDepartmentSectionOption(
+                              option
+                            );
 
-                          if (!parsed) return false;
+                          if (!parsed) {
+                            return false;
+                          }
 
-                          // Never show a class that this staff member
-                          // has already selected.
                           return !form.assignments.some(
                             (item) =>
                               getDepartmentSectionKey(
@@ -1820,24 +2225,35 @@ const handleDeleteClick =
                         }
                       )}
                       onChange={(value) => {
-                        setAssignmentSelection(value);
-                        handleDepartmentSectionChange(value);
+                        setAssignmentSelection(
+                          value
+                        );
+
+                        handleDepartmentSectionChange(
+                          value
+                        );
                       }}
                       placeholder={
                         loadingScheduleData
                           ? "Loading Department & Section..."
                           : "Select Department & Section"
                       }
-                      loading={loadingScheduleData}
+                      loading={
+                        loadingScheduleData
+                      }
                       disabled={
                         loadingScheduleData ||
                         saving ||
                         !availableDepartmentSectionOptions.some(
                           (option) => {
                             const parsed =
-                              parseDepartmentSectionOption(option);
+                              parseDepartmentSectionOption(
+                                option
+                              );
 
-                            if (!parsed) return false;
+                            if (!parsed) {
+                              return false;
+                            }
 
                             return !form.assignments.some(
                               (item) =>
@@ -1855,110 +2271,192 @@ const handleDeleteClick =
                       }
                     />
 
-                    {form.assignments.length > 0 ? (
+                    {form.assignments.length >
+                    0 ? (
                       <div className="selected-assignments">
+
                         <div className="selected-assignments-title">
-                          <span>Assigned Classes</span>
+
                           <span>
-                            {form.assignments.length} selected
+                            Assigned Classes
                           </span>
+
+                          <span>
+                            {
+                              form
+                                .assignments
+                                .length
+                            }{" "}
+                            selected
+                          </span>
+
                         </div>
 
                         <div className="selected-assignment-chips">
-                          {form.assignments.map((item) => (
-                            <div
-                              className="assignment-chip"
-                              key={getDepartmentSectionKey(
-                                item.department,
-                                item.section
-                              )}
-                            >
-                              <div className="assignment-chip-icon">
-                                <GraduationCap size={14} />
-                              </div>
 
-                              <div className="assignment-chip-content">
-                                <span className="assignment-chip-department">
-                                  {item.department}
-                                </span>
-                                <span className="assignment-chip-section">
-                                  Section {item.section}
-                                </span>
-                              </div>
-
-                              <button
-                                type="button"
-                                className="assignment-chip-remove"
-                                onClick={() =>
-                                  removeDepartmentSection(
-                                    item.department,
-                                    item.section
-                                  )
-                                }
-                                disabled={saving}
-                                title="Remove class"
-                                aria-label={`Remove ${item.department} Section ${item.section}`}
+                          {form.assignments.map(
+                            (item) => (
+                              <div
+                                className="assignment-chip"
+                                key={getDepartmentSectionKey(
+                                  item.department,
+                                  item.section
+                                )}
                               >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ))}
+
+                                <div className="assignment-chip-icon">
+
+                                  <GraduationCap
+                                    size={14}
+                                  />
+
+                                </div>
+
+                                <div className="assignment-chip-content">
+
+                                  <span className="assignment-chip-department">
+                                    {
+                                      item.department
+                                    }
+                                  </span>
+
+                                  <span className="assignment-chip-section">
+                                    Section{" "}
+                                    {
+                                      item.section
+                                    }
+                                  </span>
+
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="assignment-chip-remove"
+                                  onClick={() =>
+                                    removeDepartmentSection(
+                                      item.department,
+                                      item.section
+                                    )
+                                  }
+                                  disabled={
+                                    saving
+                                  }
+                                  title="Remove class"
+                                  aria-label={`Remove ${item.department} Section ${item.section}`}
+                                >
+                                  <X
+                                    size={14}
+                                  />
+                                </button>
+
+                              </div>
+                            )
+                          )}
+
                         </div>
+
                       </div>
                     ) : (
                       <div className="assignment-empty-state">
+
                         <div className="assignment-empty-icon">
-                          <Plus size={16} />
+
+                          <Plus
+                            size={16}
+                          />
+
                         </div>
+
                         <div>
-                          <strong>No classes assigned</strong>
+
+                          <strong>
+                            No classes assigned
+                          </strong>
+
                           <span>
                             Use the dropdown above to add one or more classes.
                           </span>
+
                         </div>
+
                       </div>
                     )}
+
                   </div>
+
                 </div>
 
+                {/* ACADEMIC YEAR / SEMESTER */}
+
                 <div className="form-row">
+
                   <div className="form-group">
+
                     <ThemeDropdown
-                      icon={GraduationCap}
-                      value={form.academicYear}
-                      options={["2023-2027", "2024-2028"]}
+                      icon={
+                        GraduationCap
+                      }
+                      value={
+                        form.academicYear
+                      }
+                      options={[
+                        "2023-2027",
+                        "2024-2028",
+                      ]}
                       onChange={(value) =>
-                        setForm((previous) => ({
-                          ...previous,
-                          academicYear: value,
-                        }))
+                        setForm(
+                          (previous) => ({
+                            ...previous,
+                            academicYear:
+                              value,
+                          })
+                        )
                       }
                       placeholder="Select Academic Year"
                       loading={false}
-                      disabled={saving}
+                      disabled={
+                        saving
+                      }
                     />
+
                   </div>
 
                   <div className="form-group">
+
                     <ThemeDropdown
-                      icon={GraduationCap}
-                      value={form.semester}
-                      options={["1", "2"]}
+                      icon={
+                        GraduationCap
+                      }
+                      value={
+                        form.semester
+                      }
+                      options={[
+                        "1",
+                        "2",
+                      ]}
                       onChange={(value) =>
-                        setForm((previous) => ({
-                          ...previous,
-                          semester: value,
-                        }))
+                        setForm(
+                          (previous) => ({
+                            ...previous,
+                            semester:
+                              value,
+                          })
+                        )
                       }
                       placeholder="Select Semester"
                       loading={false}
-                      disabled={saving}
+                      disabled={
+                        saving
+                      }
                     />
+
                   </div>
+
                 </div>
 
               </div>
 
+              {/* MODAL FOOTER */}
 
               <div className="modal-footer">
 
@@ -1981,7 +2479,6 @@ const handleDeleteClick =
                   disabled={
                     saving ||
                     loadingScheduleData ||
-                    form.assignments.length === 0 &&
                     form.assignments.length === 0
                   }
                 >
@@ -2009,6 +2506,10 @@ const handleDeleteClick =
         </div>
       )}
 
+      {/* ======================================================
+          DELETE MODAL
+          ====================================================== */}
+
       {deleteModalOpen &&
         facultyToDelete && (
           <div
@@ -2034,9 +2535,11 @@ const handleDeleteClick =
             <div className="delete-modal">
 
               <div className="delete-icon">
+
                 <Trash2
                   size={25}
                 />
+
               </div>
 
               <h2>
@@ -2046,6 +2549,7 @@ const handleDeleteClick =
               <p>
                 Are you sure you want
                 to delete{" "}
+
                 <strong>
                   {
                     facultyToDelete.name
@@ -2115,6 +2619,9 @@ const handleDeleteClick =
           </div>
         )}
 
+      {/* ======================================================
+          TOAST
+          ====================================================== */}
 
       {toast.show && (
         <div

@@ -135,7 +135,7 @@ export default function AudioTest() {
                 setShowWarning(true);
 
                 setTimeout(() => {
-                    navigate("/");
+                    navigate("/studentlogin");
                 }, 3000);
 
                 return;
@@ -195,7 +195,7 @@ export default function AudioTest() {
                     setShowWarning(true);
 
                     setTimeout(() => {
-                        navigate("/");
+                        navigate("/studentlogin");
                     }, 3000);
 
                     return;
@@ -347,7 +347,7 @@ export default function AudioTest() {
             status:"TERMINATED"
             reason:"Multiple Violations"
         */
-        navigate("/");
+        navigate("/studentlogin");
     }
 
     useEffect(() => {

@@ -516,10 +516,6 @@ const StudentDashboard = () => {
           CONTENT
       ======================================================== */}
 
-      {/* ========================================================
-          CONTENT
-      ======================================================== */}
-
       <div
         className="
           flex-1
@@ -634,11 +630,6 @@ const StudentDashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* ======================================================
-            TEST RESULTS
-            SAME FRONTEND TABLE STRUCTURE
-        ====================================================== */}
 
         {/* ======================================================
             TEST RESULTS
@@ -857,10 +848,6 @@ const StudentDashboard = () => {
           EDIT PROFILE MODAL
       ======================================================== */}
 
-      {/* ========================================================
-          EDIT PROFILE MODAL
-      ======================================================== */}
-
       {isEditing && (
         <div
           className="
@@ -976,8 +963,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Name */}
 
               {/* Name */}
 
@@ -1118,8 +1103,6 @@ const StudentDashboard = () => {
 
               {/* Section */}
 
-              {/* Section */}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Section (Cannot be changed)
@@ -1142,8 +1125,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Gender */}
 
               {/* Gender */}
 
