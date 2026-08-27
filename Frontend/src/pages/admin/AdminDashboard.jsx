@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     ClipboardList, CalendarDays, Activity, CircleCheck
 } from "lucide-react";
+import { deleteScheduledExam, getScheduleExams } from "../../services/adminService";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
 export default function AdminDashboard() {
 
@@ -38,26 +39,21 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         let interval;
+        let isMounted = true;
 
         const fetchTests = async () => {
             try {
                 setError("");
 
-                const response = await fetch(
-                    "http://localhost:5000/api/staff/schedule/getscheduleexams"
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error: ${response.status}`);
-                }
-
-                const result = await response.json();
+                const result = await getScheduleExams();
 
                 if (!result.success) {
-                    throw new Error("Failed to fetch exam data");
+                    throw new Error(
+                        result.message || "Failed to fetch exam data"
+                    );
                 }
 
-                const formattedTests = result.data.map((exam) => ({
+                const formattedTests = (result.data || []).map((exam) => ({
                     id: exam.examId,
 
                     department: exam.department || "N/A",
@@ -86,24 +82,45 @@ export default function AdminDashboard() {
                     admissionNo: exam.admissionNo || [],
                 }));
 
-                setTests(formattedTests);
+                // Prevent state updates after component unmount
+                if (isMounted) {
+                    setTests(formattedTests);
+                }
 
             } catch (err) {
-                console.error("Error fetching tests:", err);
-                setError("Unable to load tests.");
+
+                console.error(
+                    "Error fetching scheduled exams:",
+                    err
+                );
+
+                if (isMounted) {
+                    setError(
+                        err.response?.data?.message ||
+                        err.message ||
+                        "Unable to load tests."
+                    );
+                }
+
             } finally {
-                setLoading(false);
+
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
+        // Initial fetch
         fetchTests();
 
         // Refresh every 10 seconds
         interval = setInterval(fetchTests, 10000);
 
         return () => {
+            isMounted = false;
             clearInterval(interval);
         };
+
     }, []);
 
     // ==========================================================
@@ -243,6 +260,7 @@ Status: ${test.status}
     };
 
     const handleCancel = async (test) => {
+
         const confirmed = window.confirm(
             `Are you sure you want to cancel test ?`
         );
@@ -250,37 +268,38 @@ Status: ${test.status}
         if (!confirmed) return;
 
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/staff/schedule/delete-scheduled-exam",
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        testId: test.id,
-                    }),
-                }
-            );
 
-            const result = await response.json();
+            const result =
+                await deleteScheduledExam(test.id);
 
-            if (!response.ok || !result.success) {
+            if (!result.success) {
                 throw new Error(
-                    result.message || "Failed to cancel the test."
+                    result.message ||
+                    "Failed to cancel the test."
                 );
             }
 
             // Remove from dashboard
             setTests((prevTests) =>
-                prevTests.filter((item) => item.id !== test.id)
+                prevTests.filter(
+                    (item) => item.id !== test.id
+                )
             );
 
-            alert("Test cancelled successfully.");
+            toast.success("Test cancelled successfully.");
 
         } catch (error) {
-            console.error("Error cancelling test:", error);
-            alert(error.message || "Unable to cancel the test.");
+
+            console.error(
+                "Error cancelling the test:",
+                error
+            );
+
+            toast.error(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to cancel the test."
+            );
         }
     };
 
