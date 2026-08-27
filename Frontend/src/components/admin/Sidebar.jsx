@@ -50,7 +50,7 @@ const NAV_ITEMS = [
         key: "student-data-upload",
         label: "Student Data Upload",
         icon: UploadCloud,
-        location: "/admin/student-data",
+        location: "/admin/StudentData",
       },
       {
         key: "student-profile-access",
