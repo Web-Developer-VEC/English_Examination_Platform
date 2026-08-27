@@ -102,7 +102,7 @@ const login = async (req, res) => {
 
     try {
 
-        const {
+        let{
             username,
             password,
             role
@@ -111,13 +111,22 @@ const login = async (req, res) => {
         // =====================================================
         // VALIDATION
         // =====================================================
-
-        if (!username || !password || !role) {
+        
+        if (!username || !password ) {
             return res.status(400).json({
                 success: false,
                 message: "Username, password and role are required"
             });
         }
+        const db = getDB();
+        if(role==undefined){
+         let collections=db.collection("staff")
+         const user = await collections.findOne({
+            username: username.trim()
+        });
+         role=user.role
+         console.log(user);
+       }
 
         if (!["student","staff","admin"].includes(role)) {
             return res.status(400).json({
@@ -127,7 +136,7 @@ const login = async (req, res) => {
             });
         }
 
-        const db = getDB();
+        
 
         // =====================================================
         // COLLECTION
