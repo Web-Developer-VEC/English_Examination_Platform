@@ -13,7 +13,7 @@ export const getScheduleExams = async () => {
 
 // CANCEL / DELETE SCHEDULED EXAM
 export const deleteScheduledExam = async (testId) => {
-    const response = await api.post(
+    const response = await api.delete(
         `${API_URL}/schedule/delete-scheduled-exam`,
         {
             testId,
