@@ -464,25 +464,27 @@ const StudentDashboard = () => {
       >
         <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="
-              px-6
-              py-2
-              bg-white
-              border-2
-              border-gray-200
-              text-gray-700
-              font-semibold
-              rounded-lg
-              hover:bg-gray-50
-              transition
-              cursor-pointer
-            "
-          >
-            Edit Profile
-          </button>
+                <div className="flex items-center gap-4">
+          {student?.studentEditEnabled && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="
+                px-6
+                py-2
+                bg-white
+                border-2
+                border-gray-200
+                text-gray-700
+                font-semibold
+                rounded-lg
+                hover:bg-gray-50
+                transition
+                cursor-pointer
+              "
+            >
+              Edit Profile
+            </button>
+          )}
 
           <button
             onClick={() => navigate("/exam/instruction")}
@@ -505,6 +507,10 @@ const StudentDashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* ========================================================
+          CONTENT
+      ======================================================== */}
 
       {/* ========================================================
           CONTENT
@@ -624,6 +630,11 @@ const StudentDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* ======================================================
+            TEST RESULTS
+            SAME FRONTEND TABLE STRUCTURE
+        ====================================================== */}
 
         {/* ======================================================
             TEST RESULTS
@@ -833,6 +844,10 @@ const StudentDashboard = () => {
           EDIT PROFILE MODAL
       ======================================================== */}
 
+      {/* ========================================================
+          EDIT PROFILE MODAL
+      ======================================================== */}
+
       {isEditing && (
         <div
           className="
@@ -948,6 +963,8 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
+
+              {/* Name */}
 
               {/* Name */}
 
@@ -1084,6 +1101,8 @@ const StudentDashboard = () => {
 
               {/* Section */}
 
+              {/* Section */}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Section (Cannot be changed)
@@ -1106,6 +1125,8 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
+
+              {/* Gender */}
 
               {/* Gender */}
 
