@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import {
   ShieldCheck,
   UserRoundCog,
@@ -25,32 +24,17 @@ import {
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import api from "../../services/api";
 
 import "./ProfileEdit.css";
 
-const EXISTING_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
+const EXISTING_STUDENT_DATA_URL = "/staff/student-data";
 
+const SCHEDULE_DATA_URL = "/staff/schedule/getformdata";
 
-// Existing API from your student data page
-const EXISTING_STUDENT_DATA_URL =
-  `${EXISTING_BASE_URL}/api/staff/student-data`;
+const PROFILE_ACCESS_URL = "/staff/student-edit";
 
-const SCHEDULE_DATA_URL =
-  `${EXISTING_BASE_URL}/api/staff/schedule/getformdata`;
-
-
-
-// Enable / Disable Edit Profile for a particular student
-const PROFILE_ACCESS_URL =
-  `${EXISTING_BASE_URL}/api/staff/student-edit`;
-
-
-// Academic year APIs
-const ACADEMIC_YEARS_URL =
-  `${EXISTING_BASE_URL}/api/staff/academic-year`;
-
+const ACADEMIC_YEARS_URL = "/staff/academic-year";
 
 const STUDENTS_PER_PAGE = 50;
 
@@ -278,9 +262,7 @@ const StudentProfileAccess = () => {
     setLoadingScheduleData(true);
 
     try {
-      const { data } = await axios.get(SCHEDULE_DATA_URL, {
-        headers: { Accept: "application/json" },
-      });
+      const { data } = await api.get(SCHEDULE_DATA_URL);
 
       if (data?.success === false) {
         throw new Error(
@@ -400,16 +382,7 @@ const StudentProfileAccess = () => {
         section: selectedSection,
       };
 
-      const { data } = await axios.post(
-        EXISTING_STUDENT_DATA_URL,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const { data } = await api.post(EXISTING_STUDENT_DATA_URL, payload);
 
       if (data?.success === false) {
         throw new Error(
@@ -457,23 +430,14 @@ const StudentProfileAccess = () => {
     try {
       // Backend contract:
       // { students: [{ admissionNo, editEnabled }] }
-      const { data } = await axios.put(
-        PROFILE_ACCESS_URL,
-        {
-          students: [
-            {
-              admissionNo: String(student.admissionNo).trim(),
-              editEnabled: nextValue,
-            },
-          ],
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
+      const { data } = await api.put(PROFILE_ACCESS_URL, {
+        students: [
+          {
+            admissionNo: String(student.admissionNo).trim(),
+            editEnabled: nextValue,
           },
-        }
-      );
+        ],
+      });
 
       if (data?.success === false) {
         throw new Error(
@@ -522,16 +486,7 @@ const StudentProfileAccess = () => {
     setUpdatingStudentId("ALL");
 
     try {
-      const { data } = await axios.put(
-        PROFILE_ACCESS_URL,
-        { students: permissionList },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const { data } = await api.put(PROFILE_ACCESS_URL, { students: permissionList });
 
       if (data?.success === false) {
         throw new Error(
@@ -568,9 +523,7 @@ const StudentProfileAccess = () => {
     setLoadingAcademicYears(true);
 
     try {
-      const response = await axios.get(ACADEMIC_YEARS_URL, {
-        headers: { Accept: "application/json" },
-      });
+      const response = await api.get(ACADEMIC_YEARS_URL);
 
       const data = response.data;
 
@@ -645,18 +598,7 @@ const StudentProfileAccess = () => {
 
     try {
       
-      const response = await axios.put(
-        ACADEMIC_YEARS_URL,
-        {
-          academicYear: value,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const response = await api.put(ACADEMIC_YEARS_URL, { academicYear: value });
 
       const data = response.data;
 
@@ -890,7 +832,7 @@ const StudentProfileAccess = () => {
             <div>
 
               <h2>
-                Select Student Group
+                Select Student Details
               </h2>
 
               <p>
@@ -1045,7 +987,7 @@ const StudentProfileAccess = () => {
               <div>
 
                 <h2>
-                  Student Access Management
+                  Student Profile Management
                 </h2>
 
                 <p>
