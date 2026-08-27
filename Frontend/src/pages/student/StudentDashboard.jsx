@@ -464,25 +464,27 @@ const StudentDashboard = () => {
       >
         <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="
-              px-6
-              py-2
-              bg-white
-              border-2
-              border-gray-200
-              text-gray-700
-              font-semibold
-              rounded-lg
-              hover:bg-gray-50
-              transition
-              cursor-pointer
-            "
-          >
-            Edit Profile
-          </button>
+                <div className="flex items-center gap-4">
+          {student?.studentEditEnabled && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="
+                px-6
+                py-2
+                bg-white
+                border-2
+                border-gray-200
+                text-gray-700
+                font-semibold
+                rounded-lg
+                hover:bg-gray-50
+                transition
+                cursor-pointer
+              "
+            >
+              Edit Profile
+            </button>
+          )}
 
           <button
             onClick={() => navigate("/exam/instruction")}
