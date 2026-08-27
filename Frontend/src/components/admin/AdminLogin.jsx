@@ -19,30 +19,49 @@ const AdminLogin = () => {
         e.preventDefault();
 
         try {
+
             const response = await loginUser(
                 formData.identifier,
                 formData.password,
                 "staff"
             );
+
             if (response.success) {
+
+                // Save admin session
+
+
+                // Optional: remove old student session
+                sessionStorage.removeItem(
+                    "studentSession"
+                );
                 saveAdminSession({
                     token: response.token,
                     sessionId: response.sessionId,
                     expiresAt: response.expiresAt,
                     user: response.user
                 });
-
                 navigate("/admin");
-            };
+            }
 
         } catch (error) {
 
-            console.error("Login error:", error);
+            console.error(
+                "Login error:",
+                error
+            );
 
             if (error.response) {
-                toast.error(error.response.data.message);
+
+                toast.error(
+                    error.response.data.message
+                );
+
             } else {
-                toast.error("Unable to connect to server");
+
+                toast.error(
+                    "Unable to connect to server"
+                );
             }
         }
     };
@@ -111,8 +130,14 @@ const AdminLogin = () => {
 
                             <div className="login-footer">
                                 <>
-                                    <p className="login-footer__link">Forgot your password?</p>
-                                    <p className="login-footer__link">Ask other admin to reset the password</p>
+                                    <button
+                                        type="button"
+                                        className="login-footer__link"
+                                        onClick={() => navigate("/forgot-password")}
+                                    >
+                                        Forgot your password?
+                                    </button>
+                                    {/* <p className="login-footer__link">Ask other admin to reset the password</p> */}
                                 </>
                             </div>
                         </form>

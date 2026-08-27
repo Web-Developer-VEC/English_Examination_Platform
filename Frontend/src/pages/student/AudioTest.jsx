@@ -42,11 +42,11 @@ export default function AudioTest() {
     const [warningMessage, setWarningMessage] = useState("");
     const [showWarning, setShowWarning] = useState(false);
     const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
-     
+    
+    const examData = location.state;
     const studentSession = getStudentSession();
     const admissionNo = studentSession?.user?.admissionNo;
     const testId = examData?.testId;
-    const examData = location.state;
     const MAX_PLAYS = 2;
     const remainingTime = Math.max(duration - currentTime, 0);
     const audioProgress = duration > 0 ? ((duration - currentTime) / duration) * 100 : 0;
