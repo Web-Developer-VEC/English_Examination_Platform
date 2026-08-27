@@ -197,6 +197,21 @@ function polarPoint(index, radius, cx, cy) {
   };
 }
 
+function to24Hour(hour, minute, period) {
+  let h = parseInt(hour, 10) % 12;
+  if (period === "PM") h += 12;
+
+  return {
+    h,
+    m: parseInt(minute, 10),
+  };
+}
+
+function toMinutesSinceMidnight(hour, minute, period) {
+  const { h, m } = to24Hour(hour, minute, period);
+  return h * 60 + m;
+}
+
 function AnalogClockPicker({
   label,
   IconComponent,
@@ -204,6 +219,8 @@ function AnalogClockPicker({
   minute,
   period,
   onChange,
+  selectedDate,
+  minDateTime,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState("hour"); // "hour" | "minute"
@@ -224,7 +241,23 @@ function AnalogClockPicker({
     hour && minute !== "" ? `${hour}:${minute} ${period}` : "";
 
   const pad2 = (n) => String(n).padStart(2, "0");
+  const isToday = (() => {
+    if (!selectedDate) return false;
 
+    const today = new Date();
+    const todayString =
+      `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+
+    return selectedDate === todayString;
+  })();
+
+  const isTimePast = (h, m, p) => {
+    if (!isToday || !minDateTime) return false;
+
+    const selectedMinutes = toMinutesSinceMidnight(h, m, p);
+
+    return selectedMinutes < minDateTime;
+  };
   const handlePickHour = (h) => {
     onChange({ hour: pad2(h), minute, period });
     setMode("minute");
@@ -334,12 +367,29 @@ function AnalogClockPicker({
               {mode === "hour"
                 ? HOUR_VALUES.map((h) => {
                   const { x, y } = polarPoint(h, outerRadius, cx, cy);
+
                   const isSelected = hour === pad2(h);
+
+                  // Check if this entire hour is already in the past
+                  const hourIsPast =
+                    isToday &&
+                    PERIOD_OPTIONS.every((p) =>
+                      MINUTE_VALUES.every((m) => isTimePast(h, m, p))
+                    );
+
                   return (
                     <g
                       key={h}
-                      onClick={() => handlePickHour(h)}
-                      className="cursor-pointer"
+                      onClick={() => {
+                        if (!hourIsPast) {
+                          handlePickHour(h);
+                        }
+                      }}
+                      className={
+                        hourIsPast
+                          ? "cursor-not-allowed opacity-30"
+                          : "cursor-pointer"
+                      }
                     >
                       <circle
                         cx={x}
@@ -526,12 +576,27 @@ export default function Schedule() {
     };
   }, []);
 
-  const BATCH_OPTIONS = useMemo(
-    () => [
-      ...new Set(scheduleData.batchDepartmentSections.map((c) => c.batch)),
-    ],
-    [scheduleData.batchDepartmentSections],
-  );
+  const BATCH_OPTIONS = useMemo(() => {
+    if (!academicYear) return [];
+
+    const startYear = academicYear.split("-")[0];
+
+    const expectedBatch = `${startYear}-${Number(startYear) + 4}`;
+
+    return [
+      ...new Set(
+        scheduleData.batchDepartmentSections
+          .map((c) => c.batch)
+          .filter((batch) => batch === expectedBatch)
+      ),
+    ];
+  }, [scheduleData.batchDepartmentSections, academicYear]);
+
+  useEffect(() => {
+    if (batch && !BATCH_OPTIONS.includes(batch)) {
+      setBatch("");
+    }
+  }, [academicYear, BATCH_OPTIONS, batch]);
 
   const DEPT_SECTION_OPTIONS = useMemo(() => {
     return scheduleData.batchDepartmentSections
@@ -818,11 +883,45 @@ export default function Schedule() {
       problems.push("Select at least one Department & Section");
     if (!questionCode) problems.push("Test Code is required");
     if (!date) problems.push("Date is required");
+    if (date) {
+      const today = new Date();
+
+      const todayString =
+        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      if (date < todayString) {
+        problems.push("Date cannot be in the past");
+      }
+    }
 
     const hasStartTime = startHour && startMinute && startPeriod;
     const hasEndTime = endHour && endMinute && endPeriod;
     if (!hasStartTime) problems.push("Start Time is required");
     if (!hasEndTime) problems.push("End Time is required");
+    // Start time cannot be in the past when scheduling for today
+    if (date && hasStartTime) {
+      const now = new Date();
+
+      const todayString =
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      if (date === todayString) {
+        const currentMinutes =
+          now.getHours() * 60 + now.getMinutes();
+
+        const startMinutes = toMinutesSinceMidnight(
+          startHour,
+          startMinute,
+          startPeriod
+        );
+
+        if (startMinutes <= currentMinutes) {
+          problems.push(
+            "Start Time must be later than the current time"
+          );
+        }
+      }
+    }
 
     if (hasStartTime && hasEndTime) {
       const startMinutes = toMinutesSinceMidnight(
@@ -1033,8 +1132,13 @@ export default function Schedule() {
                   value={batch}
                   options={BATCH_OPTIONS}
                   onChange={setBatch}
-                  placeholder="Select Batch"
+                  placeholder={
+                    academicYear
+                      ? "Select Batch"
+                      : "Select Academic Year first"
+                  }
                   loading={isLoadingScheduleData}
+                  disabled={!academicYear}
                 />
               </div>
 
@@ -1389,6 +1493,13 @@ export default function Schedule() {
                     <input
                       type="date"
                       value={date}
+                      min={(() => {
+                        const today = new Date();
+
+                        return `${today.getFullYear()}-${String(
+                          today.getMonth() + 1
+                        ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                      })()}
                       onChange={(e) => setDate(e.target.value)}
                       className={boxClasses + " pr-2"}
                     />
@@ -1401,6 +1512,13 @@ export default function Schedule() {
                   hour={startHour}
                   minute={startMinute}
                   period={startPeriod}
+                  selectedDate={date}
+                  minDateTime={
+                    (() => {
+                      const now = new Date();
+                      return now.getHours() * 60 + now.getMinutes();
+                    })()
+                  }
                   onChange={({ hour, minute, period }) => {
                     setStartHour(hour);
                     setStartMinute(minute);

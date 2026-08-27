@@ -89,3 +89,12 @@ export const getStudent = async (username) => {
 
     return response.data;
 };
+
+export const sendStudentResult = async (testId, admissionNo) => {
+const response = await api.post("student/studentresult", {
+  testId,
+  admissionNo,
+});
+
+return response.data;
+};
