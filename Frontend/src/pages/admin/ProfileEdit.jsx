@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  getScheduleFormData,
+  getExistingStudents,
+  updateStudentProfileAccess,
+  getAcademicYear,
+  updateAcademicYear,
+} from "../../services/adminService";
+import {
   ShieldCheck,
   UserRoundCog,
   Users,
@@ -27,14 +34,6 @@ import ThemeDropdown from "../../components/common/ThemeDropDown";
 import api from "../../services/api";
 
 import "./ProfileEdit.css";
-
-const EXISTING_STUDENT_DATA_URL = "/staff/student-data";
-
-const SCHEDULE_DATA_URL = "/staff/schedule/getformdata";
-
-const PROFILE_ACCESS_URL = "/staff/student-edit";
-
-const ACADEMIC_YEARS_URL = "/staff/academic-year";
 
 const STUDENTS_PER_PAGE = 50;
 
@@ -71,7 +70,7 @@ const toArray = (value) => {
   }
 
   if (Array.isArray(value?.records)) {
-    return value.records;
+    return value.reco 
   }
 
   if (Array.isArray(value?.academicYears)) {
@@ -262,7 +261,7 @@ const StudentProfileAccess = () => {
     setLoadingScheduleData(true);
 
     try {
-      const { data } = await api.get(SCHEDULE_DATA_URL);
+      const data = await getScheduleFormData();
 
       if (data?.success === false) {
         throw new Error(
@@ -290,8 +289,8 @@ const StudentProfileAccess = () => {
       console.error("Schedule data error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load filter data.",
+        error?.message ||
+        "Unable to load filter data.",
         "error"
       );
     } finally {
@@ -317,8 +316,8 @@ const StudentProfileAccess = () => {
     const rows =
       selectedBatch
         ? batchDepartmentSections.filter(
-            (item) => item.batch === selectedBatch
-          )
+          (item) => item.batch === selectedBatch
+        )
         : batchDepartmentSections;
 
     return [
@@ -382,7 +381,7 @@ const StudentProfileAccess = () => {
         section: selectedSection,
       };
 
-      const { data } = await api.post(EXISTING_STUDENT_DATA_URL, payload);
+      const data = await getExistingStudents(payload);
 
       if (data?.success === false) {
         throw new Error(
@@ -405,8 +404,8 @@ const StudentProfileAccess = () => {
       setStudents([]);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load student data.",
+        error?.message ||
+        "Unable to load student data.",
         "error"
       );
     } finally {
@@ -430,14 +429,14 @@ const StudentProfileAccess = () => {
     try {
       // Backend contract:
       // { students: [{ admissionNo, editEnabled }] }
-      const { data } = await api.put(PROFILE_ACCESS_URL, {
-        students: [
-          {
-            admissionNo: String(student.admissionNo).trim(),
-            editEnabled: nextValue,
-          },
-        ],
-      });
+      const data = await updateStudentProfileAccess([
+        {
+          admissionNo: String(
+            student.admissionNo
+          ).trim(),
+          editEnabled: nextValue,
+        },
+      ]);
 
       if (data?.success === false) {
         throw new Error(
@@ -456,8 +455,8 @@ const StudentProfileAccess = () => {
       console.error("Profile access update error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update profile access.",
+        error?.message ||
+        "Unable to update profile access.",
         "error"
       );
     } finally {
@@ -486,7 +485,10 @@ const StudentProfileAccess = () => {
     setUpdatingStudentId("ALL");
 
     try {
-      const { data } = await api.put(PROFILE_ACCESS_URL, { students: permissionList });
+      const data =
+    await updateStudentProfileAccess(
+        permissionList
+    );
 
       if (data?.success === false) {
         throw new Error(
@@ -509,8 +511,8 @@ const StudentProfileAccess = () => {
       console.error("Bulk profile access update error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update student permissions.",
+        error?.message ||
+        "Unable to update student permissions.",
         "error"
       );
     } finally {
@@ -523,9 +525,7 @@ const StudentProfileAccess = () => {
     setLoadingAcademicYears(true);
 
     try {
-      const response = await api.get(ACADEMIC_YEARS_URL);
-
-      const data = response.data;
+      const data = await getAcademicYear();
 
       if (data?.success === false) {
         throw new Error(
@@ -564,8 +564,8 @@ const StudentProfileAccess = () => {
 
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load academic year.",
+        error?.message ||
+        "Unable to load academic year.",
         "error"
       );
     } finally {
@@ -597,10 +597,9 @@ const StudentProfileAccess = () => {
     setAddingAcademicYear(true);
 
     try {
-      
-      const response = await api.put(ACADEMIC_YEARS_URL, { academicYear: value });
 
-      const data = response.data;
+      const data =
+    await updateAcademicYear(value);
 
       if (!response.status.toString().startsWith("2") || data?.success === false) {
         throw new Error(
@@ -637,8 +636,8 @@ const StudentProfileAccess = () => {
 
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update academic year.",
+        error?.message ||
+        "Unable to update academic year.",
         "error"
       );
     } finally {
@@ -755,7 +754,7 @@ const StudentProfileAccess = () => {
       1,
       Math.ceil(
         filteredStudents.length /
-          STUDENTS_PER_PAGE
+        STUDENTS_PER_PAGE
       )
     );
 
@@ -763,10 +762,10 @@ const StudentProfileAccess = () => {
   const paginatedStudents =
     filteredStudents.slice(
       (currentPage - 1) *
-        STUDENTS_PER_PAGE,
+      STUDENTS_PER_PAGE,
 
       currentPage *
-        STUDENTS_PER_PAGE
+      STUDENTS_PER_PAGE
     );
 
 
@@ -1188,7 +1187,7 @@ const StudentProfileAccess = () => {
                   <tbody>
 
                     {paginatedStudents.length >
-                    0 ? (
+                      0 ? (
 
                       paginatedStudents.map(
                         (
@@ -1236,7 +1235,7 @@ const StudentProfileAccess = () => {
 
                                 <div className="student-identity">
 
-                                  
+
 
 
                                   <div className="student-info">
@@ -1338,11 +1337,10 @@ const StudentProfileAccess = () => {
                                 <div className="access-control">
 
                                   <div
-                                    className={`access-status ${
-                                      student.editProfileEnabled
+                                    className={`access-status ${student.editProfileEnabled
                                         ? "enabled"
                                         : "disabled"
-                                    }`}
+                                      }`}
                                   >
 
                                     {student.editProfileEnabled ? (
@@ -1372,15 +1370,13 @@ const StudentProfileAccess = () => {
 
                                   <button
                                     type="button"
-                                    className={`profile-toggle ${
-                                      student.editProfileEnabled
+                                    className={`profile-toggle ${student.editProfileEnabled
                                         ? "active"
                                         : ""
-                                    } ${
-                                      updating
+                                      } ${updating
                                         ? "updating"
                                         : ""
-                                    }`}
+                                      }`}
                                     disabled={
                                       updating
                                     }
@@ -1469,108 +1465,108 @@ const StudentProfileAccess = () => {
               {filteredStudents.length >
                 0 && (
 
-                <div className="pagination">
+                  <div className="pagination">
 
-                  <div className="pagination-info">
+                    <div className="pagination-info">
 
-                    Showing{" "}
+                      Showing{" "}
 
-                    <strong>
-                      {(currentPage - 1) *
-                        STUDENTS_PER_PAGE +
-                        1}
-                    </strong>
+                      <strong>
+                        {(currentPage - 1) *
+                          STUDENTS_PER_PAGE +
+                          1}
+                      </strong>
 
-                    {" - "}
+                      {" - "}
 
-                    <strong>
-                      {Math.min(
-                        currentPage *
+                      <strong>
+                        {Math.min(
+                          currentPage *
                           STUDENTS_PER_PAGE,
-                        filteredStudents.length
-                      )}
-                    </strong>
+                          filteredStudents.length
+                        )}
+                      </strong>
 
-                    {" of "}
+                      {" of "}
 
-                    <strong>
-                      {filteredStudents.length}
-                    </strong>
+                      <strong>
+                        {filteredStudents.length}
+                      </strong>
 
-                  </div>
-
-
-                  <div className="pagination-controls">
-
-                    <button
-                      type="button"
-                      disabled={
-                        currentPage ===
-                        1
-                      }
-                      onClick={() =>
-                        setCurrentPage(
-                          (page) =>
-                            Math.max(
-                              1,
-                              page - 1
-                            )
-                        )
-                      }
-                    >
-
-                      <ChevronLeft
-                        size={17}
-                      />
-
-                      Previous
-
-                    </button>
+                    </div>
 
 
-                    <span className="page-number">
+                    <div className="pagination-controls">
 
-                      {currentPage}
+                      <button
+                        type="button"
+                        disabled={
+                          currentPage ===
+                          1
+                        }
+                        onClick={() =>
+                          setCurrentPage(
+                            (page) =>
+                              Math.max(
+                                1,
+                                page - 1
+                              )
+                          )
+                        }
+                      >
 
-                      <span>
-                        /
+                        <ChevronLeft
+                          size={17}
+                        />
+
+                        Previous
+
+                      </button>
+
+
+                      <span className="page-number">
+
+                        {currentPage}
+
+                        <span>
+                          /
+                        </span>
+
+                        {totalPages}
+
                       </span>
 
-                      {totalPages}
 
-                    </span>
+                      <button
+                        type="button"
+                        disabled={
+                          currentPage ===
+                          totalPages
+                        }
+                        onClick={() =>
+                          setCurrentPage(
+                            (page) =>
+                              Math.min(
+                                totalPages,
+                                page + 1
+                              )
+                          )
+                        }
+                      >
 
+                        Next
 
-                    <button
-                      type="button"
-                      disabled={
-                        currentPage ===
-                        totalPages
-                      }
-                      onClick={() =>
-                        setCurrentPage(
-                          (page) =>
-                            Math.min(
-                              totalPages,
-                              page + 1
-                            )
-                        )
-                      }
-                    >
+                        <ChevronRight
+                          size={17}
+                        />
 
-                      Next
+                      </button>
 
-                      <ChevronRight
-                        size={17}
-                      />
-
-                    </button>
+                    </div>
 
                   </div>
 
-                </div>
-
-              )}
+                )}
 
             </>
 
@@ -1803,12 +1799,11 @@ const StudentProfileAccess = () => {
         >
 
           <div
-            className={`access-message ${
-              messageType ===
-              "success"
+            className={`access-message ${messageType ===
+                "success"
                 ? "success"
                 : "error"
-            }`}
+              }`}
             onClick={(event) =>
               event.stopPropagation()
             }
@@ -1817,7 +1812,7 @@ const StudentProfileAccess = () => {
             <div className="message-icon">
 
               {messageType ===
-              "success" ? (
+                "success" ? (
                 <CheckCircle2
                   size={27}
                 />
@@ -1834,7 +1829,7 @@ const StudentProfileAccess = () => {
 
               <strong>
                 {messageType ===
-                "success"
+                  "success"
                   ? "Success"
                   : "Something went wrong"}
               </strong>
