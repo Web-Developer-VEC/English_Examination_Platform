@@ -39,6 +39,7 @@ router.put(
 // Get current settings
 router.get(
     "/academic-year",
+    roleByAccess(["admin"]),
     getAdminSettings
 );
 router.get(
