@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  getScheduleFormData,
+  getStaff,
+  updateStaff,
+} from "../../services/adminService";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -18,15 +23,6 @@ import ThemeDropdown from "../../components/common/ThemeDropDown";
 import api from "../../services/api";
 
 import "./FacultyList.css";
-
-const GET_SCHEDULE_DATA_ENDPOINT =
-  "/staff/schedule/getformdata";
-
-const GET_STAFF_ENDPOINT =
-  "/staff/getstaff";
-
-const STAFF_UPDATE_ENDPOINT =
-  "/staff/updatestaff";
 
 const MAX_ORIGINAL_IMAGE_SIZE = 1024 * 1024;
 
@@ -223,16 +219,12 @@ const FacultyList = () => {
     try {
       setLoadingScheduleData(true);
 
-      const response = await api.get(
-        GET_SCHEDULE_DATA_ENDPOINT
-      );
-
-      const result = response.data;
+      const result = await getScheduleFormData();
 
       if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load department and section data"
+          "Unable to load department and section data"
         );
       }
 
@@ -255,6 +247,7 @@ const FacultyList = () => {
           ? rows
           : []
       );
+
     } catch (error) {
       console.error(
         "Schedule data error:",
@@ -263,31 +256,43 @@ const FacultyList = () => {
 
       showToast(
         "error",
-        error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load department and section"
+        error?.message ||
+        "Unable to load department and section"
       );
 
       setBatchDepartmentSections([]);
+
     } finally {
       setLoadingScheduleData(false);
     }
   };
+  
+  const extractArray = (result, keys = []) => {
+    const candidates = [
+      ...keys.map((key) => result?.data?.[key]),
+      result?.data,
+      result?.staff,
+      result?.students,
+    ];
 
- 
+    for (const value of candidates) {
+      if (Array.isArray(value)) {
+        return value;
+      }
+    }
+
+    return [];
+  };
 
   const fetchStaff = async () => {
     try {
-      const response = await api.get(
-        GET_STAFF_ENDPOINT
-      );
 
-      const result = response.data;
+      const result = await getStaff();
 
       if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to load staff"
+          "Unable to load staff"
         );
       }
 
@@ -327,6 +332,7 @@ const FacultyList = () => {
           })
         )
       );
+
     } catch (error) {
       console.error(
         "Get staff error:",
@@ -335,12 +341,12 @@ const FacultyList = () => {
 
       showToast(
         "error",
-        error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load staff"
+        error?.message ||
+        "Unable to load staff"
       );
 
       setFaculty([]);
+
     }
   };
 
@@ -621,13 +627,8 @@ const FacultyList = () => {
     );
   };
 
-  // ============================================================
-  // PHONE CHANGE
-  // ============================================================
 
-  const handlePhoneChange = (
-    event
-  ) => {
+  const handlePhoneChange = (event) => {
     const value =
       event.target.value
         .replace(/\D/g, "")
@@ -654,17 +655,9 @@ const FacultyList = () => {
     );
   };
 
-  // ============================================================
-  // DEPARTMENT / SECTION CHANGE
-  // ============================================================
 
-  const handleDepartmentSectionChange = (
-    value
-  ) => {
-    const parsed =
-      parseDepartmentSectionOption(
-        value
-      );
+  const handleDepartmentSectionChange = (value) => {
+    const parsed = parseDepartmentSectionOption(value);
 
     if (!parsed) {
       return;
@@ -861,13 +854,15 @@ const FacultyList = () => {
       image.naturalHeight ||
       image.height;
 
+
+
     const scale =
       Math.min(
         MAX_IMAGE_WIDTH /
-          width,
+        width,
 
         MAX_IMAGE_HEIGHT /
-          height,
+        height,
 
         1
       );
@@ -937,6 +932,8 @@ const FacultyList = () => {
         currentHeight
       );
 
+
+
       context.fillStyle =
         "#ffffff";
 
@@ -991,7 +988,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentWidth *
-              0.75
+            0.75
           )
         );
 
@@ -1000,7 +997,7 @@ const FacultyList = () => {
           120,
           Math.round(
             currentHeight *
-              0.75
+            0.75
           )
         );
     }
@@ -1010,9 +1007,6 @@ const FacultyList = () => {
     );
   };
 
-  // ============================================================
-  // PHOTO CHANGE
-  // ============================================================
 
   const handlePhotoChange =
     async (event) => {
@@ -1085,7 +1079,7 @@ const FacultyList = () => {
         showToast(
           "error",
           error?.message ||
-            "Unable to compress photo"
+          "Unable to compress photo"
         );
       } finally {
         event.target.value =
@@ -1093,9 +1087,6 @@ const FacultyList = () => {
       }
     };
 
-  // ============================================================
-  // VALIDATE
-  // ============================================================
 
   const validateForm = () => {
     if (!form.name.trim()) {
@@ -1291,53 +1282,20 @@ const FacultyList = () => {
         payload
       );
 
-      // ========================================================
-      // IMPORTANT CHANGE:
-      //
-      // OLD:
-      // fetch(STAFF_UPDATE_ENDPOINT, ...)
-      //
-      // NEW:
-      // api.post(STAFF_UPDATE_ENDPOINT, payload)
-      //
-      // Axios interceptor automatically adds JWT token.
-      // ========================================================
+      const result = await updateStaff(payload);
 
-      let response;
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+          "Unable to save staff"
+        );
+      }
 
-      try {
-        response =
-          await api.post(
-            STAFF_UPDATE_ENDPOINT,
-            payload
-          );
-      } catch (error) {
-        if (
-          error?.response?.status ===
-          413
-        ) {
-          throw new Error(
-            "Request payload is too large."
-          );
-        }
-
+      if (response.status === 413) {
         throw new Error(
           error?.response?.data
             ?.message ||
             error?.message ||
-            "Unable to save staff"
-        );
-      }
-
-      const result =
-        response.data;
-
-      if (
-        result?.success ===
-        false
-      ) {
-        throw new Error(
-          result?.message ||
             "Unable to save staff"
         );
       }
@@ -1419,19 +1377,13 @@ const FacultyList = () => {
 
       showToast(
         "error",
-        error?.response?.data
-          ?.message ||
-          error?.message ||
-          "Unable to save staff"
+        error?.message ||
+        "Unable to save staff"
       );
     } finally {
       setSaving(false);
     }
   };
-
-  // ============================================================
-  // DELETE CLICK
-  // ============================================================
 
   const handleDeleteClick =
     (member) => {
@@ -1516,37 +1468,15 @@ const FacultyList = () => {
         payload
       );
 
-      // ========================================================
-      // IMPORTANT CHANGE:
-      //
-      // OLD:
-      // fetch(STAFF_UPDATE_ENDPOINT, ...)
-      //
-      // NEW:
-      // api.post(STAFF_UPDATE_ENDPOINT, payload)
-      //
-      // Axios interceptor automatically adds JWT token.
-      // ========================================================
+      const result = await updateStaff(payload);
 
-      const response =
-        await api.post(
-          STAFF_UPDATE_ENDPOINT,
-          payload
-        );
-
-      const result =
-        response.data;
-
-      if (
-        result?.success ===
-        false
-      ) {
+      if (result?.success === false) {
         throw new Error(
           result?.message ||
-            "Unable to delete staff"
+          "Unable to delete staff"
         );
       }
-
+        
       setFaculty(
         (previous) =>
           previous.filter(
@@ -1591,10 +1521,8 @@ const FacultyList = () => {
 
       showToast(
         "error",
-        error?.response?.data
-          ?.message ||
-          error?.message ||
-          "Unable to delete staff"
+        error?.message ||
+        "Unable to delete staff"
       );
     } finally {
       setSaving(false);
@@ -1703,7 +1631,7 @@ const FacultyList = () => {
           <div className="faculty-card-content">
 
             <span className="faculty-role">
-              FACULTY
+              {"FACULTY"}
             </span>
 
             <h3>
@@ -2547,8 +2475,7 @@ const FacultyList = () => {
                   disabled={
                     saving ||
                     loadingScheduleData ||
-                    form.assignments
-                      .length === 0
+                    form.assignments.length === 0
                   }
                 >
 

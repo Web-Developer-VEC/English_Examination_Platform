@@ -234,6 +234,8 @@ function SelectField({
     };
   }, []);
 
+  // ...
+
   // Unique ID for this dropdown
   const dropdownId = React.useId();
 
@@ -489,6 +491,7 @@ export default function StudentResult() {
   const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState("");
+
   const [showResults, setShowResults] = useState(false);
   const [submittedFilters, setSubmittedFilters] = useState(null);
 
@@ -596,6 +599,7 @@ export default function StudentResult() {
       setError("Please select Batch, Department, Section, CIE and Semester.");
       return false;
     }
+
     return true;
   };
 
@@ -672,6 +676,10 @@ export default function StudentResult() {
   const handleViewResult = async () => {
     setError("");
 
+    // ---------------------------------------------------
+    // VALIDATE FILTERS
+    // ---------------------------------------------------
+
     if (!validate()) {
       setShowResults(false);
       return;
@@ -703,6 +711,7 @@ export default function StudentResult() {
         err.message ||
         "Something went wrong while generating or downloading the PDF.",
       );
+
       setShowResults(false);
     } finally {
       setLoadingResults(false);
