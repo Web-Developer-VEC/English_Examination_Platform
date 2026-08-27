@@ -15,20 +15,10 @@ import {
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
 
-// IMPORTANT:
-// Change this path only if your api.js is located somewhere else.
+
 import api from "../../services/api";
 
 import "./FacultyList.css";
-
-// ============================================================
-// API ENDPOINTS
-// ============================================================
-// Your api.js already has:
-// baseURL: "http://localhost:5000/api"
-//
-// Therefore DO NOT write /api here.
-// ============================================================
 
 const GET_SCHEDULE_DATA_ENDPOINT =
   "/staff/schedule/getformdata";
@@ -95,9 +85,7 @@ const FacultyList = () => {
     message: "",
   });
 
-  // ============================================================
-  // TOAST
-  // ============================================================
+
 
   const showToast = (type, message) => {
     setToast({
@@ -115,9 +103,7 @@ const FacultyList = () => {
     }, 3000);
   };
 
-  // ============================================================
-  // NORMALIZE
-  // ============================================================
+
 
   const normalize = (value) => {
     return String(value || "")
@@ -235,15 +221,7 @@ const FacultyList = () => {
       )
     );
 
-  // ============================================================
-  // FETCH SCHEDULE DATA
-  // ============================================================
-  // CHANGED:
-  // fetch() -> api.get()
-  //
-  // Axios interceptor automatically adds:
-  // Authorization: Bearer <token>
-  // ============================================================
+
 
   const fetchScheduleData = async () => {
     try {
@@ -300,12 +278,7 @@ const FacultyList = () => {
     }
   };
 
-  // ============================================================
-  // FETCH STAFF
-  // ============================================================
-  // CHANGED:
-  // fetch() -> api.get()
-  // ============================================================
+ 
 
   const fetchStaff = async () => {
     try {
