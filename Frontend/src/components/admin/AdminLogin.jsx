@@ -27,7 +27,9 @@ const AdminLogin = () => {
             );
 
             if (response.success) {
-
+                sessionStorage.removeItem(
+                    "studentSession"
+                );
                 // Save admin session
 
 
@@ -68,7 +70,7 @@ const AdminLogin = () => {
 
     return (
         <>
-            <div className="flex pt-20 justify-center">
+            <div className="flex justify-center">
                 <div className="flex justify-center pt-10">
                     <div className="login-card">
                         <ToastContainer position="bottom-right" autoClose={3000} />
@@ -130,8 +132,14 @@ const AdminLogin = () => {
 
                             <div className="login-footer">
                                 <>
-                                    <p className="login-footer__link">Forgot your password?</p>
-                                    <p className="login-footer__link">Ask other admin to reset the password</p>
+                                    <button
+                                        type="button"
+                                        className="login-footer__link"
+                                        onClick={() => navigate("/forgot-password")}
+                                    >
+                                        Forgot your password?
+                                    </button>
+                                    {/* <p className="login-footer__link">Ask other admin to reset the password</p> */}
                                 </>
                             </div>
                         </form>

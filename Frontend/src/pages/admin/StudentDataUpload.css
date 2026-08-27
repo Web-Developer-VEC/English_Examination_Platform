@@ -73,7 +73,7 @@
 
   padding: 5px;
 
-  background: #fffaf0;
+  background: white;
 
   border: 1px solid rgba(128, 0, 0, 0.12);
 
@@ -143,7 +143,7 @@
   box-sizing: border-box;
 
   box-shadow:
-    0 20px 50px rgba(128, 0, 0, 0.08);
+    0 20px 50px rgba(174, 170, 170, 0.08);
 }
 
 
@@ -574,12 +574,7 @@
 
   border-bottom: 1px solid #eeeeee;
 
-  background:
-    linear-gradient(
-      135deg,
-      #fffdf7,
-      #ffffff
-    );
+  background:white;
 }
 
 .existing-heading {
@@ -633,11 +628,11 @@
 
   padding: 8px 12px;
 
-  background: #fff8d9;
+  background: #ffcd03;
 
   border: 1px solid rgba(255, 193, 7, 0.35);
 
-  color: #800000;
+  color: black;
 
   border-radius: 20px;
 
@@ -1005,7 +1000,7 @@
 
   text-align: left;
 
-  font-size: 10px;
+  font-size: 13px;
 
   font-weight: 750;
 
@@ -1263,7 +1258,7 @@
 
   margin: 0 auto 16px;
 
-  background: #fff8d9;
+  background: #ffcd03;
 
   color: #800000;
 
@@ -1757,7 +1752,7 @@
   padding: 0 14px;
   border: 1px solid rgba(128, 0, 0, 0.16);
   border-radius: 10px;
-  background: #fffdf5;
+  background: white;
   color: #800000;
   font-size: 12px;
   font-weight: 750;
@@ -1790,7 +1785,7 @@
 
 .existing-filter-section {
   padding: 28px 30px;
-  background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+  background: white;
 }
 
 .filter-heading {
