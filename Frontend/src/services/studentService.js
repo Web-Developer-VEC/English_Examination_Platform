@@ -69,3 +69,32 @@ export const reportMalpractice = async ({
 
     return response.data;
 };
+
+export const updateStudent = async (updateData) => {
+    const response = await api.put(
+        "student/updatestudent",
+        updateData 
+    );
+
+    return response.data;
+};
+
+export const getStudent = async (username) => {
+    const response = await api.post(
+        "student/getstudent",
+        {
+            username,
+        }
+    );
+
+    return response.data;
+};
+
+export const sendStudentResult = async (testId, admissionNo) => {
+const response = await api.post("student/studentresult", {
+  testId,
+  admissionNo,
+});
+
+return response.data;
+};

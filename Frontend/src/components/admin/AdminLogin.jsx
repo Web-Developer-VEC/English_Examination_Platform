@@ -130,8 +130,14 @@ const AdminLogin = () => {
 
                             <div className="login-footer">
                                 <>
-                                    <p className="login-footer__link">Forgot your password?</p>
-                                    <p className="login-footer__link">Ask other admin to reset the password</p>
+                                    <button
+                                        type="button"
+                                        className="login-footer__link"
+                                        onClick={() => navigate("/forgot-password")}
+                                    >
+                                        Forgot your password?
+                                    </button>
+                                    {/* <p className="login-footer__link">Ask other admin to reset the password</p> */}
                                 </>
                             </div>
                         </form>
