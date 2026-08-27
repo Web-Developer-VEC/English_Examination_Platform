@@ -1,25 +1,51 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+    ClipboardList, CalendarDays, Activity, CircleCheck
+} from "lucide-react";
 export default function AdminDashboard() {
 
     const [tests, setTests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All");
     const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
-    const [selectedDate, setSelectedDate] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 5;
+    const [selectedDate, setSelectedDate] = useState("");
     const navigate = useNavigate();
+    const getDynamicStatus = (startTime, endTime) => {
+        if (!startTime || !endTime) {
+            return "Upcoming";
+        }
+
+        const now = new Date();
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+
+        if (now < start) {
+            return "Upcoming";
+        }
+
+        if (now >= start && now <= end) {
+            return "Ongoing";
+        }
+
+        return "Completed";
+    };
 
     useEffect(() => {
+        let interval;
+
         const fetchTests = async () => {
             try {
-                setLoading(true);
                 setError("");
 
-                const response = await fetch("http://localhost:5000/api/staff/schedule/getscheduleexams");
+                const response = await fetch(
+                    "http://localhost:5000/api/staff/schedule/getscheduleexams"
+                );
+
                 if (!response.ok) {
                     throw new Error(`HTTP error: ${response.status}`);
                 }
@@ -43,18 +69,12 @@ export default function AdminDashboard() {
                         ? new Date(exam.startTime).toLocaleDateString("en-CA")
                         : "N/A",
 
-                    time: exam.startTime
-                        ? new Date(exam.startTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })
-                        : "N/A",
-
-                    duration: exam.duration || 0,
-
                     testCode: exam.testcode || "N/A",
 
-                    status: exam.status || "N/A",
+                    status: getDynamicStatus(
+                        exam.startTime,
+                        exam.endTime
+                    ),
 
                     questionSetId: exam.questionSetId,
 
@@ -76,6 +96,13 @@ export default function AdminDashboard() {
         };
 
         fetchTests();
+
+        // Refresh every 10 seconds
+        interval = setInterval(fetchTests, 10000);
+
+        return () => {
+            clearInterval(interval);
+        };
     }, []);
 
     // ==========================================================
@@ -101,11 +128,7 @@ export default function AdminDashboard() {
     // ==========================================================
 
     const filteredTests = useMemo(() => {
-        return tests.filter((test) => {
-
-            const matchSearch = (test.testCode || "")
-                .toLowerCase()
-                .includes(search.toLowerCase());
+        const filtered = tests.filter((test) => {
 
             const matchDepartment =
                 department === "All" ||
@@ -124,14 +147,70 @@ export default function AdminDashboard() {
                 test.date === selectedDate;
 
             return (
-                matchSearch &&
                 matchDepartment &&
                 matchCategory &&
                 matchStatus &&
                 matchDate
             );
         });
-    }, [tests, search, department, category, status, selectedDate]);
+
+        // Ongoing → Upcoming → Completed
+        const statusPriority = {
+            Ongoing: 1,
+            Upcoming: 2,
+            Completed: 3,
+        };
+
+        filtered.sort((a, b) => {
+
+            // First sort by status
+            const statusDifference =
+                statusPriority[a.status] - statusPriority[b.status];
+
+            if (statusDifference !== 0) {
+                return statusDifference;
+            }
+
+            // Ongoing → earliest end time first
+            if (a.status === "Ongoing") {
+                return new Date(a.endTime) - new Date(b.endTime);
+            }
+
+            // Upcoming → earliest start time first
+            if (a.status === "Upcoming") {
+                return new Date(a.startTime) - new Date(b.startTime);
+            }
+
+            // Completed → latest completed test first
+            if (a.status === "Completed") {
+                return new Date(b.endTime) - new Date(a.endTime);
+            }
+
+            return 0;
+        });
+
+        return filtered;
+
+    }, [tests, department, category, status, selectedDate]);
+
+    // ==========================================================
+    // PAGINATION
+    // ==========================================================
+
+    const totalPages = Math.ceil(
+        filteredTests.length / recordsPerPage
+    );
+
+    const startIndex = (currentPage - 1) * recordsPerPage;
+
+    const paginatedTests = filteredTests.slice(
+        startIndex,
+        startIndex + recordsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [department, category, status, selectedDate]);
 
     const handleDownload = (test) => {
         const content = `
@@ -139,22 +218,21 @@ Exam ID: ${test.id}
 Category: ${test.category}
 Section: ${test.section}
 Test Code: ${test.testCode}
-Duration: ${test.duration} minutes
 Date: ${test.date}
-Time: ${test.time}
+Start Time: ${test.startTime || "N/A"}
+End Time: ${test.endTime || "N/A"}
 Status: ${test.status}
 `;
 
         const blob = new Blob([content], {
-            type: "text/plain"
+            type: "text/plain",
         });
 
         const url = URL.createObjectURL(blob);
 
         const link = document.createElement("a");
-
         link.href = url;
-        link.download = `${test.testCode || test.id}.txt`;
+        link.download = `exam-${test.testCode || test.id}.txt`;
 
         document.body.appendChild(link);
         link.click();
@@ -165,15 +243,47 @@ Status: ${test.status}
 
     const handleCancel = async (test) => {
         const confirmed = window.confirm(
-            "Are you sure you want to cancel this exam?"
+            `Are you sure you want to cancel test ${test.testCode}?`
         );
 
-        if (!confirmed) {
-            return;
-        }
+        if (!confirmed) return;
 
-        console.log("Cancel exam:", test.id);
+        try {
+            const response = await fetch(
+                "http://localhost:5000/api/staff/schedule/delete-scheduled-exam",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        testId: test.id,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Failed to cancel the test."
+                );
+            }
+
+            // Remove the cancelled test from the table
+            setTests((prevTests) =>
+                prevTests.filter((item) => item.id !== test.id)
+            );
+
+            alert("Test cancelled successfully.");
+
+        } catch (error) {
+            console.error("Error cancelling test:", error);
+            alert(error.message || "Unable to cancel the test.");
+        }
     };
+
+
 
     return (
         <div className="w-full min-h-screen bg-gray-100">
@@ -202,7 +312,7 @@ Status: ${test.status}
 
                     <div>
 
-                        <h1 className="text-3xl font-bold text-black">
+                        <h1 className="text-3xl font-bold text-[#7a1f2b]">
                             Admin Dashboard
                         </h1>
 
@@ -229,21 +339,25 @@ Status: ${test.status}
                     <SummaryCard
                         title="Total Exams"
                         value={totalExams}
+                        type="total"
                     />
 
                     <SummaryCard
                         title="Today's Tests"
                         value={todaysTests}
+                        type="today"
                     />
 
                     <SummaryCard
                         title="Active Tests"
                         value={activeTests}
+                        type="active"
                     />
 
                     <SummaryCard
                         title="Completed Tests"
                         value={completedTests}
+                        type="completed"
                     />
 
                 </div>
@@ -254,40 +368,13 @@ Status: ${test.status}
 
                 <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
-
-                        {/* SEARCH */}
-
-                        <div>
-
-                            
-
-                            <input
-                                type="text"
-                                placeholder="Search Question Code"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="
-                w-full
-                h-11
-                px-4
-                rounded-lg
-                border
-                border-gray-300
-                focus:outline-none
-                focus:ring-2
-                focus:ring-yellow-300
-                focus:border-[#FDCC03]
-                "
-                            />
-
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
 
                         {/* DEPARTMENT */}
 
                         <div>
 
-                            
+
 
                             <select
                                 value={department}
@@ -349,7 +436,7 @@ Status: ${test.status}
                                     All Categories
                                 </option>
 
-                                <option value="All">
+                                <option value="Re-Test">
                                     Re-Test
                                 </option>
 
@@ -443,18 +530,20 @@ Status: ${test.status}
             TABLE
         ========================================================== */}
 
-                <div className="mt-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="mt-8 bg-white rounded-xl border border-gray-200 overflow-x-auto">
+
 
                     {/* TABLE HEADER */}
 
-                    <div className="hidden lg:grid grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr] items-center gap-4 bg-gray-50 border-b border-gray-200 px-6">
-
+                    <div
+                        className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
+                        style={{
+                            gridTemplateColumns:
+                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
+                        }}
+                    >
                         <TableHeading>
                             Department
-                        </TableHeading>
-
-                        <TableHeading>
-                            Category
                         </TableHeading>
 
                         <TableHeading>
@@ -462,15 +551,19 @@ Status: ${test.status}
                         </TableHeading>
 
                         <TableHeading>
+                            Category
+                        </TableHeading>
+
+                        <TableHeading>
                             Date
                         </TableHeading>
 
                         <TableHeading>
-                            Time
+                            Start Time
                         </TableHeading>
 
                         <TableHeading>
-                            Duration
+                            End Time
                         </TableHeading>
 
                         <TableHeading>
@@ -481,6 +574,13 @@ Status: ${test.status}
                             Status
                         </TableHeading>
 
+                        <TableHeading>
+                            Download
+                        </TableHeading>
+
+                        <TableHeading>
+                            Action
+                        </TableHeading>
                     </div>
 
                     {/* TABLE BODY */}
@@ -501,22 +601,25 @@ Status: ${test.status}
 
                     ) : (
 
-                        filteredTests.map((test) => (
+                        paginatedTests.map((test) => (
 
                             <div
                                 key={test.id}
                                 className="
-                grid
-                lg:grid-cols-[1.2fr_1.2fr_0.7fr_1fr_1fr_0.8fr_1fr_1fr]
-                items-center
-                px-6
-                gap-4
-                py-5
-                border-b
-                border-gray-100
-                hover:bg-yellow-50/40
-                transition
-            "
+        grid
+        items-center
+        gap-4
+        px-6
+        py-5
+        border-b
+        border-gray-100
+        hover:bg-yellow-50/40
+        transition
+    "
+                                style={{
+                                    gridTemplateColumns:
+                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
+                                }}
                             >
 
                                 {/* DEPARTMENT */}
@@ -527,6 +630,14 @@ Status: ${test.status}
                                     </span>
                                 </div>
 
+                                {/* SECTION */}
+
+                                <div className="flex items-center justify-center">
+                                    <span className="font-semibold">
+                                        {test.section}
+                                    </span>
+                                </div>
+
                                 {/* CATEGORY */}
 
                                 <div className="flex items-center justify-center">
@@ -534,20 +645,7 @@ Status: ${test.status}
                                         <h3 className="font-semibold text-gray-900">
                                             {test.category}
                                         </h3>
-
-                                        
                                     </div>
-                                </div>
-
-
-                                {/* SECTION */}
-
-                                <div className="flex items-center justify-center">
-
-                                    <span className="font-semibold">
-                                        {test.section}
-                                    </span>
-
                                 </div>
 
 
@@ -559,16 +657,27 @@ Status: ${test.status}
                                 </div>
 
 
-                                {/* TIME */}
-
+                                {/* START TIME */}
                                 <div className="flex items-center justify-center text-gray-600">
-                                    {test.time}
+                                    {test.startTime
+                                        ? new Date(test.startTime).toLocaleTimeString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })
+                                        : "N/A"}
                                 </div>
 
+                                {/* END TIME */}
                                 <div className="flex items-center justify-center text-gray-600">
-                                    {test.duration} min
+                                    {test.endTime
+                                        ? new Date(test.endTime).toLocaleTimeString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })
+                                        : "N/A"}
                                 </div>
-
 
                                 {/* TEST CODE */}
 
@@ -602,7 +711,7 @@ Status: ${test.status}
 
 
 
-                                {/* DOWNLOAD
+                                {/* DOWNLOAD */}
 
                                 <div className="flex items-center justify-center">
 
@@ -622,7 +731,7 @@ Status: ${test.status}
                 border
                 border-[#FDCC03]
                 text-black
-                hover:bg-red-700
+                hover:bg-[#7a1f2b]
                 hover:border-red-500
                 hover:text-white
                 transition
@@ -645,8 +754,35 @@ Status: ${test.status}
                                         </button>
                                     )}
 
-                                </div> */}
+                                </div>
 
+                                {/* ACTION */}
+
+                                <div className="flex items-center justify-center">
+                                    {test.status === "Upcoming" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCancel(test)}
+                                            className="
+                px-3
+                py-2
+                rounded-lg
+                border
+                border-red-200
+                bg-red-50
+                text-red-600
+                text-xs
+                font-semibold
+                hover:bg-red-600
+                hover:text-white
+                transition-all
+                duration-200
+            "
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                         ))
@@ -662,57 +798,64 @@ Status: ${test.status}
                 <div className="mt-6 flex items-center justify-between">
 
                     <p className="text-sm text-gray-500">
-
-                        Showing {filteredTests.length} Records
-
+                        {filteredTests.length === 0
+                            ? "Showing 0 Records"
+                            : `Showing ${startIndex + 1}-${Math.min(
+                                startIndex + recordsPerPage,
+                                filteredTests.length
+                            )} of ${filteredTests.length} Records`
+                        }
                     </p>
 
-                    <div className="flex gap-3">
+                    <div className="flex items-center gap-3">
 
                         {currentPage > 1 && (
                             <button
                                 onClick={() => setCurrentPage(currentPage - 1)}
                                 className="
-            px-4
-            py-2
-            rounded-lg
-            border
-            border-gray-300
-            hover:bg-gray-100
-            transition
-        "
+                    px-4
+                    py-2
+                    rounded-lg
+                    border
+                    border-gray-300
+                    hover:bg-gray-100
+                    transition
+                "
                             >
                                 Previous
                             </button>
                         )}
 
-                        <button
-                            className="
-              px-4
-              py-2
-              rounded-lg
-              bg-[#FDCC03]
-              font-semibold
-              hover:bg-yellow-400
-              transition
-              "
-                        >
-                            1
-                        </button>
+                        {totalPages > 0 && (
+                            <span
+                                className="
+                    px-4
+                    py-2
+                    rounded-lg
+                    bg-[#FDCC03]
+                    font-semibold
+                "
+                            >
+                                {currentPage}
+                            </span>
+                        )}
 
-                        <button
-                            className="
-              px-4
-              py-2
-              rounded-lg
-              border
-              border-gray-300
-              hover:bg-gray-100
-              transition
-              "
-                        >
-                            Next
-                        </button>
+                        {currentPage < totalPages && (
+                            <button
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                className="
+                    px-4
+                    py-2
+                    rounded-lg
+                    border
+                    border-gray-300
+                    hover:bg-gray-100
+                    transition
+                "
+                            >
+                                Next
+                            </button>
+                        )}
 
                     </div>
 
@@ -727,20 +870,123 @@ Status: ${test.status}
 /* ==========================================================
    SUMMARY CARD
 ========================================================== */
+function SummaryCard({ title, value, type }) {
 
-function SummaryCard({ title, value }) {
+    const descriptions = {
+        total: "All scheduled exams",
+        today: "Scheduled for today",
+        active: "Currently in progress",
+        completed: "Successfully completed",
+    };
+
     return (
-        <div className="relative bg-white border border-gray-200 rounded-xl p-5 overflow-hidden hover:border-[#FDCC03] hover:shadow-sm transition">
+        <div
+            className="
+                relative
+                bg-white
+                border
+                border-gray-200
+                rounded-xl
+                px-5
+                py-4
+                overflow-hidden
+                transition-all
+                duration-200
+                hover:shadow-md
+                hover:border-gray-300
+            "
+        >
 
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDCC03]" />
+            {/* TOP ACCENT */}
 
-            <p className="text-sm font-medium text-gray-500">
-                {title}
-            </p>
+            <div className="flex items-center gap-2">
 
-            <h2 className="mt-3 text-3xl font-bold text-black">
-                {value}
-            </h2>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#FDCC03]" />
+
+                <p className="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-wider
+                    text-gray-500
+                ">
+                    {title}
+                </p>
+
+            </div>
+
+            {/* MAIN CONTENT */}
+
+            <div className="mt-3 flex items-end justify-between">
+
+                <div className="flex items-baseline gap-2">
+
+                    <span className="
+                        text-4xl
+                        leading-none
+                        font-semibold
+                        tracking-tight
+                        text-[#7a1f2b]
+                    ">
+                        {String(value).padStart(2, "0")}
+                    </span>
+
+                    <span className="
+                        text-xs
+                        text-gray-400
+                    ">
+                        exams
+                    </span>
+
+                </div>
+
+                <p className="
+                    max-w-[120px]
+                    text-right
+                    text-[11px]
+                    leading-4
+                    text-gray-400
+                ">
+                    {descriptions[type]}
+                </p>
+
+            </div>
+
+            {/* DIVIDER */}
+
+            <div className="
+                mt-4
+                border-t
+                border-gray-100
+            " />
+
+            {/* BOTTOM */}
+
+            <div className="
+                mt-2
+                flex
+                items-center
+                justify-between
+            ">
+
+                <span className="
+                    text-[10px]
+                    uppercase
+                    tracking-wide
+                    text-gray-300
+                ">
+                    Dashboard
+                </span>
+
+                <span className="
+                    text-[10px]
+                    font-medium
+                    text-gray-400
+                ">
+                    {new Date().getFullYear()}
+                </span>
+
+            </div>
 
         </div>
     );
@@ -750,15 +996,10 @@ function SummaryCard({ title, value }) {
    TABLE HEADER
 ========================================================== */
 
-function TableHeading({ children, align = "center" }) {
+function TableHeading({ children }) {
     return (
-        <div className="py-4 flex items-center">
-            <p
-                className={`text-xs font-bold uppercase tracking-wider text-gray-400 ${align === "left"
-                    ? "text-left"
-                    : "text-center w-full"
-                    }`}
-            >
+        <div className="py-4 flex items-center justify-center">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 text-center w-full">
                 {children}
             </p>
         </div>

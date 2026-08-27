@@ -33,7 +33,7 @@ const API_BASE_URL = (
 
 const STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/studentsupload`;
 const EXISTING_STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/student-data`;
-const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getscheduledata`;
+const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -67,6 +67,47 @@ const normalizeStudent = (student = {}) => ({
   batch: getValue(student, ["batch"]),
   dob: getValue(student, ["dob"]),
 });
+
+const uploadInstructions = [
+  {
+    id: "01",
+    title: "Use the correct Excel file",
+    description: (
+      <>
+        Upload only Excel files with <strong>.xlsx</strong> extension. The file must be less than <strong>10 MB</strong> and cannot be empty.
+      </>
+    )
+  },
+  {
+    id: "02",
+    title: "Keep the column names unchanged",
+    description: "Use the exact template headers: Name, Reg_no, Admission_no, Email, Phone, Department, Year, Section, Batch, DOB."
+  },
+  {
+    id: "03",
+    title: "Follow strict data formatting",
+    description: (
+      <>
+        <strong>DOB</strong> must be exactly <strong>DD-MM-YYYY</strong>. <strong>Phone numbers</strong> must be exactly <strong>10 digits</strong>.
+      </>
+    )
+  },
+  {
+    id: "04",
+    title: "Ensure unique records",
+    description: (
+      <>
+        <strong>Admission_no</strong> must be unique. Duplicate records will cause the upload to fail.
+      </>
+    )
+  },
+  {
+    id: "05",
+    title: "Valid values required",
+    description: "Year must be 1-4. Departments must match approved courses. Remove empty rows before uploading."
+  }
+];
+
 
 const toArray = (value) => {
   if (Array.isArray(value)) return value;
@@ -703,19 +744,6 @@ const StudentDataUpload = () => {
               )}
             </div>
 
-            {message && (
-              <div className={`upload-message ${messageType}`}>
-                <span className="message-icon">
-                  {messageType === "success" ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <AlertCircle size={16} />
-                  )}
-                </span>
-                <span>{message}</span>
-              </div>
-            )}
-
             <button
               type="button"
               className={`upload-submit-button ${uploading ? "uploading" : ""
@@ -847,15 +875,6 @@ const StudentDataUpload = () => {
                 </button>
               </div>
             </div>
-
-            {existingMessage && (
-              <div
-                className={`existing-message ${existingMessageType}`}
-              >
-                <AlertCircle size={17} />
-                <span>{existingMessage}</span>
-              </div>
-            )}
 
             {students.length > 0 && (
               <div className="student-results-section">
@@ -1112,97 +1131,265 @@ const StudentDataUpload = () => {
         )}
       </div>
 
-      {showInstructions && (
+      {(message || existingMessage) && (
         <div
-          className="instruction-overlay"
-          onClick={() => setShowInstructions(false)}
+          className="student-message-overlay"
+          role="alert"
+          aria-live="assertive"
+          onClick={() => {
+            setMessage("");
+            setMessageType("");
+            setExistingMessage("");
+            setExistingMessageType("");
+          }}
         >
           <div
-            className="instruction-modal"
+            className={`student-message-popup ${
+              (message ? messageType : existingMessageType) === "success"
+                ? "success"
+                : "error"
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="instruction-modal-header">
-              <div className="instruction-heading">
-                <div className="instruction-icon">
-                  <Info size={21} />
-                </div>
-
-                <div>
-                  <h2>Upload Instructions</h2>
-                  <p>Please check these before uploading</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="instruction-close"
-                onClick={() => setShowInstructions(false)}
-              >
-                <X size={20} />
-              </button>
+            <div className="student-message-icon-wrap">
+              {(message ? messageType : existingMessageType) === "success" ? (
+                <CheckCircle2 size={30} strokeWidth={2.2} />
+              ) : (
+                <AlertCircle size={30} strokeWidth={2.2} />
+              )}
             </div>
 
-            <div className="instruction-content">
-              <div className="instruction-item">
-                <span className="instruction-number">01</span>
-
-                <div>
-                  <h3>Use the correct Excel file</h3>
-                  <p>
-                    Upload only Excel files with{" "}
-                    <strong>.xlsx</strong> or{" "}
-                    <strong>.xls</strong> extension.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">02</span>
-
-                <div>
-                  <h3>Keep the column names unchanged</h3>
-                  <p>
-                    Use the same columns as the downloaded student
-                    data template.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">03</span>
-
-                <div>
-                  <h3>Remove unnecessary rows</h3>
-                  <p>
-                    Remove empty rows or unnecessary data before
-                    uploading the file.
-                  </p>
-                </div>
-              </div>
-
-              <div className="instruction-item">
-                <span className="instruction-number">04</span>
-
-                <div>
-                  <h3>Check the file size</h3>
-                  <p>
-                    The Excel file must be less than{" "}
-                    <strong>10 MB</strong>.
-                  </p>
-                </div>
-              </div>
+            <div className="student-message-content">
+              <span className="student-message-label">
+                {(message ? messageType : existingMessageType) === "success"
+                  ? "Success"
+                  : "Something went wrong"}
+              </span>
+              <p>{message || existingMessage}</p>
             </div>
 
             <button
               type="button"
-              className="got-it-button"
-              onClick={() => setShowInstructions(false)}
+              className="student-message-close"
+              aria-label="Close message"
+              onClick={() => {
+                setMessage("");
+                setMessageType("");
+                setExistingMessage("");
+                setExistingMessageType("");
+              }}
             >
-              <CheckCircle2 size={18} />
-              Got it
+              <X size={18} strokeWidth={2.2} />
             </button>
           </div>
         </div>
+      )}
+
+      <style>{`
+        .student-message-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(8, 12, 20, 0.38);
+          backdrop-filter: blur(9px);
+          -webkit-backdrop-filter: blur(9px);
+          animation: studentMessageFadeIn 0.22s ease-out;
+        }
+
+        .student-message-popup {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          width: min(500px, 100%);
+          padding: 22px 48px 22px 22px;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.96);
+          box-shadow:
+            0 24px 70px rgba(0, 0, 0, 0.22),
+            0 8px 25px rgba(0, 0, 0, 0.10);
+          animation: studentMessagePopIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .student-message-icon-wrap {
+          flex: 0 0 58px;
+          width: 58px;
+          height: 58px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 17px;
+        }
+
+        .student-message-popup.success .student-message-icon-wrap {
+          color: #15803d;
+          background: rgba(34, 197, 94, 0.12);
+          box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.16);
+        }
+
+        .student-message-popup.error .student-message-icon-wrap {
+          color: #dc2626;
+          background: rgba(239, 68, 68, 0.11);
+          box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.15);
+        }
+
+        .student-message-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .student-message-label {
+          display: block;
+          margin-bottom: 4px;
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+        }
+
+        .student-message-popup.success .student-message-label {
+          color: #166534;
+        }
+
+        .student-message-popup.error .student-message-label {
+          color: #b91c1c;
+        }
+
+        .student-message-content p {
+          margin: 0;
+          color: #4b5563;
+          font-size: 14px;
+          line-height: 1.55;
+          overflow-wrap: anywhere;
+        }
+
+        .student-message-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 10px;
+          background: transparent;
+          color: #6b7280;
+          cursor: pointer;
+          transition: 0.18s ease;
+        }
+
+        .student-message-close:hover {
+          background: rgba(107, 114, 128, 0.10);
+          color: #111827;
+        }
+
+        @keyframes studentMessageFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes studentMessagePopIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (max-width: 560px) {
+          .student-message-overlay {
+            padding: 16px;
+          }
+
+          .student-message-popup {
+            gap: 13px;
+            padding: 18px 42px 18px 16px;
+            border-radius: 17px;
+          }
+
+          .student-message-icon-wrap {
+            flex-basis: 50px;
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+          }
+
+          .student-message-content p {
+            font-size: 13px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .student-message-overlay,
+          .student-message-popup {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      {showInstructions && (
+<div
+  className="instruction-overlay"
+  onClick={() => setShowInstructions(false)}
+>
+  <div
+    className="instruction-modal"
+    onClick={(event) => event.stopPropagation()}
+  >
+    <div className="instruction-modal-header">
+      <div className="instruction-heading">
+        <div className="instruction-icon">
+          <Info size={21} />
+        </div>
+
+        <div>
+          <h2>Upload Instructions</h2>
+          <p>Please check these before uploading</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="instruction-close"
+        onClick={() => setShowInstructions(false)}
+      >
+        <X size={20} />
+      </button>
+    </div>
+
+    {/* Using the variable here */}
+    <div className="instruction-content">
+      {uploadInstructions.map((item) => (
+        <div key={item.id} className="instruction-item">
+          <span className="instruction-number">{item.id}</span>
+          <div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <button
+      type="button"
+      className="got-it-button"
+      onClick={() => setShowInstructions(false)}
+    >
+      <CheckCircle2 size={18} />
+      Got it
+    </button>
+  </div>
+</div>
       )}
     </div>
   );

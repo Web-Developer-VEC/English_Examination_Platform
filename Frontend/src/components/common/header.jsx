@@ -138,7 +138,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                         )}
 
                     {/* STAFF / ADMIN */}
-                    {user.role === "staff" &&
+                    {(user.role === "staff" || user.role === "admin") &&
                         user.name && (
                             <div className="vec-header__user">
 

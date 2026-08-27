@@ -2,14 +2,14 @@ const express = require("express");
 
 const router = express.Router();
 
-const {
-  getScheduleData,
-  getScheduledExams,
-} = require("../../controllers/getscheduleexam.controller");
+const { getformdata, getScheduledExams} = require("../../controllers/getscheduleexam.controller");
 const { scheduleExam } = require("../../controllers/schedule.controller");
-// const {uploadHTMLToS3}=require("../../controllers/upload")
-router.get("/getscheduledata", getScheduleData);
-router.get("/getscheduleexams", getScheduledExams);
-router.post("/scheduleexam", scheduleExam);
-// router.post("/upload",uploadHTMLToS3)
+const{deleteScheduledExam}=require("../../controllers/delete.schedule.controller");
+const { roleByAccess } = require("../../middleware/roleby.access.middleware");
+
+router.get("/getformdata", roleByAccess(["admin","staff"]),getformdata);
+router.get("/getscheduleexams", roleByAccess(["admin","staff"]),getScheduledExams);
+router.post("/scheduleexam",roleByAccess(["admin"]) ,scheduleExam);
+router.delete("/delete-scheduled-exam", roleByAccess(["admin"]),deleteScheduledExam);
+
 module.exports = router;

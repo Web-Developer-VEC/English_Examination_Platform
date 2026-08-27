@@ -1,16 +1,20 @@
 const express = require("express");
 
-const {submitExam, startExam, syncExam } = require("../../controllers/exam.controller");
-const {reportMalpractice} = require("../../controllers/malpractice.controller");
-const { studentAuth } = require("../../middleware/roleby.access.middleware");
+const {
+  submitExam,
+  startExam,
+  syncExam,
+} = require("../../controllers/exam.controller");
+const {
+  reportMalpractice,
+} = require("../../controllers/malpractice.controller");
+const { roleByAccess } = require("../../middleware/roleby.access.middleware");
+
 const router = express.Router();
 
-router.use("/startexam",studentAuth, startExam);
-router.use("/submit",studentAuth, submitExam);
-router.use("/examsync",studentAuth, syncExam);
-router.post(
-    "/malpractice",studentAuth,
-    reportMalpractice
-);
+router.use("/startexam", roleByAccess(["student"]), startExam);
+router.use("/submit", roleByAccess(["student"]), submitExam);
+router.use("/examsync", roleByAccess(["student"]), syncExam);
+router.post("/malpractice", roleByAccess(["student"]), reportMalpractice);
 
 module.exports = router;
