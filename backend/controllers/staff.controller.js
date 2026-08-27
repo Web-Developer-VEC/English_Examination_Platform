@@ -28,8 +28,8 @@ const SALT_ROUNDS = 10;
 const updateStaff = async (req, res) => {
     try {
 
-        const staffList = req.body;
-
+        const {data} = req.body;
+const staffList = data;
         // =====================================================
         // VALIDATION
         // =====================================================

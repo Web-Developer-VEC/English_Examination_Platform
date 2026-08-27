@@ -31,7 +31,7 @@ const NAV_ITEMS = [
         key: "QuestionUpload",
         label: "Question Upload",
         icon: ClipboardPlus,
-        location: "/admin/QuestionUpload",
+        location: "/admin/questionupload",
       },
       {
         key: "schedule-test",
@@ -122,9 +122,7 @@ export default function AdminSidebar() {
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       >
-
-        <div className="vec-header">
-
+        <div className="vec-sidebar-header">
           <button
             className="vec-collapse-btn"
             aria-label={

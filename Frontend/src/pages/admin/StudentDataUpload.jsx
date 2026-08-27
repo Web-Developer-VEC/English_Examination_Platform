@@ -24,16 +24,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
-
+import {
+  uploadStudentData,
+  getExistingStudents,
+  getScheduleFormData,
+} from "../../services/adminService";
 import "./StudentDataUpload.css";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
-
-const STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/studentsupload`;
-const EXISTING_STUDENT_DATA_URL = `${API_BASE_URL}/api/staff/student-data`;
-const SCHEDULE_DATA_URL = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -292,18 +289,14 @@ const StudentDataUpload = () => {
     setExistingMessageType("");
 
     try {
-      const response = await fetch(SCHEDULE_DATA_URL, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      const data = await getScheduleFormData();
 
-      const data = await readApiResponse(response);
-
-      if (!response.ok || data?.success === false) {
+      if (data?.success === false) {
         throw new Error(
-          getErrorMessage(data, "Unable to load batch, department and section data.")
+          getErrorMessage(
+            data,
+            "Unable to load batch, department and section data."
+          )
         );
       }
 
@@ -392,21 +385,16 @@ const StudentDataUpload = () => {
     setMessage("");
 
     try {
-      const formData = new FormData();
+      const data = await uploadStudentData(
+        selectedFile
+      );
 
-
-      formData.append("student_data", selectedFile);
-
-      const response = await fetch(STUDENT_DATA_URL, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await readApiResponse(response);
-
-      if (!response.ok || data?.success === false) {
+      if (data?.success === false) {
         throw new Error(
-          getErrorMessage(data, "Student data upload failed.")
+          getErrorMessage(
+            data,
+            "Student data upload failed."
+          )
         );
       }
 
@@ -464,28 +452,25 @@ const StudentDataUpload = () => {
     }
 
     try {
-      const response = await fetch(EXISTING_STUDENT_DATA_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          batch: selectedBatch,
-          department: selectedDepartment,
-          section: selectedSection,
-        }),
+      const data = await getExistingStudents({
+        batch: selectedBatch,
+        department: selectedDepartment,
+        section: selectedSection,
       });
-      const data = await readApiResponse(response);
 
-      console.log("Existing student data API response:", data);
+      console.log(
+        "Existing student data API response:",
+        data
+      );
 
-      if (!response.ok || data?.success === false) {
+      if (data?.success === false) {
         throw new Error(
-          getErrorMessage(data, "Unable to load student data.")
+          getErrorMessage(
+            data,
+            "Unable to load student data."
+          )
         );
       }
-
       const rawStudents = toArray(data);
       const normalizedStudents = rawStudents.map(normalizeStudent);
 
@@ -1144,11 +1129,10 @@ const StudentDataUpload = () => {
           }}
         >
           <div
-            className={`student-message-popup ${
-              (message ? messageType : existingMessageType) === "success"
-                ? "success"
-                : "error"
-            }`}
+            className={`student-message-popup ${(message ? messageType : existingMessageType) === "success"
+              ? "success"
+              : "error"
+              }`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="student-message-icon-wrap">
@@ -1338,58 +1322,58 @@ const StudentDataUpload = () => {
       `}</style>
 
       {showInstructions && (
-<div
-  className="instruction-overlay"
-  onClick={() => setShowInstructions(false)}
->
-  <div
-    className="instruction-modal"
-    onClick={(event) => event.stopPropagation()}
-  >
-    <div className="instruction-modal-header">
-      <div className="instruction-heading">
-        <div className="instruction-icon">
-          <Info size={21} />
-        </div>
+        <div
+          className="instruction-overlay"
+          onClick={() => setShowInstructions(false)}
+        >
+          <div
+            className="instruction-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="instruction-modal-header">
+              <div className="instruction-heading">
+                <div className="instruction-icon">
+                  <Info size={21} />
+                </div>
 
-        <div>
-          <h2>Upload Instructions</h2>
-          <p>Please check these before uploading</p>
-        </div>
-      </div>
+                <div>
+                  <h2>Upload Instructions</h2>
+                  <p>Please check these before uploading</p>
+                </div>
+              </div>
 
-      <button
-        type="button"
-        className="instruction-close"
-        onClick={() => setShowInstructions(false)}
-      >
-        <X size={20} />
-      </button>
-    </div>
+              <button
+                type="button"
+                className="instruction-close"
+                onClick={() => setShowInstructions(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-    {/* Using the variable here */}
-    <div className="instruction-content">
-      {uploadInstructions.map((item) => (
-        <div key={item.id} className="instruction-item">
-          <span className="instruction-number">{item.id}</span>
-          <div>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
+            {/* Using the variable here */}
+            <div className="instruction-content">
+              {uploadInstructions.map((item) => (
+                <div key={item.id} className="instruction-item">
+                  <span className="instruction-number">{item.id}</span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="got-it-button"
+              onClick={() => setShowInstructions(false)}
+            >
+              <CheckCircle2 size={18} />
+              Got it
+            </button>
           </div>
         </div>
-      ))}
-    </div>
-
-    <button
-      type="button"
-      className="got-it-button"
-      onClick={() => setShowInstructions(false)}
-    >
-      <CheckCircle2 size={18} />
-      Got it
-    </button>
-  </div>
-</div>
       )}
     </div>
   );
