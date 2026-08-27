@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
+  getScheduleFormData,
+  scheduleExam,
+} from "../../services/adminService";
+import {
   ClipboardClock,
   GraduationCap,
   ShieldCheck,
@@ -24,11 +28,6 @@ import {
   Search,
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown"
-
-// API CONFIG
-const API_BASE_URL = "http://localhost:5000";
-const SCHEDULE_EXAM_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/scheduleexam`;
-const GET_SCHEDULE_DATA_ENDPOINT = `${API_BASE_URL}/api/staff/schedule/getformdata`;
 
 // PROJECT COLOR TOKENS
 export const colors = {
@@ -398,7 +397,6 @@ function AnalogClockPicker({
                         r="13"
                         fill={isSelected ? "#800000" : "transparent"}
                       />
-
                       <text
                         x={x}
                         y={y}
@@ -414,7 +412,6 @@ function AnalogClockPicker({
                   );
                 })
                 : MINUTE_VALUES.map((m, idx) => {
-
                   const { x, y } = polarPoint(idx, outerRadius, cx, cy);
                   const isSelected = minute === pad2(m);
                   return (
@@ -508,49 +505,72 @@ export default function Schedule() {
   const questionCodeRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     let cancelled = false;
 
-    async function fetchScheduleData() {
+    const fetchScheduleData = async () => {
       setIsLoadingScheduleData(true);
       setScheduleDataError("");
+
       try {
-        const res = await fetch(GET_SCHEDULE_DATA_ENDPOINT, {
-          method: "GET",
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const body = await res.json();
-        console.log("GET SCHEDULE DATA STATUS:", res.status);
-        console.log("GET SCHEDULE DATA RESPONSE:", body);
-        console.log("TESTS FROM BACKEND:", body?.data?.tests);
+        const body = await getScheduleFormData();
+
+        console.log(
+          "GET SCHEDULE DATA RESPONSE:",
+          body
+        );
+
+        console.log(
+          "TESTS FROM BACKEND:",
+          body?.data?.tests
+        );
+
         console.log(
           "BATCH DEPARTMENT SECTIONS:",
           body?.data?.batchDepartmentSections
         );
 
-        if (!res.ok || !body.success) {
-          throw new Error(body.message || `Request failed (${res.status})`);
-        }
-        if (!cancelled) {
-          setScheduleData({
-            batchDepartmentSections: body.data.batchDepartmentSections || [],
-            tests: body.data.tests || [],
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setScheduleDataError(
-            err.message || "Failed to load batches/departments/test codes.",
+        if (body?.success === false) {
+          throw new Error(
+            body?.message ||
+            "Failed to load batches/departments/test codes."
           );
         }
+
+        if (!cancelled) {
+          setScheduleData({
+            batchDepartmentSections:
+              body?.data?.batchDepartmentSections || [],
+
+            tests:
+              body?.data?.tests || [],
+          });
+        }
+
+      } catch (error) {
+
+        if (!cancelled) {
+          console.error(
+            "Schedule data fetch error:",
+            error
+          );
+
+          setScheduleDataError(
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load batches/departments/test codes."
+          );
+        }
+
       } finally {
-        if (!cancelled) setIsLoadingScheduleData(false);
+
+        if (!cancelled) {
+          setIsLoadingScheduleData(false);
+        }
       }
-    }
+    };
 
     fetchScheduleData();
+
     return () => {
       cancelled = true;
     };
@@ -958,7 +978,6 @@ export default function Schedule() {
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
 
-    const token = localStorage.getItem("token");
 
     setIsSubmitting(true);
     setErrorMessage("");
@@ -983,26 +1002,17 @@ export default function Schedule() {
         if (category === "Normal") {
           payload.cie = cie;
         }
-        return fetch(SCHEDULE_EXAM_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(payload),
-        }).then(async (res) => {
-          let body = null;
-          try {
-            body = await res.json();
-          } catch {
-            // no JSON body — leave as null
+        return scheduleExam(payload).then((body) => {
+
+          if (body?.success === false) {
+            throw new Error(
+              `${combo.label}: ${body?.message ||
+              body?.error ||
+              "Request failed"
+              }`
+            );
           }
-          if (!res.ok) {
-            const message =
-              (body && (body.message || body.error)) ||
-              `Request failed (${res.status})`;
-            throw new Error(`${combo.label}: ${message}`);
-          }
+
           return body;
         });
       }),
