@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { uploadQuestions, getQuestionFormData, deleteQuestionSet } from "../../services/adminService";
 
 /* ============================================================
    Question Upload card
@@ -105,6 +106,7 @@ function QuestionUploadCard() {
   };
 
   const handleSubmit = async () => {
+
     if (!questionCode.trim()) {
       toast.error("Please enter a Question Code.");
       return;
@@ -121,47 +123,55 @@ function QuestionUploadCard() {
     }
 
     if (isSubmitting) return;
+
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData();
-      formData.append("questionCode", questionCode.trim());
-      formData.append("audio", audioFile);
-      formData.append("questions", questionFile);
 
-      const token = localStorage.getItem("token");
+      const data = await uploadQuestions({
+        questionCode,
+        audioFile,
+        questionFile,
+      });
 
-      const response = await fetch(
-        "http://localhost:5000/api/staff/questionsupload",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to upload question.");
+      if (!data.success) {
+        throw new Error(
+          data.message ||
+          "Failed to upload question."
+        );
       }
 
-      toast.success("Question uploaded successfully.");
+      toast.success(
+        "Question uploaded successfully."
+      );
 
       setQuestionCode("");
       setAudioFile(null);
       setQuestionFile(null);
 
-      document.getElementById("audio-upload").value = "";
-      document.getElementById("excel-upload").value = "";
+      document.getElementById(
+        "audio-upload"
+      ).value = "";
+
+      document.getElementById(
+        "excel-upload"
+      ).value = "";
+
     } catch (error) {
-      console.error("Upload Question Error:", error);
-      toast.error(
-        error.message || "Something went wrong while creating the question.",
+
+      console.error(
+        "Upload Question Error:",
+        error
       );
+
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong while creating the question."
+      );
+
     } finally {
+
       setIsSubmitting(false);
     }
   };
@@ -281,11 +291,10 @@ function QuestionUploadCard() {
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${
-            isSubmitting
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#FDCC03] hover:bg-[#800000] hover:text-white text-gray-900 cursor-pointer"
-          }`}
+          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${isSubmitting
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-[#FDCC03] hover:bg-[#800000] hover:text-white text-gray-900 cursor-pointer"
+            }`}
         >
           {isSubmitting ? (
             <>
@@ -410,131 +419,141 @@ function DeleteQuestionCard() {
   };
 
   const handleConfirmDelete = async () => {
-  if (isDeleting) return;
+    if (isDeleting) return;
 
-  setIsDeleting(true);
+    setIsDeleting(true);
 
-  try {
-    const token = localStorage.getItem("token");
+    try {
 
-    // =====================================================
-    // 1. GET FORM DATA
-    // =====================================================
+      // =====================================================
+      // 1. GET FORM DATA
+      // =====================================================
 
-    const formResponse = await fetch(
-      "http://localhost:5000/api/staff/schedule/getformdata",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const formData =
+        await getQuestionFormData();
+
+      console.log(
+        "GET FORM DATA RESPONSE:",
+        formData
+      );
+
+      if (!formData.success) {
+        throw new Error(
+          formData.message ||
+          "Failed to fetch question data."
+        );
       }
-    );
 
-    const formData = await formResponse.json();
+      // =====================================================
+      // 2. GET TESTS ARRAY
+      // =====================================================
 
-    console.log("GET FORM DATA RESPONSE:", formData);
+      const questionList =
+        formData?.data?.tests || [];
 
-    if (!formResponse.ok) {
-      throw new Error(
-        formData.message || "Failed to fetch question data."
+      console.log(
+        "QUESTION LIST:",
+        questionList
       );
-    }
 
-    // =====================================================
-    // 2. GET TESTS ARRAY
-    // =====================================================
+      // =====================================================
+      // 3. FIND QUESTION USING QUESTION CODE
+      // =====================================================
 
-    const questionList = formData?.data?.tests || [];
+      const enteredQuestionCode =
+        questionCode.trim().toLowerCase();
 
-    console.log("QUESTION LIST:", questionList);
+      const questionSet =
+        questionList.find(
+          (item) =>
+            item.questionCode
+              ?.trim()
+              .toLowerCase() ===
+            enteredQuestionCode
+        );
 
-    // =====================================================
-    // 3. FIND QUESTION USING QUESTION CODE
-    // =====================================================
-
-    const enteredQuestionCode = questionCode.trim().toLowerCase();
-
-    const questionSet = questionList.find(
-      (item) =>
-        item.questionCode?.trim().toLowerCase() ===
-        enteredQuestionCode
-    );
-
-    console.log("MATCHED QUESTION SET:", questionSet);
-
-    if (!questionSet) {
-  setShowConfirm(false);
-
-  toast.error(
-    `Question code "${questionCode.trim()}" was not found.`
-  );
-
-  return;
-}
-
-    // =====================================================
-    // 4. GET QUESTION SET ID
-    // =====================================================
-
-    const questionSetId = questionSet.questionSetId;
-
-    console.log("QUESTION SET ID:", questionSetId);
-
-    if (!questionSetId) {
-      throw new Error(
-        "Question ID was not found for this question code."
+      console.log(
+        "MATCHED QUESTION SET:",
+        questionSet
       );
-    }
 
-    // =====================================================
-    // 5. DELETE QUESTION SET
-    // =====================================================
+      if (!questionSet) {
 
-    const deleteResponse = await fetch(
-      "http://localhost:5000/api/staff/delete-question-set",
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          questionSetId: questionSetId,
-        }),
+        setShowConfirm(false);
+
+        toast.error(
+          `Question code "${questionCode.trim()}" was not found.`
+        );
+
+        return;
       }
-    );
 
-    const deleteData = await deleteResponse.json();
+      // =====================================================
+      // 4. GET QUESTION SET ID
+      // =====================================================
 
-    console.log("DELETE RESPONSE:", deleteData);
+      const questionSetId =
+        questionSet.questionSetId;
 
-    if (!deleteResponse.ok) {
-      throw new Error(
-        deleteData.message || "Failed to delete question."
+      console.log(
+        "QUESTION SET ID:",
+        questionSetId
       );
-    }
 
-    // =====================================================
-    // 6. SUCCESS
-    // =====================================================
+      if (!questionSetId) {
+        throw new Error(
+          "Question ID was not found for this question code."
+        );
+      }
 
-    toast.success("Question deleted successfully.");
+      // =====================================================
+      // 5. DELETE QUESTION SET
+      // =====================================================
 
-    setQuestionCode("");
-    setShowConfirm(false);
+      const deleteData =
+        await deleteQuestionSet(questionSetId);
 
-  } catch (error) {
-    console.error("Delete Question Error:", error);
+      console.log(
+        "DELETE RESPONSE:",
+        deleteData
+      );
 
-    toast.error(
-      error.message ||
+      if (!deleteData.success) {
+        throw new Error(
+          deleteData.message ||
+          "Failed to delete question."
+        );
+      }
+
+      // =====================================================
+      // 6. SUCCESS
+      // =====================================================
+
+      toast.success(
+        "Question deleted successfully."
+      );
+
+      setQuestionCode("");
+      setShowConfirm(false);
+
+    } catch (error) {
+
+      console.error(
+        "Delete Question Error:",
+        error
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
         "Something went wrong while deleting the question."
-    );
-  } finally {
-    setIsDeleting(false);
-  }
-};
+      );
+
+    } finally {
+
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-[650px] mx-auto bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex flex-col">
@@ -576,11 +595,10 @@ function DeleteQuestionCard() {
           type="button"
           onClick={handleDeleteClick}
           disabled={isDeleting}
-          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${
-            isDeleting
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#800000] hover:bg-[#5e0000] text-white cursor-pointer"
-          }`}
+          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${isDeleting
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-[#800000] hover:bg-[#5e0000] text-white cursor-pointer"
+            }`}
         >
           {isDeleting ? (
             <>
@@ -695,11 +713,10 @@ export default function QuestionUploadManagement() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-colors ${
-                  isActive
-                    ? "bg-[#800000] text-white shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-colors ${isActive
+                  ? "bg-[#800000] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+                  }`}
               >
                 <Icon size={16} className={isActive ? "text-[#FDCC03]" : ""} />
                 {tab.label}

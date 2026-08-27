@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
     ClipboardList, CalendarDays, Activity, CircleCheck
 } from "lucide-react";
+import { deleteScheduledExam, getScheduleExams } from "../../services/adminService";
+import ThemeDropdown from "../../components/common/ThemeDropDown";
 export default function AdminDashboard() {
 
     const [tests, setTests] = useState([]);
@@ -37,26 +39,21 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         let interval;
+        let isMounted = true;
 
         const fetchTests = async () => {
             try {
                 setError("");
 
-                const response = await fetch(
-                    "http://localhost:5000/api/staff/schedule/getscheduleexams"
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error: ${response.status}`);
-                }
-
-                const result = await response.json();
+                const result = await getScheduleExams();
 
                 if (!result.success) {
-                    throw new Error("Failed to fetch exam data");
+                    throw new Error(
+                        result.message || "Failed to fetch exam data"
+                    );
                 }
 
-                const formattedTests = result.data.map((exam) => ({
+                const formattedTests = (result.data || []).map((exam) => ({
                     id: exam.examId,
 
                     department: exam.department || "N/A",
@@ -85,24 +82,45 @@ export default function AdminDashboard() {
                     admissionNo: exam.admissionNo || [],
                 }));
 
-                setTests(formattedTests);
+                // Prevent state updates after component unmount
+                if (isMounted) {
+                    setTests(formattedTests);
+                }
 
             } catch (err) {
-                console.error("Error fetching tests:", err);
-                setError("Unable to load tests.");
+
+                console.error(
+                    "Error fetching scheduled exams:",
+                    err
+                );
+
+                if (isMounted) {
+                    setError(
+                        err.response?.data?.message ||
+                        err.message ||
+                        "Unable to load tests."
+                    );
+                }
+
             } finally {
-                setLoading(false);
+
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
+        // Initial fetch
         fetchTests();
 
         // Refresh every 10 seconds
         interval = setInterval(fetchTests, 10000);
 
         return () => {
+            isMounted = false;
             clearInterval(interval);
         };
+
     }, []);
 
     // ==========================================================
@@ -242,44 +260,46 @@ Status: ${test.status}
     };
 
     const handleCancel = async (test) => {
+
         const confirmed = window.confirm(
-            `Are you sure you want to cancel test ${test.testCode}?`
+            `Are you sure you want to cancel test ?`
         );
 
         if (!confirmed) return;
 
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/staff/schedule/delete-scheduled-exam",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        testId: test.id,
-                    }),
-                }
-            );
 
-            const result = await response.json();
+            const result =
+                await deleteScheduledExam(test.id);
 
-            if (!response.ok) {
+            if (!result.success) {
                 throw new Error(
-                    result.message || "Failed to cancel the test."
+                    result.message ||
+                    "Failed to cancel the test."
                 );
             }
 
-            // Remove the cancelled test from the table
+            // Remove from dashboard
             setTests((prevTests) =>
-                prevTests.filter((item) => item.id !== test.id)
+                prevTests.filter(
+                    (item) => item.id !== test.id
+                )
             );
 
-            alert("Test cancelled successfully.");
+            toast.success("Test cancelled successfully.");
 
         } catch (error) {
-            console.error("Error cancelling test:", error);
-            alert(error.message || "Unable to cancel the test.");
+
+            console.error(
+                "Error cancelling the test:",
+                error
+            );
+
+            toast.error(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to cancel the test."
+            );
         }
     };
 
@@ -376,39 +396,16 @@ Status: ${test.status}
 
 
 
-                            <select
+                            <ThemeDropdown
                                 value={department}
-                                onChange={(e) => setDepartment(e.target.value)}
-                                className="
-            w-full
-            h-11
-            px-3
-            rounded-lg
-            border
-            border-gray-300
-            focus:outline-none
-            focus:ring-2
-            focus:ring-yellow-300
-            focus:border-[#FDCC03]
-        "
-                            >
-
-                                <option value="All">
-                                    All Departments
-                                </option>
-
-                                {[...new Set(tests.map((item) => item.department))]
-                                    .filter(Boolean)
-                                    .map((item) => (
-                                        <option
-                                            key={item}
-                                            value={item}
-                                        >
-                                            {item}
-                                        </option>
-                                    ))}
-
-                            </select>
+                                options={[
+                                    "All",
+                                    ...[...new Set(tests.map((item) => item.department))]
+                                        .filter(Boolean),
+                                ]}
+                                onChange={setDepartment}
+                                placeholder="Select Department"
+                            />
 
                         </div>
 
@@ -416,41 +413,21 @@ Status: ${test.status}
 
                         <div>
 
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="
-        w-full
-        h-11
-        px-3
-        rounded-lg
-        border
-        border-gray-300
-        focus:outline-none
-        focus:ring-2
-        focus:ring-yellow-300
-        focus:border-[#FDCC03]
-    "
-                            >
-                                <option value="All">
-                                    All Categories
-                                </option>
-
-                                <option value="Re-Test">
-                                    Re-Test
-                                </option>
-
-                                {[...new Set(tests.map((item) => item.category))]
-                                    .filter(Boolean)
-                                    .map((item) => (
-                                        <option
-                                            key={item}
-                                            value={item}
-                                        >
-                                            {item}
-                                        </option>
-                                    ))}
-                            </select>
+                            {/* CATEGORY */}
+                            <div>
+                                <ThemeDropdown
+                                    value={category}
+                                    options={[
+                                        "All",
+                                        "Re-Test",
+                                        ...[...new Set(tests.map((item) => item.category))]
+                                            .filter(Boolean)
+                                            .filter((item) => item !== "Re-Test"),
+                                    ]}
+                                    onChange={setCategory}
+                                    placeholder="Select Category"
+                                />
+                            </div>
 
                         </div>
 
@@ -483,43 +460,19 @@ Status: ${test.status}
 
                         {/* STATUS */}
 
+                        {/* STATUS */}
                         <div>
-
-                            <select
+                            <ThemeDropdown
                                 value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="
-                w-full
-                h-11
-                px-3
-                rounded-lg
-                border
-                border-gray-300
-                focus:outline-none
-                focus:ring-2
-                focus:ring-yellow-300
-                focus:border-[#FDCC03]
-                "
-                            >
-
-                                <option value="All">
-                                    All Status
-                                </option>
-
-                                <option value="Completed">
-                                    Completed
-                                </option>
-
-                                <option value="Ongoing">
-                                    Ongoing
-                                </option>
-
-                                <option value="Upcoming">
-                                    Upcoming
-                                </option>
-
-                            </select>
-
+                                options={[
+                                    "All",
+                                    "Completed",
+                                    "Ongoing",
+                                    "Upcoming",
+                                ]}
+                                onChange={setStatus}
+                                placeholder="Select Status"
+                            />
                         </div>
 
                     </div>
@@ -539,7 +492,7 @@ Status: ${test.status}
                         className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
                         style={{
                             gridTemplateColumns:
-                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
+                                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
                         }}
                     >
                         <TableHeading>
@@ -572,10 +525,6 @@ Status: ${test.status}
 
                         <TableHeading>
                             Status
-                        </TableHeading>
-
-                        <TableHeading>
-                            Download
                         </TableHeading>
 
                         <TableHeading>
@@ -618,7 +567,7 @@ Status: ${test.status}
     "
                                 style={{
                                     gridTemplateColumns:
-                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr"
+                                        "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr"
                                 }}
                             >
 
@@ -711,77 +660,45 @@ Status: ${test.status}
 
 
 
-                                {/* DOWNLOAD */}
-
-                                <div className="flex items-center justify-center">
-
-                                    {test.status === "Completed" && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDownload(test)}
-                                            title="Download Test"
-                                            className="
-                flex
-                items-center
-                justify-center
-                w-9
-                h-9
-                rounded-lg
-                bg-[#FDCC03]
-                border
-                border-[#FDCC03]
-                text-black
-                hover:bg-[#7a1f2b]
-                hover:border-red-500
-                hover:text-white
-                transition
-            "
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                strokeWidth={2}
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
-                                                />
-                                            </svg>
-                                        </button>
-                                    )}
-
-                                </div>
 
                                 {/* ACTION */}
 
                                 <div className="flex items-center justify-center">
-                                    {test.status === "Upcoming" && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCancel(test)}
-                                            className="
-                px-3
-                py-2
-                rounded-lg
-                border
-                border-red-200
-                bg-red-50
-                text-red-600
-                text-xs
-                font-semibold
-                hover:bg-red-600
-                hover:text-white
-                transition-all
-                duration-200
-            "
-                                        >
-                                            Cancel
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        disabled={test.status !== "Upcoming"}
+                                        onClick={() => handleCancel(test)}
+                                        className={`
+            px-3
+            py-2
+            rounded-lg
+            text-xs
+            font-semibold
+            border
+            transition-all
+            duration-200
+
+            ${test.status === "Upcoming"
+                                                ? `
+                        border-red-200
+                        bg-red-50
+                        text-red-600
+                        hover:bg-red-600
+                        hover:text-white
+                        cursor-pointer
+                    `
+                                                : `
+                        border-gray-200
+                        bg-gray-100
+                        text-gray-400
+                        cursor-not-allowed
+                        opacity-70
+                    `
+                                            }
+        `}
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
 

@@ -414,3 +414,17 @@
     z-index: 35;
   }
 }
+
+.vec-sidebar-header {
+    display: flex;
+    align-items: center;
+    min-height: 62px;
+    padding: 16px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.vec-sidebar.collapsed .vec-sidebar-header {
+    justify-content: center;
+    padding: 16px 0;
+}
