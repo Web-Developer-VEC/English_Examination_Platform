@@ -136,7 +136,9 @@ const login = async (req, res) => {
         const collection =
             role === "student"
                 ? db.collection("students")
-                :db.collection("staff");
+                :role==="staff"
+                ?db.collection("staff")
+                :db.collection("admin");
 
         // =====================================================
         // FIND USER
