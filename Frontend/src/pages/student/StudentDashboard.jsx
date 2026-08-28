@@ -468,6 +468,8 @@ const StudentDashboard = () => {
     editForm?.registerNo && editForm.registerNo.trim()
       ? editForm.registerNo
       : editForm?.admissionNo || "";
+  const hasChanges =
+    editForm?.registerNo?.trim() !== student?.registerNo?.trim();
 
   // ============================================================
   // MAIN DASHBOARD
@@ -503,7 +505,7 @@ const StudentDashboard = () => {
       >
         <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-                <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
           {student?.studentEditEnabled && (
             <button
               onClick={() => setIsEditing(true)}
@@ -715,7 +717,6 @@ const StudentDashboard = () => {
             TEST RESULTS
             SAME FRONTEND TABLE STRUCTURE
         ====================================================== */}
-        
 
         <div
           className="
@@ -1346,21 +1347,25 @@ const StudentDashboard = () => {
 
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || !hasChanges}
                   className="
-                    px-6
-                    py-2
-                    bg-yellow-400
-                    text-black
-                    font-semibold
-                    rounded-lg
-                    hover:bg-yellow-500
-                    shadow-sm
-                    transition
-                    cursor-pointer
-                    disabled:opacity-70
-                    disabled:cursor-wait
-                  "
+                  px-6
+                  py-2
+                  bg-yellow-400
+                  text-black
+                  font-semibold
+                  rounded-lg
+                  hover:bg-yellow-500
+                  shadow-sm
+                  transition
+                  cursor-pointer
+
+                  focus:outline-none
+                  focus:ring-0
+
+                  disabled:opacity-70
+                  disabled:cursor-not-allowed
+                "
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>

@@ -47,13 +47,13 @@ export const colors = {
 
 const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 
-const ACADEMIC_YEAR_OPTIONS = [
-  "2023-2024",
-  "2024-2025",
-  "2025-2026",
-  "2026-2027",
-  "2027-2028",
-];
+// const ACADEMIC_YEAR_OPTIONS = [
+//   "2023-2024",
+//   "2024-2025",
+//   "2025-2026",
+//   "2026-2027",
+//   "2027-2028",
+// ];
 const SEMESTER_OPTIONS = ["Odd", "Even"];
 const CIE_OPTIONS = ["I", "II", "III"];
 // 12-hour clock face values
@@ -537,13 +537,18 @@ export default function Schedule() {
         }
 
         if (!cancelled) {
+          const currentAcademicYear = body?.data?.current_academic_year;
+
+          setAcademicYear(currentAcademicYear || "");
+
           setScheduleData({
             batchDepartmentSections:
               body?.data?.batchDepartmentSections || [],
 
             tests:
               body?.data?.tests || [],
-            academicYear: body.data.current_academic_year
+
+            academicYear: currentAcademicYear || ""
           });
         }
 
@@ -946,6 +951,7 @@ export default function Schedule() {
   // ---------------- SUBMIT ----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🔥 HANDLE SUBMIT CALLED");
 
     const problems = validateForm();
     if (problems.length > 0) {
@@ -1003,6 +1009,7 @@ export default function Schedule() {
         if (category === "Normal") {
           payload.cie = cie;
         }
+        console.log("SCHEDULE PAYLOAD:", payload);
         return scheduleExam(payload).then((body) => {
 
           if (body?.success === false) {
