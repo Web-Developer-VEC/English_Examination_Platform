@@ -75,13 +75,23 @@ const updateStudent = async (req, res) => {
 // REGISTER NUMBER
 // =====================================================
 
+        // =====================================================
+// REGISTER NUMBER
+// =====================================================
+
+const registerNoProvided = registerNo !== undefined;
+const registerNoTrimmed =
+    registerNo !== null && registerNo !== undefined
+        ? String(registerNo).trim()
+        : "";
+
 if (
-    registerNo !== undefined &&
-    registerNo !== null &&
-    String(registerNo).trim() !== ""
+    registerNoProvided &&
+    registerNoTrimmed !== "" &&
+    registerNoTrimmed.toLowerCase() !== "null"
 ) {
 
-    const newRegisterNo = String(registerNo).trim();
+    const newRegisterNo = registerNoTrimmed;
 
     // ---------------------------------------------
     // CHECK DUPLICATE REGISTER NUMBER
@@ -110,6 +120,14 @@ if (
 
     // Username follows register number
     updateData.username = newRegisterNo;
+
+} else if (registerNoProvided) {
+
+    // registerNo was explicitly sent but empty/null/"null" —
+    // clear it back to a real null, username falls back to admissionNo.
+
+    updateData.registerNo = null;
+    updateData.username = admissionNo.trim();
 }
         // =====================================================
         // UPDATED TIME

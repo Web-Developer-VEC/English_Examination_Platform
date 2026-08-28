@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import {
+  getScheduleFormData,
+  getExistingStudents,
+  updateStudentProfileAccess,
+  getAcademicYear,
+  updateAcademicYear,
+} from "../../services/adminService";
 import {
   ShieldCheck,
   UserRoundCog,
@@ -25,32 +31,9 @@ import {
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import api from "../../services/api";
 
 import "./ProfileEdit.css";
-
-const EXISTING_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
-
-
-// Existing API from your student data page
-const EXISTING_STUDENT_DATA_URL =
-  `${EXISTING_BASE_URL}/api/staff/student-data`;
-
-const SCHEDULE_DATA_URL =
-  `${EXISTING_BASE_URL}/api/staff/schedule/getformdata`;
-
-
-
-// Enable / Disable Edit Profile for a particular student
-const PROFILE_ACCESS_URL =
-  `${EXISTING_BASE_URL}/api/staff/student-edit`;
-
-
-// Academic year APIs
-const ACADEMIC_YEARS_URL =
-  `${EXISTING_BASE_URL}/api/staff/academic-year`;
-
 
 const STUDENTS_PER_PAGE = 50;
 
@@ -87,7 +70,7 @@ const toArray = (value) => {
   }
 
   if (Array.isArray(value?.records)) {
-    return value.records;
+    return value.reco 
   }
 
   if (Array.isArray(value?.academicYears)) {
@@ -278,9 +261,7 @@ const StudentProfileAccess = () => {
     setLoadingScheduleData(true);
 
     try {
-      const { data } = await axios.get(SCHEDULE_DATA_URL, {
-        headers: { Accept: "application/json" },
-      });
+      const data = await getScheduleFormData();
 
       if (data?.success === false) {
         throw new Error(
@@ -308,8 +289,8 @@ const StudentProfileAccess = () => {
       console.error("Schedule data error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load filter data.",
+        error?.message ||
+        "Unable to load filter data.",
         "error"
       );
     } finally {
@@ -335,8 +316,8 @@ const StudentProfileAccess = () => {
     const rows =
       selectedBatch
         ? batchDepartmentSections.filter(
-            (item) => item.batch === selectedBatch
-          )
+          (item) => item.batch === selectedBatch
+        )
         : batchDepartmentSections;
 
     return [
@@ -400,16 +381,7 @@ const StudentProfileAccess = () => {
         section: selectedSection,
       };
 
-      const { data } = await axios.post(
-        EXISTING_STUDENT_DATA_URL,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const data = await getExistingStudents(payload);
 
       if (data?.success === false) {
         throw new Error(
@@ -432,8 +404,8 @@ const StudentProfileAccess = () => {
       setStudents([]);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load student data.",
+        error?.message ||
+        "Unable to load student data.",
         "error"
       );
     } finally {
@@ -457,23 +429,14 @@ const StudentProfileAccess = () => {
     try {
       // Backend contract:
       // { students: [{ admissionNo, editEnabled }] }
-      const { data } = await axios.put(
-        PROFILE_ACCESS_URL,
+      const data = await updateStudentProfileAccess([
         {
-          students: [
-            {
-              admissionNo: String(student.admissionNo).trim(),
-              editEnabled: nextValue,
-            },
-          ],
+          admissionNo: String(
+            student.admissionNo
+          ).trim(),
+          editEnabled: nextValue,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      ]);
 
       if (data?.success === false) {
         throw new Error(
@@ -492,8 +455,8 @@ const StudentProfileAccess = () => {
       console.error("Profile access update error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update profile access.",
+        error?.message ||
+        "Unable to update profile access.",
         "error"
       );
     } finally {
@@ -522,16 +485,10 @@ const StudentProfileAccess = () => {
     setUpdatingStudentId("ALL");
 
     try {
-      const { data } = await axios.put(
-        PROFILE_ACCESS_URL,
-        { students: permissionList },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const data =
+    await updateStudentProfileAccess(
+        permissionList
+    );
 
       if (data?.success === false) {
         throw new Error(
@@ -554,8 +511,8 @@ const StudentProfileAccess = () => {
       console.error("Bulk profile access update error:", error);
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update student permissions.",
+        error?.message ||
+        "Unable to update student permissions.",
         "error"
       );
     } finally {
@@ -568,11 +525,7 @@ const StudentProfileAccess = () => {
     setLoadingAcademicYears(true);
 
     try {
-      const response = await axios.get(ACADEMIC_YEARS_URL, {
-        headers: { Accept: "application/json" },
-      });
-
-      const data = response.data;
+      const data = await getAcademicYear();
 
       if (data?.success === false) {
         throw new Error(
@@ -611,8 +564,8 @@ const StudentProfileAccess = () => {
 
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load academic year.",
+        error?.message ||
+        "Unable to load academic year.",
         "error"
       );
     } finally {
@@ -644,21 +597,9 @@ const StudentProfileAccess = () => {
     setAddingAcademicYear(true);
 
     try {
-      
-      const response = await axios.put(
-        ACADEMIC_YEARS_URL,
-        {
-          academicYear: value,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
 
-      const data = response.data;
+      const data =
+    await updateAcademicYear(value);
 
       if (!response.status.toString().startsWith("2") || data?.success === false) {
         throw new Error(
@@ -695,8 +636,8 @@ const StudentProfileAccess = () => {
 
       showMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to update academic year.",
+        error?.message ||
+        "Unable to update academic year.",
         "error"
       );
     } finally {
@@ -813,7 +754,7 @@ const StudentProfileAccess = () => {
       1,
       Math.ceil(
         filteredStudents.length /
-          STUDENTS_PER_PAGE
+        STUDENTS_PER_PAGE
       )
     );
 
@@ -821,10 +762,10 @@ const StudentProfileAccess = () => {
   const paginatedStudents =
     filteredStudents.slice(
       (currentPage - 1) *
-        STUDENTS_PER_PAGE,
+      STUDENTS_PER_PAGE,
 
       currentPage *
-        STUDENTS_PER_PAGE
+      STUDENTS_PER_PAGE
     );
 
 
@@ -890,7 +831,7 @@ const StudentProfileAccess = () => {
             <div>
 
               <h2>
-                Select Student Group
+                Select Student Details
               </h2>
 
               <p>
@@ -1045,7 +986,7 @@ const StudentProfileAccess = () => {
               <div>
 
                 <h2>
-                  Student Access Management
+                  Student Profile Management
                 </h2>
 
                 <p>
@@ -1246,7 +1187,7 @@ const StudentProfileAccess = () => {
                   <tbody>
 
                     {paginatedStudents.length >
-                    0 ? (
+                      0 ? (
 
                       paginatedStudents.map(
                         (
@@ -1294,7 +1235,7 @@ const StudentProfileAccess = () => {
 
                                 <div className="student-identity">
 
-                                  
+
 
 
                                   <div className="student-info">
@@ -1396,11 +1337,10 @@ const StudentProfileAccess = () => {
                                 <div className="access-control">
 
                                   <div
-                                    className={`access-status ${
-                                      student.editProfileEnabled
+                                    className={`access-status ${student.editProfileEnabled
                                         ? "enabled"
                                         : "disabled"
-                                    }`}
+                                      }`}
                                   >
 
                                     {student.editProfileEnabled ? (
@@ -1430,15 +1370,13 @@ const StudentProfileAccess = () => {
 
                                   <button
                                     type="button"
-                                    className={`profile-toggle ${
-                                      student.editProfileEnabled
+                                    className={`profile-toggle ${student.editProfileEnabled
                                         ? "active"
                                         : ""
-                                    } ${
-                                      updating
+                                      } ${updating
                                         ? "updating"
                                         : ""
-                                    }`}
+                                      }`}
                                     disabled={
                                       updating
                                     }
@@ -1527,108 +1465,108 @@ const StudentProfileAccess = () => {
               {filteredStudents.length >
                 0 && (
 
-                <div className="pagination">
+                  <div className="pagination">
 
-                  <div className="pagination-info">
+                    <div className="pagination-info">
 
-                    Showing{" "}
+                      Showing{" "}
 
-                    <strong>
-                      {(currentPage - 1) *
-                        STUDENTS_PER_PAGE +
-                        1}
-                    </strong>
+                      <strong>
+                        {(currentPage - 1) *
+                          STUDENTS_PER_PAGE +
+                          1}
+                      </strong>
 
-                    {" - "}
+                      {" - "}
 
-                    <strong>
-                      {Math.min(
-                        currentPage *
+                      <strong>
+                        {Math.min(
+                          currentPage *
                           STUDENTS_PER_PAGE,
-                        filteredStudents.length
-                      )}
-                    </strong>
+                          filteredStudents.length
+                        )}
+                      </strong>
 
-                    {" of "}
+                      {" of "}
 
-                    <strong>
-                      {filteredStudents.length}
-                    </strong>
+                      <strong>
+                        {filteredStudents.length}
+                      </strong>
 
-                  </div>
-
-
-                  <div className="pagination-controls">
-
-                    <button
-                      type="button"
-                      disabled={
-                        currentPage ===
-                        1
-                      }
-                      onClick={() =>
-                        setCurrentPage(
-                          (page) =>
-                            Math.max(
-                              1,
-                              page - 1
-                            )
-                        )
-                      }
-                    >
-
-                      <ChevronLeft
-                        size={17}
-                      />
-
-                      Previous
-
-                    </button>
+                    </div>
 
 
-                    <span className="page-number">
+                    <div className="pagination-controls">
 
-                      {currentPage}
+                      <button
+                        type="button"
+                        disabled={
+                          currentPage ===
+                          1
+                        }
+                        onClick={() =>
+                          setCurrentPage(
+                            (page) =>
+                              Math.max(
+                                1,
+                                page - 1
+                              )
+                          )
+                        }
+                      >
 
-                      <span>
-                        /
+                        <ChevronLeft
+                          size={17}
+                        />
+
+                        Previous
+
+                      </button>
+
+
+                      <span className="page-number">
+
+                        {currentPage}
+
+                        <span>
+                          /
+                        </span>
+
+                        {totalPages}
+
                       </span>
 
-                      {totalPages}
 
-                    </span>
+                      <button
+                        type="button"
+                        disabled={
+                          currentPage ===
+                          totalPages
+                        }
+                        onClick={() =>
+                          setCurrentPage(
+                            (page) =>
+                              Math.min(
+                                totalPages,
+                                page + 1
+                              )
+                          )
+                        }
+                      >
 
+                        Next
 
-                    <button
-                      type="button"
-                      disabled={
-                        currentPage ===
-                        totalPages
-                      }
-                      onClick={() =>
-                        setCurrentPage(
-                          (page) =>
-                            Math.min(
-                              totalPages,
-                              page + 1
-                            )
-                        )
-                      }
-                    >
+                        <ChevronRight
+                          size={17}
+                        />
 
-                      Next
+                      </button>
 
-                      <ChevronRight
-                        size={17}
-                      />
-
-                    </button>
+                    </div>
 
                   </div>
 
-                </div>
-
-              )}
+                )}
 
             </>
 
@@ -1861,12 +1799,11 @@ const StudentProfileAccess = () => {
         >
 
           <div
-            className={`access-message ${
-              messageType ===
-              "success"
+            className={`access-message ${messageType ===
+                "success"
                 ? "success"
                 : "error"
-            }`}
+              }`}
             onClick={(event) =>
               event.stopPropagation()
             }
@@ -1875,7 +1812,7 @@ const StudentProfileAccess = () => {
             <div className="message-icon">
 
               {messageType ===
-              "success" ? (
+                "success" ? (
                 <CheckCircle2
                   size={27}
                 />
@@ -1892,7 +1829,7 @@ const StudentProfileAccess = () => {
 
               <strong>
                 {messageType ===
-                "success"
+                  "success"
                   ? "Success"
                   : "Something went wrong"}
               </strong>

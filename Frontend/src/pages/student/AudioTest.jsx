@@ -112,8 +112,7 @@ export default function AudioTest() {
             const violationNo =
                 response?.malpractice?.violationNo || 0;
 
-            const remaining =
-                response?.malpractice?.remaining || 0;
+            const remaining =response?.malpractice?.remaining || 0;
 
             setViolations(violationNo);
 
@@ -135,7 +134,7 @@ export default function AudioTest() {
                 setShowWarning(true);
 
                 setTimeout(() => {
-                    navigate("/");
+                    navigate("/studentlogin");
                 }, 3000);
 
                 return;
@@ -195,7 +194,7 @@ export default function AudioTest() {
                     setShowWarning(true);
 
                     setTimeout(() => {
-                        navigate("/");
+                        navigate("/studentlogin");
                     }, 3000);
 
                     return;
@@ -347,7 +346,7 @@ export default function AudioTest() {
             status:"TERMINATED"
             reason:"Multiple Violations"
         */
-        navigate("/");
+        navigate("/studentlogin");
     }
 
     useEffect(() => {
@@ -695,7 +694,7 @@ export default function AudioTest() {
             // ==========================================
 
             if (
-                key === "f12" ||
+                key === "f12" || key=="f11"||key=="f10"||key=="f9"||key=="f8"||key=="f7"||key=="f6"||key=="f5"||key=="f4"||key=="f3"||key=="f2"||key=="f1"||
                 (e.ctrlKey && key === "r") ||
                 (e.ctrlKey && key === "u") ||
                 (e.ctrlKey && e.shiftKey && key === "i") ||
