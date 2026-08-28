@@ -5,9 +5,11 @@ import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
 import { useNavigate } from "react-router-dom";
-import { saveStudentSession } from "../../utils/helpers";
+import { saveStudentSession,clearStudentSession,clearAdminSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
+  clearStudentSession();
+  clearAdminSession();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     identifier: "",
