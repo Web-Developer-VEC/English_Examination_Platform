@@ -79,6 +79,50 @@
             margin-top: 20px;
             font-size: 13px;
         }
+
+        /* ==========================================================
+           SIGNATURE BLOCK
+           ========================================================== */
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 60px;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            width: 220px;
+            font-size: 12px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-bottom: 6px;
+            height: 1px;
+        }
+
+        .signature-left {
+            text-align: left;
+        }
+
+        .signature-left .signature-line {
+            width: 220px;
+        }
+
+        .signature-right {
+            text-align: right;
+        }
+
+        .signature-right .signature-line {
+            width: 220px;
+            margin-left: auto;
+        }
+
+        .signature-label {
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -105,7 +149,6 @@
             <span class="filter-item">Batch:</span>
             {{BATCH}}
         </div>
-        
 
         <div>
             <span class="filter-item">Department:</span>
@@ -155,6 +198,22 @@
 
         <strong>Total Students:</strong>
         {{TOTAL_STUDENTS}}
+
+    </div>
+
+
+
+    <div class="signature-row">
+
+        <div class="signature-box signature-left">
+            <div class="signature-line"></div>
+            <span class="signature-label">{{LEFT_SIGN_LABEL}}</span>
+        </div>
+
+        <div class="signature-box signature-right">
+            <div class="signature-line"></div>
+            <span class="signature-label">{{RIGHT_SIGN_LABEL}}</span>
+        </div>
 
     </div>
 

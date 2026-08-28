@@ -4,7 +4,7 @@ const router = express.Router();
 
 const {
   generateStudentResult,
-} = require("../../controllers/srudentResult.controller");
+} = require("../../controllers/studentResult.controller");
 
 const {
   getStudentByUsername,

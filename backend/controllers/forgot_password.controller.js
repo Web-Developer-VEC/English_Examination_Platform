@@ -38,6 +38,7 @@ const forgotpassword = async (req, res) => {
     // FIND USER
     const user = await db.collection(collection).findOne({
       username: normalizedUsername,
+      role: role
     });
 
     if (!user) {
