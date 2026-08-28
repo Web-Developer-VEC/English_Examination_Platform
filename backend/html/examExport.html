@@ -14,10 +14,17 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             color: #222;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .header {
@@ -80,47 +87,29 @@
             font-size: 13px;
         }
 
-        /* ==========================================================
+        /* ==========================
            SIGNATURE BLOCK
-           ========================================================== */
-
-        .signature-row {
+           ========================== */
+        .signature-block {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            margin-top: 60px;
-            page-break-inside: avoid;
+            margin-top: auto;
+            padding-top: 60px;
         }
 
         .signature-box {
             width: 220px;
-            font-size: 12px;
+            text-align: center;
         }
 
-        .signature-line {
+        .signature-box .sign-line {
             border-top: 1px solid #333;
             margin-bottom: 6px;
-            height: 1px;
+            height: 40px;
         }
 
-        .signature-left {
-            text-align: left;
-        }
-
-        .signature-left .signature-line {
-            width: 220px;
-        }
-
-        .signature-right {
-            text-align: right;
-        }
-
-        .signature-right .signature-line {
-            width: 220px;
-            margin-left: auto;
-        }
-
-        .signature-label {
+        .signature-box .sign-label {
+            font-size: 12px;
             font-weight: bold;
         }
     </style>
@@ -149,6 +138,7 @@
             <span class="filter-item">Batch:</span>
             {{BATCH}}
         </div>
+
 
         <div>
             <span class="filter-item">Department:</span>
@@ -202,17 +192,16 @@
     </div>
 
 
+    <div class="signature-block">
 
-    <div class="signature-row">
-
-        <div class="signature-box signature-left">
-            <div class="signature-line"></div>
-            <span class="signature-label">{{LEFT_SIGN_LABEL}}</span>
+        <div class="signature-box">
+            <div class="sign-line"></div>
+            <div class="sign-label">{{SIGN_LEFT_LABEL}}</div>
         </div>
 
-        <div class="signature-box signature-right">
-            <div class="signature-line"></div>
-            <span class="signature-label">{{RIGHT_SIGN_LABEL}}</span>
+        <div class="signature-box">
+            <div class="sign-line"></div>
+            <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
         </div>
 
     </div>
