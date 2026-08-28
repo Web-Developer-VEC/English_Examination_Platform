@@ -72,39 +72,63 @@ const updateStudent = async (req, res) => {
         }
 
         // =====================================================
-        // REGISTER NUMBER
+// REGISTER NUMBER
+// =====================================================
+
         // =====================================================
+// REGISTER NUMBER
+// =====================================================
 
-        
+const registerNoProvided = registerNo !== undefined;
+const registerNoTrimmed =
+    registerNo !== null && registerNo !== undefined
+        ? String(registerNo).trim()
+        : "";
 
-            const newRegisterNo =
-                String(registerNo).trim();
+if (
+    registerNoProvided &&
+    registerNoTrimmed !== "" &&
+    registerNoTrimmed.toLowerCase() !== "null"
+) {
 
-            
+    const newRegisterNo = registerNoTrimmed;
 
-            // Check duplicate register number
-            const existingStudent =
-                await db.collection("students").findOne({
-                    registerNo: newRegisterNo,
-                    admissionNo: {
-                        $ne: admissionNo.trim()
-                    }
-                });
+    // ---------------------------------------------
+    // CHECK DUPLICATE REGISTER NUMBER
+    // ---------------------------------------------
 
-            if (existingStudent) {
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "Register Number already belongs to another student."
-                });
-            }
+    const existingStudent = await db.collection("students").findOne({
+        registerNo: newRegisterNo,
+        admissionNo: {
+            $ne: admissionNo.trim()
+        }
+    });
 
-            updateData.registerNo = newRegisterNo;
+    if (existingStudent) {
+        return res.status(409).json({
+            success: false,
+            message:
+                "Register Number already belongs to another student."
+        });
+    }
 
-            // Username follows register number
-            updateData.username = newRegisterNo;
-        
+    // ---------------------------------------------
+    // UPDATE REGISTER NUMBER
+    // ---------------------------------------------
 
+    updateData.registerNo = newRegisterNo;
+
+    // Username follows register number
+    updateData.username = newRegisterNo;
+
+} else if (registerNoProvided) {
+
+    // registerNo was explicitly sent but empty/null/"null" —
+    // clear it back to a real null, username falls back to admissionNo.
+
+    updateData.registerNo = null;
+    updateData.username = admissionNo.trim();
+}
         // =====================================================
         // UPDATED TIME
         // =====================================================
