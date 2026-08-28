@@ -2,15 +2,15 @@
     "students": [
         {
             "admissionNo": "24VEC_586",
-            "editEnabled": true
+            "studentEditEnabled": true
         },
         {
             "admissionNo": "24VEC_586",
-            "editEnabled": true
+            "studentEditEnabled": true
         },
         {
             "admissionNo": "24VEC_900",
-            "editEnabled": false
+            "studentEditEnabled": false
         }
     ]
 }
