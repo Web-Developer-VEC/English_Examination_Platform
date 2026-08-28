@@ -150,7 +150,8 @@ const StudentDashboard = () => {
       setIsSaving(false);
     }
   };
-
+  // This is for making the fields uneditable . if you want to make it editable again change the true to false
+  const registerNoOnlyEdit = true;
   // ============================================================
   // SEND RESULT
   // POSTs { testId, admissionNo } to /api/student/studentresult.
@@ -1047,7 +1048,7 @@ const StudentDashboard = () => {
                   name="name"
                   value={editForm?.name || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1101,7 +1102,7 @@ const StudentDashboard = () => {
                   name="email"
                   value={editForm?.email || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1128,7 +1129,7 @@ const StudentDashboard = () => {
                   name="phone"
                   value={editForm?.phone || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1204,7 +1205,7 @@ const StudentDashboard = () => {
                   name="gender"
                   value={editForm?.gender || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1239,7 +1240,7 @@ const StudentDashboard = () => {
                   name="batch"
                   value={editForm?.batch || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1266,7 +1267,7 @@ const StudentDashboard = () => {
                   name="dob"
                   value={editForm?.dob || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2

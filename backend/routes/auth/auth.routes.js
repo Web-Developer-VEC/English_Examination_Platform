@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const {register, login} = require("../../controllers/auth.controller");
-const { forgotpassword, otpValidation, resetPassword } = require("../../controllers/forgot_password_controller");
+const { forgotpassword, otpValidation, resetPassword } = require("../../controllers/forgot_password.controller");
 
 router.post("/register",register);
 router.post("/login", login);
