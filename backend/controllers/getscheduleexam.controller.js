@@ -144,8 +144,7 @@ const getScheduledExams = async (req, res) => {
           examId: exam._id,
           category: exam.category,
           questionSetId: exam.questionSetId,
-          testcode:
-            exam?.testcode !== undefined ? exam.testcode : null,
+          testcode:exam?.testcode !== undefined ? exam.testcode : null,
           department: exam.eligibility.department,
           batch: exam.eligibility.batch,
           section: exam.eligibility.section,

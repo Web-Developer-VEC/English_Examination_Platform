@@ -22,8 +22,7 @@ const AdminLogin = () => {
 
             const response = await loginUser(
                 formData.identifier,
-                formData.password,
-                "staff"
+                formData.password
             );
 
             if (response.success) {
