@@ -614,7 +614,7 @@
   padding: 25px;
 
   background:
-    rgba(38, 13, 21, 0.55);
+    rgba(162, 153, 156, 0.55);
 
   backdrop-filter: blur(8px);
 
@@ -1073,83 +1073,161 @@
   background: #a91f1f;
 }
 
-.faculty-toast {
-  position: fixed;
+/* ============================================================
+   MESSAGE / ERROR POPUP
+   ============================================================ */
 
+.faculty-popup-overlay {
+  position: fixed;
+  inset: 0;
   z-index: 10001;
 
-  right: 25px;
-  bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  min-width: 290px;
+  padding: 20px;
 
-  max-width: calc(100vw - 40px);
+  background: rgba(36, 27, 29, 0.22);
+  backdrop-filter: blur(4px);
 
-  padding: 13px 14px;
+  animation: popupOverlayIn 0.2s ease;
+}
 
-  background: white;
+.faculty-popup-card {
+  width: min(440px, 100%);
 
-  border-radius: 12px;
-
-  box-shadow:
-    0 15px 40px rgba(36, 12, 20, 0.16);
+  position: relative;
 
   display: flex;
   align-items: center;
 
-  gap: 10px;
+  gap: 15px;
 
-  border-left: 4px solid;
+  padding: 20px 20px 20px 18px;
 
-  animation: toastIn 0.3s ease;
+  background: white;
+
+  border: 1px solid var(--faculty-border);
+  border-radius: 17px;
+
+  box-shadow:
+    0 25px 70px rgba(35, 8, 18, 0.22);
+
+  animation: popupCardIn 0.25s ease;
 }
 
-.faculty-toast.success {
-  border-color: #268a49;
+.faculty-popup-card.success {
+  border-left: 5px solid #268a49;
 }
 
-.faculty-toast.error {
-  border-color: var(--faculty-danger);
+.faculty-popup-card.error {
+  border-left: 5px solid var(--faculty-danger);
 }
 
-.toast-dot {
-  width: 8px;
-  height: 8px;
+.faculty-popup-icon {
+  width: 48px;
+  height: 48px;
 
   flex-shrink: 0;
 
-  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  background: currentColor;
+  border-radius: 13px;
 }
 
-.faculty-toast.success .toast-dot {
+.faculty-popup-card.success .faculty-popup-icon {
+  background: rgba(38, 138, 73, 0.12);
   color: #268a49;
 }
 
-.faculty-toast.error .toast-dot {
+.faculty-popup-card.error .faculty-popup-icon {
+  background: rgba(198, 40, 40, 0.1);
   color: var(--faculty-danger);
 }
 
-.faculty-toast span {
+.faculty-popup-content {
+  min-width: 0;
   flex: 1;
 
-  color: #40383a;
-
-  font-size: 12px;
-  font-weight: 700;
+  padding-right: 18px;
 }
 
-.faculty-toast button {
+.faculty-popup-content h3 {
+  margin: 0 0 4px;
+
+  color: var(--faculty-maroon);
+
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.faculty-popup-content p {
+  margin: 0;
+
+  color: var(--faculty-muted);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  line-height: 1.55;
+
+  word-break: break-word;
+}
+
+.faculty-popup-close {
+  position: absolute;
+
+  top: 11px;
+  right: 11px;
+
+  width: 30px;
+  height: 30px;
+
   border: none;
-
-  background: transparent;
-
-  color: #92898b;
+  border-radius: 8px;
 
   display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  color: #92898b;
 
   cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.faculty-popup-close:hover {
+  background: #f3eeee;
+  color: var(--faculty-maroon);
+}
+
+@keyframes popupOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popupCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .faculty-loading {
@@ -1251,6 +1329,30 @@
 }
 
 @media (max-width: 720px) {
+
+  .faculty-popup-overlay {
+    padding: 14px;
+  }
+
+  .faculty-popup-card {
+    padding: 17px 17px 17px 15px;
+    gap: 12px;
+    border-radius: 15px;
+  }
+
+  .faculty-popup-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .faculty-popup-content h3 {
+    font-size: 14px;
+  }
+
+  .faculty-popup-content p {
+    font-size: 11px;
+  }
+
   .faculty-page {
     padding: 18px 14px 30px;
   }
@@ -1394,9 +1496,8 @@
     align-items: flex-start;
   }
 
-  .faculty-toast {
-    right: 14px;
-    bottom: 14px;
+  .faculty-popup-card {
+    width: 100%;
   }
 }
 

@@ -7,7 +7,7 @@ const crypto = require("crypto");
 // ============================================================
 
 const generateUniqueTestCode = async (db) => {
-  const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const characters = "1234567890";
 
   while (true) {
     const bytes = crypto.randomBytes(6);

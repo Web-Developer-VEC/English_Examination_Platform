@@ -19,9 +19,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(
-    cors({
-        origin: "http://localhost:5173",
-    }),
+  cors({
+    origin: "*",
+  }),
 );
 
 app.use(express.json());
@@ -48,9 +48,9 @@ app.use(secureNoSQLMiddleware);
 // Request Logger
 app.use((req, res, next) => {
 
-    const start = Date.now();
-
-    res.on("finish", () => {
+  res.on("finish", () => {
+    console.log("Hits :", req.originalUrl);
+  });
 
 
 

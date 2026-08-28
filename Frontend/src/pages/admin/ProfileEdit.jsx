@@ -428,13 +428,13 @@ const StudentProfileAccess = () => {
 
     try {
       // Backend contract:
-      // { students: [{ admissionNo, editEnabled }] }
+      // { students: [{ admissionNo, studentEditEnabled }] }
       const data = await updateStudentProfileAccess([
         {
           admissionNo: String(
             student.admissionNo
           ).trim(),
-          editEnabled: nextValue,
+          studentEditEnabled: nextValue,
         },
       ]);
 
@@ -471,7 +471,7 @@ const StudentProfileAccess = () => {
       .filter((student) => student?.admissionNo)
       .map((student) => ({
         admissionNo: String(student.admissionNo).trim(),
-        editEnabled: enabled,
+        studentEditEnabled: enabled,
       }));
 
     if (!permissionList.length) {
@@ -601,7 +601,7 @@ const StudentProfileAccess = () => {
       const data =
     await updateAcademicYear(value);
 
-      if (!response.status.toString().startsWith("2") || data?.success === false) {
+      if (data?.success === false) {
         throw new Error(
           getErrorMessage(
             data,
