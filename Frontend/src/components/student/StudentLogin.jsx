@@ -126,7 +126,7 @@ const StudentLogin = () => {
         </button>
 
         <div className="login-footer">
-          <>
+          {/* <>
 <button
   type="button"
   className="login-footer__link"
@@ -134,11 +134,11 @@ const StudentLogin = () => {
 >
   Forgot your password?
 </button>           
- {/* <p className="login-footer__link">Contact your mentor</p>  */}
-            {/* <button type="button" className="login-signup" onClick={() => navigate("/register")} >
+ <p className="login-footer__link">Contact your mentor</p>  
+            <button type="button" className="login-signup" onClick={() => navigate("/register")} >
               New Student? Sign Up
-            </button> */}
-          </>
+            </button> 
+          </> */}
         </div>
       </form>
     </div>

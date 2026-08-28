@@ -150,7 +150,8 @@ const StudentDashboard = () => {
       setIsSaving(false);
     }
   };
-
+  // This is for making the fields uneditable . if you want to make it editable again change the true to false
+  const registerNoOnlyEdit = true;
   // ============================================================
   // SEND RESULT
   // POSTs { testId, admissionNo } to /api/student/studentresult.
@@ -467,6 +468,8 @@ const StudentDashboard = () => {
     editForm?.registerNo && editForm.registerNo.trim()
       ? editForm.registerNo
       : editForm?.admissionNo || "";
+  const hasChanges =
+    editForm?.registerNo?.trim() !== student?.registerNo?.trim();
 
   // ============================================================
   // MAIN DASHBOARD
@@ -502,7 +505,7 @@ const StudentDashboard = () => {
       >
         <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
-                <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
           {student?.studentEditEnabled && (
             <button
               onClick={() => setIsEditing(true)}
@@ -714,7 +717,6 @@ const StudentDashboard = () => {
             TEST RESULTS
             SAME FRONTEND TABLE STRUCTURE
         ====================================================== */}
-        
 
         <div
           className="
@@ -1047,7 +1049,7 @@ const StudentDashboard = () => {
                   name="name"
                   value={editForm?.name || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1101,7 +1103,7 @@ const StudentDashboard = () => {
                   name="email"
                   value={editForm?.email || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1128,7 +1130,7 @@ const StudentDashboard = () => {
                   name="phone"
                   value={editForm?.phone || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1204,7 +1206,7 @@ const StudentDashboard = () => {
                   name="gender"
                   value={editForm?.gender || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1239,7 +1241,7 @@ const StudentDashboard = () => {
                   name="batch"
                   value={editForm?.batch || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1266,7 +1268,7 @@ const StudentDashboard = () => {
                   name="dob"
                   value={editForm?.dob || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1345,21 +1347,25 @@ const StudentDashboard = () => {
 
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || !hasChanges}
                   className="
-                    px-6
-                    py-2
-                    bg-yellow-400
-                    text-black
-                    font-semibold
-                    rounded-lg
-                    hover:bg-yellow-500
-                    shadow-sm
-                    transition
-                    cursor-pointer
-                    disabled:opacity-70
-                    disabled:cursor-wait
-                  "
+                  px-6
+                  py-2
+                  bg-yellow-400
+                  text-black
+                  font-semibold
+                  rounded-lg
+                  hover:bg-yellow-500
+                  shadow-sm
+                  transition
+                  cursor-pointer
+
+                  focus:outline-none
+                  focus:ring-0
+
+                  disabled:opacity-70
+                  disabled:cursor-not-allowed
+                "
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>

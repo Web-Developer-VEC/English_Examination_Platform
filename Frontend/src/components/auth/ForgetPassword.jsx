@@ -210,50 +210,61 @@ const ForgetPassword = () => {
   // =====================================================
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
+    <div className="fixed top-[150px] left-0 right-0 bottom-0 overflow-hidden bg-gray-100 flex items-center justify-center px-4 py-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
 
         {/* ================================
-            STEP INDICATOR
-        ================================= */}
+    STEP INDICATOR
+================================= */}
 
         <div className="flex items-center justify-center gap-3 mb-8">
+
+          {/* STEP 1 */}
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 1
-              ? "bg-orange-600 text-white"
+              ? "bg-[#FDCC03] text-white"
               : "bg-gray-200 text-gray-500"
               }`}
           >
             1
           </div>
 
+          {/* LINE 1 */}
           <div
-            className={`h-1 w-10 ${step >= 2 ? "bg-orange-600" : "bg-gray-200"
+            className={`h-1 w-10 ${step >= 2
+              ? "bg-[#FDCC03]"
+              : "bg-gray-200"
               }`}
           />
 
+          {/* STEP 2 */}
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 2
-              ? "bg-orange-600 text-white"
+              ? "bg-[#FDCC03] text-white"
               : "bg-gray-200 text-gray-500"
               }`}
           >
             2
           </div>
 
+          {/* LINE 2 */}
           <div
-            className={`h-1 w-10 ${step >= 3 ? "bg-orange-600" : "bg-gray-200"
+            className={`h-1 w-10 ${step >= 3
+              ? "bg-[#FDCC03]"
+              : "bg-gray-200"
               }`}
           />
 
+          {/* STEP 3 */}
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 3
-              ? "bg-orange-600 text-white"
+              ? "bg-[#FDCC03] text-white"
               : "bg-gray-200 text-gray-500"
               }`}
           >
             3
           </div>
+
         </div>
 
         {/* =================================================
@@ -277,7 +288,6 @@ const ForgetPassword = () => {
               {/* ROLE */}
               <div>
                 <label
-                  htmlFor="role"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Role
@@ -288,7 +298,7 @@ const ForgetPassword = () => {
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100"
+                  className="w-full px-4 py-3 border border-black/15 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                 >
                   <option value="">Select Role</option>
                   <option value="student">Student</option>
@@ -300,7 +310,6 @@ const ForgetPassword = () => {
               {/* USERNAME */}
               <div>
                 <label
-                  htmlFor="username"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Username
@@ -313,7 +322,7 @@ const ForgetPassword = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100"
+                  className="w-full px-4 py-3 border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                 />
               </div>
 
@@ -335,7 +344,7 @@ const ForgetPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition disabled:bg-orange-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-[#FDCC03] hover:bg-[#7a1f2b] text-white font-semibold rounded-lg transition disabled:bg-orange-300 disabled:cursor-not-allowed"
               >
                 {loading ? "Sending OTP..." : "Send OTP"}
               </button>
@@ -373,7 +382,6 @@ const ForgetPassword = () => {
               {/* OTP */}
               <div>
                 <label
-                  htmlFor="otp"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   OTP
@@ -390,7 +398,7 @@ const ForgetPassword = () => {
                     setOtp(e.target.value.replace(/\D/g, ""))
                   }
                   disabled={loading}
-                  className="w-full px-4 py-3 text-center text-xl tracking-[0.5em] font-semibold border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100"
+                  className="w-full px-4 py-3 text-center text-base tracking-[0.1em] font-semibold border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                 />
               </div>
 
@@ -412,7 +420,7 @@ const ForgetPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition disabled:bg-orange-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-[#FDCC03] hover:bg-[#7a1f2b] text-white font-semibold rounded-lg transition disabled:bg-orange-300 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </button>
@@ -450,7 +458,7 @@ const ForgetPassword = () => {
               {/* NEW PASSWORD */}
               <div>
                 <label
-                  htmlFor="newPassword"
+                  htmlFor="confirmPassword"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   New Password
@@ -466,14 +474,14 @@ const ForgetPassword = () => {
                       setNewPassword(e.target.value)
                     }
                     disabled={loading}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100"
+                    className="w-full px-4 py-3 pr-12 border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     disabled={loading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#7a1f2b] transition-colors"
                   >
                     {showNewPassword ? (
                       <EyeOff size={20} />
@@ -494,33 +502,33 @@ const ForgetPassword = () => {
                 </label>
 
                 <div className="relative">
-  <input
-    id="confirmPassword"
-    type={showConfirmPassword ? "text" : "password"}
-    placeholder="Confirm new password"
-    value={confirmPassword}
-    onChange={(e) =>
-      setConfirmPassword(e.target.value)
-    }
-    disabled={loading}
-    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100"
-  />
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) =>
+                      setConfirmPassword(e.target.value)
+                    }
+                    disabled={loading}
+                    className="w-full px-4 py-3 pr-12 border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
+                  />
 
-  <button
-    type="button"
-    onClick={() =>
-      setShowConfirmPassword(!showConfirmPassword)
-    }
-    disabled={loading}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-600"
-  >
-    {showConfirmPassword ? (
-      <EyeOff size={20} />
-    ) : (
-      <Eye size={20} />
-    )}
-  </button>
-</div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <p className="text-xs text-gray-500">
@@ -545,7 +553,7 @@ const ForgetPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition disabled:bg-orange-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-[#FDCC03] hover:bg-[#7a1f2b] text-white font-semibold rounded-lg transition disabled:bg-[#e5b900] disabled:cursor-not-allowed"
               >
                 {loading ? "Resetting..." : "Reset Password"}
               </button>
