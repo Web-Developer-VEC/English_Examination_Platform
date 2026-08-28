@@ -623,8 +623,6 @@ export default function AudioTest() {
                 "MediaTrackNext",
                 "MediaTrackPrevious",
                 "MediaStop",
-                "AudioVolumeUp",
-                "AudioVolumeDown",
                 "AudioVolumeMute"
             ];
 
@@ -634,6 +632,9 @@ export default function AudioTest() {
             ) {
                 e.preventDefault();
                 e.stopPropagation();
+                handleViolation(
+                    "Media key pressed."
+                );
                 return;
             }
 
