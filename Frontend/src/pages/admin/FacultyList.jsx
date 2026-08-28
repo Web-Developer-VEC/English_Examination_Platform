@@ -16,21 +16,13 @@ import {
   Search,
   Users,
   Image as ImageIcon,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
 
-import api from "../../services/api";
-
 import "./FacultyList.css";
-
-const MAX_ORIGINAL_IMAGE_SIZE = 1024 * 1024;
-
-const TARGET_BASE64_SIZE = 70 * 1024;
-
-const MAX_IMAGE_WIDTH = 420;
-
-const MAX_IMAGE_HEIGHT = 420;
 
 const EMPTY_FORM = {
   name: "",
@@ -38,8 +30,8 @@ const EMPTY_FORM = {
   assignments: [],
   department: "",
   section: "",
-  academicYear: "2023-2027",
-  semester: "1",
+  academicYear: "",
+  semester: "",
   email: "",
   phoneNo: "",
   role: "staff",
@@ -74,28 +66,54 @@ const FacultyList = () => {
   const [assignmentSelection, setAssignmentSelection] =
     useState("");
 
-  const [toast, setToast] = useState({
+  const [popup, setPopup] = useState({
     show: false,
     type: "",
     message: "",
   });
 
+  const popupTimerRef = React.useRef(null);
 
-  const showToast = (type, message) => {
-    setToast({
+  const showPopup = (type, message) => {
+    if (popupTimerRef.current) {
+      window.clearTimeout(popupTimerRef.current);
+    }
+
+    setPopup({
       show: true,
       type,
       message,
     });
 
-    window.setTimeout(() => {
-      setToast({
+    popupTimerRef.current = window.setTimeout(() => {
+      setPopup({
         show: false,
         type: "",
         message: "",
       });
-    }, 3000);
+    }, 3500);
   };
+
+  const closePopup = () => {
+    if (popupTimerRef.current) {
+      window.clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = null;
+    }
+
+    setPopup({
+      show: false,
+      type: "",
+      message: "",
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) {
+        window.clearTimeout(popupTimerRef.current);
+      }
+    };
+  }, []);
 
 
   const normalize = (value) => {
@@ -254,7 +272,7 @@ const FacultyList = () => {
         error
       );
 
-      showToast(
+      showPopup(
         "error",
         error?.message ||
         "Unable to load department and section"
@@ -339,7 +357,7 @@ const FacultyList = () => {
         error
       );
 
-      showToast(
+      showPopup(
         "error",
         error?.message ||
         "Unable to load staff"
@@ -533,8 +551,8 @@ const FacultyList = () => {
     setForm({
       ...EMPTY_FORM,
       role: "staff",
-      academicYear: "2023-2027",
-      semester: "1",
+      academicYear: "",
+      semester: "",
     });
 
     setModalOpen(true);
@@ -564,11 +582,10 @@ const FacultyList = () => {
         member?.section || "",
 
       academicYear:
-        member?.academicYear ||
-        "2023-2027",
+        member?.academicYear || "",
 
       semester:
-        member?.semester || "1",
+        member?.semester || "",
 
       email:
         member?.email || "",
@@ -601,8 +618,8 @@ const FacultyList = () => {
 
     setForm({
       ...EMPTY_FORM,
-      academicYear: "2023-2027",
-      semester: "1",
+      academicYear: "",
+      semester: "",
       role: "staff",
     });
   };
@@ -1022,7 +1039,7 @@ const FacultyList = () => {
           "image/"
         )
       ) {
-        showToast(
+        showPopup(
           "error",
           "Please select a valid image"
         );
@@ -1037,7 +1054,7 @@ const FacultyList = () => {
         file.size >=
         MAX_ORIGINAL_IMAGE_SIZE
       ) {
-        showToast(
+        showPopup(
           "error",
           "Photo must be less than 1MB"
         );
@@ -1049,7 +1066,7 @@ const FacultyList = () => {
       }
 
       try {
-        showToast(
+        showPopup(
           "success",
           "Compressing photo..."
         );
@@ -1066,7 +1083,7 @@ const FacultyList = () => {
           })
         );
 
-        showToast(
+        showPopup(
           "success",
           "Photo compressed successfully"
         );
@@ -1076,7 +1093,7 @@ const FacultyList = () => {
           error
         );
 
-        showToast(
+        showPopup(
           "error",
           error?.message ||
           "Unable to compress photo"
@@ -1090,7 +1107,7 @@ const FacultyList = () => {
 
   const validateForm = () => {
     if (!form.name.trim()) {
-      showToast(
+      showPopup(
         "error",
         "Staff name is required"
       );
@@ -1099,7 +1116,7 @@ const FacultyList = () => {
     }
 
     if (!form.email.trim()) {
-      showToast(
+      showPopup(
         "error",
         "Email is required"
       );
@@ -1112,7 +1129,7 @@ const FacultyList = () => {
         form.email.trim()
       )
     ) {
-      showToast(
+      showPopup(
         "error",
         "Enter a valid email address"
       );
@@ -1125,7 +1142,7 @@ const FacultyList = () => {
         form.phoneNo
       )
     ) {
-      showToast(
+      showPopup(
         "error",
         "Enter a valid 10 digit phone number"
       );
@@ -1140,7 +1157,7 @@ const FacultyList = () => {
       form.assignments.length ===
         0
     ) {
-      showToast(
+      showPopup(
         "error",
         "Please select at least one department & section"
       );
@@ -1151,7 +1168,7 @@ const FacultyList = () => {
     if (
       !form.academicYear.trim()
     ) {
-      showToast(
+      showPopup(
         "error",
         "Academic year is required"
       );
@@ -1162,7 +1179,7 @@ const FacultyList = () => {
     if (
       !form.semester.trim()
     ) {
-      showToast(
+      showPopup(
         "error",
         "Semester is required"
       );
@@ -1192,9 +1209,7 @@ const FacultyList = () => {
   // SUBMIT
   // ============================================================
 
-  const handleSubmit = async (
-    event
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!validateForm()) {
@@ -1204,164 +1219,113 @@ const FacultyList = () => {
     try {
       setSaving(true);
 
-      const isEditing =
-        Boolean(editingFaculty);
+      const isEditing = Boolean(editingFaculty);
+
+      const id =
+        editingFaculty?.id ||
+        editingFaculty?._id ||
+        null;
 
       const staffData = {
         name: form.name.trim(),
 
-        assignments:
-          form.assignments.map(
-            (item) => ({
-              department:
-                item.department.trim(),
+        assignments: form.assignments.map((item) => ({
+          department: String(item.department || "").trim(),
+          section: String(item.section || "").trim(),
+        })),
 
-              section:
-                item.section.trim(),
-            })
-          ),
+        department: form.assignments
+          .map((item) => String(item.department || "").trim())
+          .filter(Boolean)
+          .join(", "),
 
-        department:
-          form.assignments
-            .map(
-              (item) =>
-                item.department.trim()
-            )
-            .join(", "),
+        section: form.assignments
+          .map((item) => String(item.section || "").trim())
+          .filter(Boolean)
+          .join(", "),
 
-        section:
-          form.assignments
-            .map(
-              (item) =>
-                item.section.trim()
-            )
-            .join(", "),
+        academicYear: form.academicYear.trim(),
+        semester: form.semester.trim(),
+        email: form.email.trim(),
+        phoneNo: form.phoneNo.trim(),
+        role: "staff",
 
-        academicYear:
-          form.academicYear.trim(),
-
-        semester:
-          form.semester.trim(),
-
-        email:
-          form.email.trim(),
-
-        phoneNo:
-          form.phoneNo.trim(),
+        // Keep the old photo when editing unless a new photo was selected.
+        photo:
+          form.photo ||
+          editingFaculty?.photo ||
+          "",
       };
-
-      const id =
-        editingFaculty?.id ||
-        editingFaculty?._id;
 
       const staffRecord = {
-        ...(isEditing && id
-          ? { id }
-          : {}),
-
+        ...(isEditing && id ? { id } : {}),
         ...staffData,
-
-        role: "staff",
       };
+
+      /*
+       * IMPORTANT:
+       * updateStaff is treated as a collection update by the backend.
+       * Therefore ADD/UPDATE must send the complete faculty list, not
+       * only the one newly-created/edited record.
+       */
+      let completeStaffList;
+
+      if (isEditing) {
+        completeStaffList = faculty.map((member) => {
+          const memberId = member?.id || member?._id;
+
+          return memberId === id
+            ? {
+                ...member,
+                ...staffRecord,
+                id: memberId,
+                role: "staff",
+              }
+            : {
+                ...member,
+                role: "staff",
+              };
+        });
+      } else {
+        completeStaffList = [
+          ...faculty.map((member) => ({
+            ...member,
+            role: "staff",
+          })),
+          {
+            ...staffRecord,
+            id: staffRecord.id || `staff-${Date.now()}`,
+          },
+        ];
+      }
 
       const payload = {
         action: "update",
-
-        operation:
-          isEditing
-            ? "update"
-            : "insert",
-
-        data: [
-          staffRecord,
-        ],
+        operation: isEditing ? "update" : "insert",
+        data: completeStaffList,
       };
 
       console.log(
-        "STAFF UPDATE PAYLOAD:",
-        payload
+        "STAFF COLLECTION PAYLOAD:",
+        JSON.stringify(payload, null, 2)
       );
 
       const result = await updateStaff(payload);
 
       if (result?.success === false) {
         throw new Error(
-          result?.message ||
-          "Unable to save staff"
+          result?.message || "Unable to save staff"
         );
       }
 
-      if (response.status === 413) {
-        throw new Error(
-          error?.response?.data
-            ?.message ||
-            error?.message ||
-            "Unable to save staff"
-        );
-      }
+      /*
+       * Reload from DB after every successful save.
+       * This guarantees that the UI displays exactly what the database
+       * contains and prevents local state from becoming different from DB.
+       */
+      await fetchStaff();
 
-      // ========================================================
-      // UPDATE LOCAL STATE
-      // ========================================================
-
-      if (isEditing) {
-        setFaculty(
-          (previous) =>
-            previous.map(
-              (member) => {
-                const memberId =
-                  member?.id ||
-                  member?._id;
-
-                return memberId ===
-                  id
-                  ? {
-                      ...member,
-                      ...staffData,
-                    }
-                  : member;
-              }
-            )
-        );
-      } else {
-        const returnedData =
-          result?.data?.staff ||
-          result?.data?.faculty ||
-          result?.staff ||
-          result?.data;
-
-        const returned =
-          Array.isArray(
-            returnedData
-          )
-            ? returnedData[0]
-            : returnedData;
-
-        setFaculty(
-          (previous) => [
-            ...previous,
-
-            {
-              ...staffData,
-
-              id:
-                result?.data?.id ||
-                result?.data?._id ||
-                returned?.id ||
-                returned?._id ||
-                `staff-${Date.now()}`,
-
-              role: "staff",
-
-              photo:
-                returned?.photo ||
-                "",
-            },
-          ]
-        );
-      }
-
-      showToast(
+      showPopup(
         "success",
         isEditing
           ? "Staff updated successfully"
@@ -1370,15 +1334,24 @@ const FacultyList = () => {
 
       closeModal();
     } catch (error) {
-      console.error(
-        "Staff save error:",
-        error
-      );
+      console.error("Staff save error:", error);
 
-      showToast(
+      const status =
+        error?.response?.status ||
+        error?.status;
+
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error;
+
+      showPopup(
         "error",
-        error?.message ||
-        "Unable to save staff"
+        status === 413
+          ? serverMessage ||
+            "Photo/data is too large. Please choose a smaller photo."
+          : serverMessage ||
+            error?.message ||
+            "Unable to save staff"
       );
     } finally {
       setSaving(false);
@@ -1412,60 +1385,39 @@ const FacultyList = () => {
         facultyToDelete?.id ||
         facultyToDelete?._id;
 
-      const staffData = {
-        name:
-          facultyToDelete?.name ||
-          "",
+      /*
+       * Remove only the selected faculty locally first, then send the
+       * COMPLETE remaining collection to the backend.
+       */
+      const remainingStaff = faculty
+        .filter((member) => {
+          const memberId =
+            member?.id ||
+            member?._id;
 
-        department:
-          facultyToDelete?.department ||
-          "",
+          if (id) {
+            return memberId !== id;
+          }
 
-        section:
-          facultyToDelete?.section ||
-          "",
-
-        academicYear:
-          facultyToDelete?.academicYear ||
-          "",
-
-        semester:
-          facultyToDelete?.semester ||
-          "",
-
-        email:
-          facultyToDelete?.email ||
-          "",
-
-        phoneNo:
-          facultyToDelete?.phoneNo ||
-          facultyToDelete?.phone ||
-          "",
-      };
-
-      const staffRecord = {
-        ...(id
-          ? { id }
-          : {}),
-
-        ...staffData,
-
-        role: "staff",
-      };
+          return !(
+            member?.name === facultyToDelete?.name &&
+            member?.email === facultyToDelete?.email
+          );
+        })
+        .map((member) => ({
+          ...member,
+          role: "staff",
+        }));
 
       const payload = {
         action: "update",
-
         operation: "delete",
-
-        data: [
-          staffRecord,
-        ],
+        data: remainingStaff,
       };
 
       console.log(
-        "STAFF DELETE PAYLOAD:",
-        payload
+        "STAFF DELETE COLLECTION PAYLOAD:",
+        JSON.stringify(payload, null, 2)
       );
 
       const result = await updateStaff(payload);
@@ -1473,43 +1425,17 @@ const FacultyList = () => {
       if (result?.success === false) {
         throw new Error(
           result?.message ||
-          "Unable to delete staff"
+            "Unable to delete staff"
         );
       }
-        
-      setFaculty(
-        (previous) =>
-          previous.filter(
-            (member) => {
-              const memberId =
-                member?.id ||
-                member?._id;
 
-              if (id) {
-                return (
-                  memberId !== id
-                );
-              }
+      // Always synchronize the UI with the database.
+      await fetchStaff();
 
-              return !(
-                member?.name ===
-                  facultyToDelete?.name &&
-                member?.email ===
-                  facultyToDelete?.email
-              );
-            }
-          )
-      );
+      setDeleteModalOpen(false);
+      setFacultyToDelete(null);
 
-      setDeleteModalOpen(
-        false
-      );
-
-      setFacultyToDelete(
-        null
-      );
-
-      showToast(
+      showPopup(
         "success",
         "Staff deleted successfully"
       );
@@ -1519,10 +1445,15 @@ const FacultyList = () => {
         error
       );
 
-      showToast(
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error;
+
+      showPopup(
         "error",
-        error?.message ||
-        "Unable to delete staff"
+        serverMessage ||
+          error?.message ||
+          "Unable to delete staff"
       );
     } finally {
       setSaving(false);
@@ -2001,59 +1932,7 @@ const FacultyList = () => {
 
               <div className="modal-body">
 
-                {/* PHOTO */}
-
-                <div className="photo-upload-area">
-
-                  <div className="form-photo-preview">
-
-                    {form.photo ? (
-                      <img
-                        src={
-                          form.photo
-                        }
-                        alt="Faculty preview"
-                      />
-                    ) : (
-                      <UserRound
-                        size={35}
-                      />
-                    )}
-
-                  </div>
-
-                  <div className="photo-upload-content">
-
-                    <h4>
-                      Faculty Photo
-                    </h4>
-
-                    <p>
-                      JPG, PNG or WEBP
-                      · Less than 1MB
-                    </p>
-
-                    <label className="upload-photo-btn">
-
-                      <ImageIcon
-                        size={16}
-                      />
-
-                      Choose Photo
-
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={
-                          handlePhotoChange
-                        }
-                      />
-
-                    </label>
-
-                  </div>
-
-                </div>
+            
 
                 {/* NAME */}
 
@@ -2384,9 +2263,15 @@ const FacultyList = () => {
 
                 {/* ACADEMIC YEAR / SEMESTER */}
 
-                <div className="form-row">
+                <div className="form-row academic-details-row">
 
-                  <div className="form-group">
+                  {/* ACADEMIC YEAR */}
+
+                  <div className="form-group academic-detail-group">
+
+                    <label className="static-field-label">
+                      Academic Year
+                    </label>
 
                     <ThemeDropdown
                       icon={
@@ -2417,7 +2302,13 @@ const FacultyList = () => {
 
                   </div>
 
-                  <div className="form-group">
+                  {/* SEMESTER */}
+
+                  <div className="form-group academic-detail-group">
+
+                    <label className="static-field-label">
+                      Semester
+                    </label>
 
                     <ThemeDropdown
                       icon={
@@ -2616,37 +2507,52 @@ const FacultyList = () => {
         )}
 
       {/* ======================================================
-          TOAST
+          MESSAGE / ERROR POPUP
           ====================================================== */}
 
-      {toast.show && (
+      {popup.show && (
         <div
-          className={`faculty-toast ${toast.type}`}
+          className="faculty-popup-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              closePopup();
+            }
+          }}
         >
-
-          <div className="toast-dot" />
-
-          <span>
-            {
-              toast.message
-            }
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setToast({
-                show: false,
-                type: "",
-                message: "",
-              })
-            }
+          <div
+            className={`faculty-popup-card ${popup.type}`}
+            role="alert"
+            aria-live="polite"
           >
-            <X
-              size={16}
-            />
-          </button>
+            <div className="faculty-popup-icon">
+              {popup.type === "success" ? (
+                <CheckCircle2 size={28} />
+              ) : (
+                <AlertCircle size={28} />
+              )}
+            </div>
 
+            <div className="faculty-popup-content">
+              <h3>
+                {popup.type === "success"
+                  ? "Success"
+                  : "Something went wrong"}
+              </h3>
+
+              <p>{popup.message}</p>
+            </div>
+
+            <button
+              type="button"
+              className="faculty-popup-close"
+              onClick={closePopup}
+              aria-label="Close message"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
       )}
 
