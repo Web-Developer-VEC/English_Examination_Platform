@@ -40,7 +40,7 @@ const checkCompletedExams = async () => {
 
       for (const admissionNo of admissionNos) {
         try {
-          await generateStudentExamPDF(test._id, admissionNo);
+          // await generateStudentExamPDF(test._id, admissionNo);
 
           console.log(`Result generated: ${test._id} - ${admissionNo}`);
         } catch (error) {

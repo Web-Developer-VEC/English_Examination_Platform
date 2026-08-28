@@ -157,6 +157,8 @@ const getStudentByUsername = async (req, res) => {
         message: "Student not found.",
       });
     }
+
+    student.studentEditEnabled = student?.studentEditEnabled ? student.studentEditEnabled : false;
  // Get student's exam results with question details
 const exams = await db
   .collection("exam")
