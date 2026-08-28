@@ -543,6 +543,7 @@ export default function Schedule() {
 
             tests:
               body?.data?.tests || [],
+            academicYear: body.data.current_academic_year
           });
         }
 
@@ -1103,13 +1104,22 @@ export default function Schedule() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClasses}>Academic Year</label>
-                  <ThemeDropdown
-                    icon={CalendarRange}
-                    value={academicYear}
-                    options={ACADEMIC_YEAR_OPTIONS}
-                    onChange={setAcademicYear}
-                    placeholder="Select Academic Year"
-                  />
+                  <div className="relative">
+                    <CalendarRange className={iconLeftClasses} />
+
+                    <input
+                      type="text"
+                      value={scheduleData.academicYear || ""}
+                      readOnly
+                      placeholder="Academic Year"
+                      className={boxClasses}
+                      style={{
+                        pointerEvents: "none",
+                        cursor: "default",
+                        opacity: 0.6
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div>

@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Menu,
   X,
-  PanelLeftClose,
+  LogOut,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -46,7 +46,7 @@ const NAV_ITEMS = [
         icon: CalendarClock,
         location: "/admin/schedule",
       },
-            {
+      {
         key: "student-data-upload",
         label: "Student Data Upload",
         icon: UploadCloud,
@@ -67,6 +67,7 @@ const NAV_ITEMS = [
     ],
   },
 ];
+
 export default function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,6 +100,18 @@ export default function AdminSidebar() {
     }
   };
 
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+
+    setMobileOpen(false);
+    setCollapsed(true);
+    setHovering(false);
+
+    navigate("/login");
+  };
+
   return (
     <div className="vec-shell">
       {/* Mobile topbar */}
@@ -129,23 +142,7 @@ export default function AdminSidebar() {
         onMouseLeave={() => setHovering(false)}
       >
         <div className="vec-sidebar-header">
-          <button
-            className="vec-collapse-btn"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() => {
-              setCollapsed((c) => {
-                const next = !c;
-
-                if (next) {
-                  setHovering(false);
-                }
-
-                return next;
-              });
-            }}
-          >
-            <PanelLeftClose size={18} />
-          </button>
+         
 
           <button
             className="vec-close-btn"
@@ -174,7 +171,7 @@ export default function AdminSidebar() {
             const isParentActive =
               hasChildren &&
               item.children.some(
-                (child) => location.pathname === child.location,
+                (child) => location.pathname === child.location
               );
 
             const isOpen = !!expanded[item.key];
@@ -187,37 +184,49 @@ export default function AdminSidebar() {
                     isDirectActive
                       ? "active"
                       : isParentActive
-                        ? "parent-active-only"
-                        : ""
+                      ? "parent-active-only"
+                      : ""
                   }`}
                   onClick={() =>
-                    handleSelect(item.key, hasChildren, item.location)
+                    handleSelect(
+                      item.key,
+                      hasChildren,
+                      item.location
+                    )
                   }
                   aria-expanded={hasChildren ? isOpen : undefined}
                   title={collapsed ? item.label : undefined}
                 >
                   <Icon className="vec-icon" />
 
-                  <span className="vec-label">{item.label}</span>
+                  <span className="vec-label">
+                    {item.label}
+                  </span>
 
                   {hasChildren && (
                     <ChevronDown
-                      className={`vec-chevron ${isOpen ? "open" : ""}`}
+                      className={`vec-chevron ${
+                        isOpen ? "open" : ""
+                      }`}
                     />
                   )}
                 </button>
 
                 {/* Submenu */}
                 {hasChildren && (
-                  <div className={`vec-submenu ${isOpen ? "open" : ""}`}>
+                  <div
+                    className={`vec-submenu ${
+                      isOpen ? "open" : ""
+                    }`}
+                  >
                     {item.children.map((child) => {
                       const ChildIcon = child.icon;
 
                       /*
-                       * THIS is the important part.
                        * Active state comes from URL.
                        */
-                      const childActive = location.pathname === child.location;
+                      const childActive =
+                        location.pathname === child.location;
 
                       return (
                         <button
@@ -226,7 +235,11 @@ export default function AdminSidebar() {
                             childActive ? "active" : ""
                           }`}
                           onClick={() =>
-                            handleSelect(child.key, false, child.location)
+                            handleSelect(
+                              child.key,
+                              false,
+                              child.location
+                            )
                           }
                         >
                           <ChildIcon className="vec-subicon" />
@@ -241,6 +254,21 @@ export default function AdminSidebar() {
             );
           })}
         </nav>
+
+        {/* Logout Button */}
+        <div className="vec-sidebar-footer">
+          <button
+            className="vec-logout-btn"
+            onClick={handleLogout}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="vec-icon" />
+
+            <span className="vec-label">
+              Logout
+            </span>
+          </button>
+        </div>
       </aside>
     </div>
   );

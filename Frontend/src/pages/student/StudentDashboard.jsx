@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import Footer from "../../components/common/footer";
-//import { getStudentSession, saveStudentSession } from "../../utils/helpers";
 import {
   getStudent,
   updateStudent,
@@ -14,6 +14,7 @@ import {
   saveStudentSession,
   getSentResults,
   markResultSent,
+  clearStudentSession,
 } from "../../utils/helpers";
 
 const StudentDashboard = () => {
@@ -179,6 +180,7 @@ const StudentDashboard = () => {
       });
 
       const data = await sendStudentResult(testId, student.admissionNo);
+      toast.success("Result sent to mail successfully");
 
       console.log("studentresult response:", data);
 
@@ -206,6 +208,21 @@ const StudentDashboard = () => {
     } finally {
       setSendingId(null);
     }
+  };
+
+  // ============================================================
+  // LOGOUT
+  // Same behavior as the header's logout: clear the student session,
+  // let anything listening for session changes know, then redirect
+  // to the login page.
+  // ============================================================
+
+  const handleLogout = () => {
+    clearStudentSession();
+
+    window.dispatchEvent(new Event("studentSessionChanged"));
+
+    navigate("/studentlogin");
   };
 
   // ============================================================
@@ -354,6 +371,27 @@ const StudentDashboard = () => {
       };
     }
   }, [isEditing, student]);
+
+  // ============================================================
+  // PAGE SCROLLBAR CONTROL
+  // This dashboard is designed to fit entirely within the viewport
+  // (h-[calc(100dvh-172px)] below already accounts for the header/
+  // footer), so the outer document scrollbar is disabled for as long
+  // as this page is mounted.
+  // ============================================================
+
+  useEffect(() => {
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, []);
 
   // ============================================================
   // LOADING
@@ -512,10 +550,6 @@ const StudentDashboard = () => {
           CONTENT
       ======================================================== */}
 
-      {/* ========================================================
-          CONTENT
-      ======================================================== */}
-
       <div
         className="
           flex-1
@@ -629,6 +663,46 @@ const StudentDashboard = () => {
               </p>
             </div>
           </div>
+
+          {/* ====================================================
+              LOGOUT
+              Pinned to the bottom of the profile card via mt-auto.
+          ==================================================== */}
+
+          <div
+            className="
+              mt-auto
+              pt-6
+              border-t
+              border-gray-100
+            "
+          >
+            <button
+              onClick={handleLogout}
+              className="
+                w-full
+                flex
+                items-center
+                justify-center
+                gap-2
+                bg-[#FDCC03]
+                hover:bg-[#800000]
+                text-black
+                hover:text-white
+                font-semibold
+                py-2.5
+                rounded-lg
+                transition-colors
+                duration-300
+                shadow-sm
+                cursor-pointer
+              "
+              title="Logout"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* ======================================================
@@ -640,6 +714,7 @@ const StudentDashboard = () => {
             TEST RESULTS
             SAME FRONTEND TABLE STRUCTURE
         ====================================================== */}
+        
 
         <div
           className="
@@ -844,10 +919,6 @@ const StudentDashboard = () => {
           EDIT PROFILE MODAL
       ======================================================== */}
 
-      {/* ========================================================
-          EDIT PROFILE MODAL
-      ======================================================== */}
-
       {isEditing && (
         <div
           className="
@@ -963,8 +1034,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Name */}
 
               {/* Name */}
 
@@ -1101,8 +1170,6 @@ const StudentDashboard = () => {
 
               {/* Section */}
 
-              {/* Section */}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Section (Cannot be changed)
@@ -1125,8 +1192,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Gender */}
 
               {/* Gender */}
 

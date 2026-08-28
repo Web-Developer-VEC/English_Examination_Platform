@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
-import { BookOpenCheck, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { BookOpenCheck } from "lucide-react";
 import "./Header.css";
 import collegeLogo from "../../assets/logo/college-logo.png";
 import {
     getAdminSession,
     getStudentSession,
-    clearAdminSession,
-    clearStudentSession,
 } from "../../utils/helpers";
 
 const Header = ({ portalTitle = "English Examination Portal" }) => {
 
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
+       const [user, setUser] = useState(null);
 
     useEffect(() => {
 
@@ -67,35 +63,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
     // =========================
     // LOGOUT
     // =========================
-    const handleLogout = () => {
-
-        if (!user) return;
-
-        if (user.role === "student") {
-
-            clearStudentSession();
-
-            window.dispatchEvent(
-                new Event("studentSessionChanged")
-            );
-
-            navigate("/studentlogin");
-
-        } else if (
-            user.role === "staff" ||
-            user.role === "admin"
-        ) {
-
-            clearAdminSession();
-
-            window.dispatchEvent(
-                new Event("adminSessionChanged")
-            );
-
-            navigate("/");
-        }
-    };
-
+   
     return (
         <header className="vec-header">
 
@@ -194,7 +162,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                     </div>
 
 
-                    {/* LOGOUT BUTTON */}
+                    {/* LOGOUT BUTTON
                     <button
                         type="button"
                         className="vec-header__logout"
@@ -202,7 +170,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                         title="Logout"
                     >
                         <LogOut size={18} />
-                    </button>
+                    </button> */}
 
                 </div>
             )}
