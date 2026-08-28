@@ -5,6 +5,7 @@ import AdminLogin from "../components/admin/AdminLogin";
 import StudentLogin from "../components/student/StudentLogin";
 import StudentProtectedRoute from "../components/auth/StudentProtectedRoute";
 import AdminProtectedRoute from "../components/auth/AdminProtectedRoute";
+import ForgetPassword from "../components/auth/ForgetPassword";
 
 import StudentLayout from "../layouts/StudentLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -23,7 +24,7 @@ import Students from "../pages/admin/Students";
 import FacultyList from "../pages/admin/FacultyList";
 import StudentDataUpload from "../pages/admin/StudentDataUpload";
 import StudentResult from "../pages/admin/StudentResult";
-
+import ProfileEdit from "../pages/admin/ProfileEdit";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -31,6 +32,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<AdminLogin />} />
       <Route path="/studentlogin" element={<StudentLogin />} />
+      <Route path="/forgot-password" element={<ForgetPassword />} />
 
       {/* Student */}
       <Route element={<StudentProtectedRoute />}>
@@ -53,14 +55,14 @@ export default function AppRoutes() {
           <Route path="schedule" element={<Schedule />} />
           <Route path="results" element={<Results />} />
           <Route path="students" element={<Students />} />
-          <Route path="faculty" element={<FacultyList />} />
-          <Route path="student-data" element={<StudentDataUpload />} />
+          <Route path="faculty-list" element={<FacultyList />} />
+          <Route path="studentData" element={<StudentDataUpload />} />
+          <Route path="student-profile-access" element={<ProfileEdit />} />
           <Route path="student-result" element={<StudentResult />} />
         </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-
     </Routes>
   );
 }
