@@ -52,15 +52,7 @@ app.use((req, res, next) => {
 
     res.on("finish", () => {
 
-        console.log(
-            "Hits:",
-            req.originalUrl,
-            "Status:",
-            res.statusCode,
-            "Time:",
-            Date.now() - start,
-            "ms"
-        );
+
 
     });
 
