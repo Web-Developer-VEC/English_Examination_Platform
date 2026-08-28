@@ -180,6 +180,7 @@ const StudentDashboard = () => {
       });
 
       const data = await sendStudentResult(testId, student.admissionNo);
+      toast.success("Result sent to mail successfully");
 
       console.log("studentresult response:", data);
 
@@ -688,9 +689,10 @@ const StudentDashboard = () => {
                 items-center
                 justify-center
                 gap-2
-                bg-red-600
-                hover:bg-red-700
-                text-white
+                bg-[#FDCC03]
+                hover:bg-[#800000]
+                text-black
+                hover:text-white
                 font-semibold
                 py-2.5
                 rounded-lg
@@ -716,7 +718,7 @@ const StudentDashboard = () => {
             TEST RESULTS
             SAME FRONTEND TABLE STRUCTURE
         ====================================================== */}
-        
+
 
         <div
           className="
