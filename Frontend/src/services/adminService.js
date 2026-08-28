@@ -158,7 +158,7 @@ export const scheduleExam = async (payload) => {
 
 export const getScheduleFormData = async () => {
     const response = await api.get(
-        `${STAFF_API}/schedule/getformdata`
+        `${API_URL}/schedule/getformdata`
     );
 
     return response.data;
@@ -171,7 +171,7 @@ export const getScheduleFormData = async () => {
 
 export const getStaff = async () => {
     const response = await api.get(
-        `${STAFF_API}/getstaff`
+        `${API_URL}/getstaff`
     );
 
     return response.data;
@@ -184,7 +184,7 @@ export const getStaff = async () => {
 
 export const updateStaff = async (payload) => {
     const response = await api.post(
-        `${STAFF_API}/updatestaff`,
+        `${API_URL}/updatestaff`,
         payload
     );
 
