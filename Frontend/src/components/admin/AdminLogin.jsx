@@ -3,11 +3,13 @@ import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
 import { loginUser } from "../../services/authService";
-import { saveAdminSession } from "../../utils/helpers";
+import { saveAdminSession,clearAdminSession,clearStudentSession } from "../../utils/helpers";
 import Footer from "../common/footer.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
+    clearAdminSession();
+    clearStudentSession();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({ identifier: "", password: "" });
     const navigate = useNavigate();
@@ -22,8 +24,7 @@ const AdminLogin = () => {
 
             const response = await loginUser(
                 formData.identifier,
-                formData.password,
-                "staff"
+                formData.password
             );
 
             if (response.success) {
