@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "*",
   }),
 );
 app.use(express.json());
@@ -26,7 +26,7 @@ app.use((req, res, next) => {
   const start = Date.now();
 
   res.on("finish", () => {
-    console.log("Hits :",req.originalUrl);
+    console.log("Hits :", req.originalUrl);
   });
 
   next();
