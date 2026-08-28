@@ -32,7 +32,7 @@ const NAV_ITEMS = [
         key: "faculty-list",
         label: "Faculty Incharge",
         icon: UserCog,
-        location: "/admin/faculty-list",
+        location: "/admin/FacultyIncharge",
       },
       {
         key: "QuestionUpload",
@@ -56,7 +56,7 @@ const NAV_ITEMS = [
         key: "student-profile-access",
         label: "Student Profile Access",
         icon: ShieldCheck,
-        location: "/admin/student-profile-access",
+        location: "/admin/StudentProfileAccess",
       },
       {
         key: "student-result",
