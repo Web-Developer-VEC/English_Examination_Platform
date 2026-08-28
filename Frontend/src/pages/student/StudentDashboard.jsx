@@ -180,6 +180,7 @@ const StudentDashboard = () => {
       });
 
       const data = await sendStudentResult(testId, student.admissionNo);
+      toast.success("Result sent to mail successfully");
 
       console.log("studentresult response:", data);
 
@@ -549,10 +550,6 @@ const StudentDashboard = () => {
           CONTENT
       ======================================================== */}
 
-      {/* ========================================================
-          CONTENT
-      ======================================================== */}
-
       <div
         className="
           flex-1
@@ -688,9 +685,10 @@ const StudentDashboard = () => {
                 items-center
                 justify-center
                 gap-2
-                bg-red-600
-                hover:bg-red-700
-                text-white
+                bg-[#FDCC03]
+                hover:bg-[#800000]
+                text-black
+                hover:text-white
                 font-semibold
                 py-2.5
                 rounded-lg
@@ -921,10 +919,6 @@ const StudentDashboard = () => {
           EDIT PROFILE MODAL
       ======================================================== */}
 
-      {/* ========================================================
-          EDIT PROFILE MODAL
-      ======================================================== */}
-
       {isEditing && (
         <div
           className="
@@ -1040,8 +1034,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Name */}
 
               {/* Name */}
 
@@ -1178,8 +1170,6 @@ const StudentDashboard = () => {
 
               {/* Section */}
 
-              {/* Section */}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Section (Cannot be changed)
@@ -1202,8 +1192,6 @@ const StudentDashboard = () => {
                   "
                 />
               </div>
-
-              {/* Gender */}
 
               {/* Gender */}
 
