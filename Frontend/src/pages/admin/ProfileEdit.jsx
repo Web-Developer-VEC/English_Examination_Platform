@@ -601,7 +601,7 @@ const StudentProfileAccess = () => {
       const data =
     await updateAcademicYear(value);
 
-      if (!response.status.toString().startsWith("2") || data?.success === false) {
+      if (data?.success === false) {
         throw new Error(
           getErrorMessage(
             data,
