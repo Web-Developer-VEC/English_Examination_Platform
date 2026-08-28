@@ -10,13 +10,12 @@ export const loginUser = async (
     password,
     role
 ) => {
-
     const response = await api.post(
         `${base_URL}/login`,
         {
             username,
             password,
-            role,
+            role
         }
     );
 
@@ -88,13 +87,12 @@ export const validateForgotPasswordOtp = async ({
 // =====================================================
 
 export const resetForgotPassword = async ({
-    username,
-    role,
-    resetToken,
-    newPassword,
-    confirmPassword,
+  username,
+  role,
+  resetToken,
+  newPassword,
+  confirmPassword,
 }) => {
-
     const response = await api.post(
         `${base_URL}/reset_password`,
         {
