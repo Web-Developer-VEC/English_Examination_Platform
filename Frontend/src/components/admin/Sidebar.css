@@ -1,205 +1,444 @@
-.vec-shell {
-  font-family: 'Poppins', sans-serif;
+/* =========================================================
+   ROOT SIDEBAR SYSTEM
+   ========================================================= */
 
-  --gold-mild: #ffc800b5;
-  --gold-mild-soft: #f7e5a8;
+.vec-shell {
+  font-family: "Poppins", sans-serif;
+
+  /* CHANGE THIS IF YOUR HEADER HEIGHT IS DIFFERENT */
+  --header-height: 160px;
+
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 100px;
+
+  --gold: #ffcd03;
+  --gold-soft: #f7e5a8;
+
+  --maroon: #800000;
+  --logout-maroon: #660000;
+
   --bg: #ffffff;
   --panel: #ffffff;
-  --maroon: #800000;
-  --maroon-soft: rgba(128, 0, 0, 0.08);
-  --maroon-soft-strong: rgba(128, 0, 0, 0.16);
-  --gold: #ffcc00;
+
   --text-main: #1a1a1a;
   --text-muted: #767676;
+
   --border: #e9e2e2;
 
-  background: var(--bg);
+  /*
+   * IMPORTANT
+   *
+   * This reserves exactly the same width
+   * as the visible collapsed sidebar.
+   */
+
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
+  flex: 0 0 var(--sidebar-collapsed-width);
 
   display: flex;
   align-items: flex-start;
 
-  /* Reserve space for the fixed sidebar */
-  width: 280px;
-  min-width: 280px;
-  flex: 0 0 280px;
+  background: var(--bg);
 
-  transition: width 0.25s ease, min-width 0.25s ease, flex-basis 0.25s ease;
+  transition:
+    width 0.25s ease,
+    min-width 0.25s ease,
+    flex-basis 0.25s ease;
 }
 
-/* Reserve only 80px when sidebar is collapsed */
-.vec-shell:has(.vec-sidebar.collapsed) {
-  width: 80px;
-  min-width: 80px;
-  flex-basis: 80px;
+
+/* =========================================================
+   SHELL WHEN OPEN
+   ========================================================= */
+
+.vec-shell-open {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  flex-basis: var(--sidebar-width);
 }
 
-/* When the collapsed sidebar is hovered, it expands */
-.vec-shell:has(.vec-sidebar.collapsed:hover) {
-  width: 280px;
-  min-width: 280px;
-  flex-basis: 280px;
-}
+
+/* =========================================================
+   MOBILE TOPBAR
+   ========================================================= */
 
 .vec-topbar {
   display: none;
 }
 
-/* ---------- Sidebar ---------- */
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 
 .vec-sidebar {
-  width: 280px;
-
   position: fixed;
-  top: 193px;
+
+  /*
+   * Sidebar starts EXACTLY at the bottom
+   * of the header.
+   */
+
+  top: var(--header-height);
   left: 0;
 
-  height: calc(100vh - 193px);
+  width: var(--sidebar-width);
+
+  /*
+   * Fill remaining viewport.
+   */
+
+  height: calc(100vh - var(--header-height));
 
   background: var(--panel);
+
   border-right: 1px solid var(--border);
-  box-shadow: 2px 0 10px rgba(128, 0, 0, 0.04);
+
+  box-shadow:
+    2px 0 10px rgba(128, 0, 0, 0.04);
 
   display: flex;
   flex-direction: column;
 
   overflow: hidden;
 
+  z-index: 1000;
+
   transition:
-    transform 0.3s ease,
-    width 0.25s ease;
-
-  z-index: 40;
+    width 0.25s ease,
+    transform 0.3s ease;
 }
 
-.vec-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
 
-.vec-sidebar::-webkit-scrollbar-thumb {
-  background: var(--maroon-soft-strong);
-  border-radius: 8px;
-}
+/* =========================================================
+   COLLAPSED SIDEBAR
+   ========================================================= */
 
 .vec-sidebar.collapsed {
-  width: 80px;
+  width: var(--sidebar-collapsed-width);
 }
 
-/* ---------- Sidebar Header ---------- */
 
-.vec-header {
+/*
+ * When collapsed sidebar is hovered,
+ * visually expand it.
+ */
+
+.vec-sidebar.collapsed:hover {
+  width: var(--sidebar-width);
+}
+
+
+/* =========================================================
+   SIDEBAR HEADER
+   ========================================================= */
+
+.vec-sidebar-header {
+  width: 100%;
+
+  height: 70px;
+  min-height: 70px;
+
   display: flex;
   align-items: center;
-  padding: 16px 14px;
-  border-bottom: 1px solid var(--border);
-}
 
-.vec-sidebar.collapsed .vec-header {
+  /*
+   * DEFAULT = CENTER
+   *
+   * This is used when sidebar is collapsed.
+   */
+
   justify-content: center;
-  padding: 16px 0;
+
+  padding: 0;
+
+  margin: 0;
+
+  border-bottom: 1px solid var(--border);
+
+  box-sizing: border-box;
+
+  flex-shrink: 0;
 }
 
 
+/* =========================================================
+   TOGGLE BUTTON
+   ========================================================= */
+
+.vec-sidebar-toggle {
+  width: 60px;
+  height: 52px;
+
+  padding: 0;
+  margin: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+
+  border: none;
+  border-radius: 14px;
+
+  color: var(--maroon);
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+/* Toggle hover */
+
+.vec-sidebar-toggle:hover {
+  background: var(--gold-soft);
+}
+
+
+/* Toggle click */
+
+.vec-sidebar-toggle:active {
+  transform: scale(0.94);
+}
+
+
+/* Toggle focus */
+
+.vec-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--maroon);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   IMPORTANT:
+   EXPANDED SIDEBAR = TOGGLE AT RIGHT CORNER
+   ========================================================= */
+
+.vec-sidebar.expanded .vec-sidebar-header {
+  justify-content: flex-end;
+  padding-right: 10px;
+}
+
+
+/*
+ * If sidebar is collapsed but mouse is hovering,
+ * it is visually open, therefore move toggle
+ * to the right corner.
+ */
+
+.vec-sidebar.collapsed:hover .vec-sidebar-header {
+  justify-content: flex-end;
+  padding-right: 10px;
+}
+
+
+/* =========================================================
+   MOBILE CLOSE BUTTON
+   ========================================================= */
 
 .vec-close-btn {
   display: none;
-  margin-left: 4px;
+
+  width: 38px;
+  height: 38px;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-left: auto;
 
   background: transparent;
+
   border: none;
+  border-radius: 10px;
 
   color: var(--maroon);
+
   cursor: pointer;
 }
 
-/* ---------- Navigation ---------- */
+.vec-close-btn:hover {
+  background: var(--gold-soft);
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 
 .vec-nav {
-  padding: 16px 14px 20px;
+  padding: 14px 10px 20px;
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+
+  gap: 10px;
+
+  flex: 1;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  box-sizing: border-box;
 }
 
-.vec-sidebar.collapsed .vec-nav {
-  padding: 16px 10px 20px;
+
+/* Scrollbar */
+
+.vec-nav::-webkit-scrollbar {
+  width: 5px;
 }
 
-.vec-section-label {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 4px 10px 2px;
+.vec-nav::-webkit-scrollbar-thumb {
+  background: rgba(128, 0, 0, 0.2);
+  border-radius: 8px;
 }
 
-.vec-sidebar.collapsed .vec-section-label {
-  display: none;
+
+/* =========================================================
+   NAV GROUP
+   ========================================================= */
+
+.vec-nav-group {
+  width: 100%;
 }
 
-/* ---------- Main Menu Item ---------- */
+
+/* =========================================================
+   MAIN MENU BUTTON
+   ========================================================= */
 
 .vec-item-btn {
   display: flex;
+
   align-items: center;
+
   gap: 13px;
 
   width: 100%;
+
   padding: 14px 18px;
 
   border: none;
+
   background: transparent;
 
   border-radius: 14px;
 
   font-family: inherit;
+
   font-size: 17.5px;
+
   font-weight: 500;
 
   color: var(--text-main);
 
   cursor: pointer;
+
   text-align: left;
 
+  box-sizing: border-box;
+
   transition:
-    background 0.1s ease,
-    color 0.1s ease,
+    background 0.15s ease,
+    color 0.15s ease,
     transform 0.15s ease;
 }
 
+
+/* =========================================================
+   COLLAPSED MAIN BUTTON
+   ========================================================= */
+
 .vec-sidebar.collapsed .vec-item-btn {
+  width: 100%;
+
   justify-content: center;
+  align-items: center;
+
   padding: 14px 0;
+
+  margin: 0;
+
   gap: 0;
 }
+
+
+/*
+ * When hovering collapsed sidebar,
+ * turn buttons back into expanded layout.
+ */
+
+.vec-sidebar.collapsed:hover .vec-item-btn {
+  justify-content: flex-start;
+
+  padding: 14px 18px;
+
+  gap: 13px;
+}
+
+
+/* =========================================================
+   MAIN BUTTON HOVER
+   ========================================================= */
 
 .vec-item-btn:hover {
   background: var(--gold);
   color: #1a1a1a;
 }
 
+
+/* Focus */
+
 .vec-item-btn:focus-visible {
   outline: 2px solid var(--maroon);
   outline-offset: 2px;
 }
 
+
+/* Active click */
+
 .vec-item-btn:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
+
+
+/* =========================================================
+   ACTIVE
+   ========================================================= */
 
 .vec-item-btn.active {
   background: var(--gold);
+
   color: #1a1a1a;
 
   font-weight: 600;
 
-  box-shadow: 0 6px 16px rgba(210, 170, 2, 0.3);
+  box-shadow:
+    0 6px 16px rgba(210, 170, 2, 0.3);
 }
 
+
+/* =========================================================
+   PARENT ACTIVE
+   ========================================================= */
+
 .vec-item-btn.parent-active-only {
-  background: var(--gold-mild-soft);
+  background: var(--gold-soft);
 }
+
+
+/* =========================================================
+   ICON
+   ========================================================= */
 
 .vec-icon {
   width: 19px;
@@ -212,16 +451,39 @@
   transition: color 0.2s ease;
 }
 
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
 .vec-label {
   flex: 1;
+
   white-space: nowrap;
 }
+
+
+/* =========================================================
+   HIDE LABEL WHEN COLLAPSED
+   ========================================================= */
 
 .vec-sidebar.collapsed .vec-label {
   display: none;
 }
 
-/* ---------- Chevron ---------- */
+
+/*
+ * Show labels when collapsed sidebar is hovered.
+ */
+
+.vec-sidebar.collapsed:hover .vec-label {
+  display: block;
+}
+
+
+/* =========================================================
+   CHEVRON
+   ========================================================= */
 
 .vec-chevron {
   width: 16px;
@@ -229,27 +491,42 @@
 
   flex-shrink: 0;
 
-  transition: transform 0.25s ease;
+  transition:
+    transform 0.25s ease;
 
   color: inherit;
 }
+
+
+/* Rotate */
 
 .vec-chevron.open {
   transform: rotate(180deg);
 }
 
+
+/* Hide while collapsed */
+
 .vec-sidebar.collapsed .vec-chevron {
   display: none;
 }
 
-/* ---------- Submenu ---------- */
+
+/* Show on hover */
+
+.vec-sidebar.collapsed:hover .vec-chevron {
+  display: block;
+}
+
+
+/* =========================================================
+   SUBMENU
+   ========================================================= */
 
 .vec-submenu {
   overflow: hidden;
 
   max-height: 0;
-
-  transition: max-height 0.3s ease;
 
   display: flex;
   flex-direction: column;
@@ -257,67 +534,114 @@
   gap: 4px;
 
   margin-left: 16px;
+
   padding-left: 14px;
 
-  border-left: 2px solid var(--maroon-soft-strong);
+  border-left:
+    2px solid rgba(128, 0, 0, 0.16);
+
+  transition:
+    max-height 0.3s ease,
+    margin 0.3s ease;
 }
 
+
+/* Open */
+
 .vec-submenu.open {
-  max-height: 320px;
+  max-height: 400px;
 
   margin-top: 4px;
   margin-bottom: 4px;
 }
 
+
+/* Hide submenu while collapsed */
+
 .vec-sidebar.collapsed .vec-submenu {
   display: none;
 }
 
-/* ---------- Submenu Items ---------- */
+
+/* Show submenu while hovering */
+
+.vec-sidebar.collapsed:hover .vec-submenu.open {
+  display: flex;
+}
+
+
+/* =========================================================
+   SUBMENU ITEMS
+   ========================================================= */
 
 .vec-subitem-btn {
   display: flex;
+
   align-items: center;
+
   gap: 10px;
 
   width: 100%;
+
   padding: 11px 14px;
 
   border: none;
+
   background: transparent;
 
   border-radius: 12px;
 
   font-family: inherit;
+
   font-size: 15.5px;
+
   font-weight: 450;
 
   color: var(--text-main);
 
   cursor: pointer;
+
   text-align: left;
 
+  box-sizing: border-box;
+
   transition:
-    background 0.1s ease,
-    color 0.1s ease;
+    background 0.15s ease,
+    color 0.15s ease;
 }
+
+
+/* Hover */
 
 .vec-subitem-btn:hover {
   background: var(--gold);
+
   color: #1a1a1a;
 }
+
+
+/* Focus */
 
 .vec-subitem-btn:focus-visible {
   outline: 2px solid var(--maroon);
   outline-offset: 2px;
 }
 
+
+/* Active */
+
 .vec-subitem-btn.active {
   background: var(--gold);
+
   color: #1a1a1a;
 
   font-weight: 600;
 }
+
+
+/* =========================================================
+   SUBMENU ICON
+   ========================================================= */
 
 .vec-subicon {
   width: 16px;
@@ -328,31 +652,39 @@
   color: var(--maroon);
 }
 
-/* ---------- Logout ---------- */
 
-/*
- * Logout is a MAIN LEVEL item.
- * It is outside the Faculty submenu.
- *
- * No margin-top: auto here.
- * Therefore it appears immediately after Faculty.
- */
+/* =========================================================
+/* =========================================================
+   LOGOUT FOOTER
+   ========================================================= */
 
 .vec-sidebar-footer {
-  padding: 0 14px 20px;
+  width: 100%;
+  padding: 10px 10px 20px;
+  box-sizing: border-box;
   flex-shrink: 0;
+  margin-top: auto;
 }
+
+
+/* =========================================================
+   LOGOUT BUTTON
+   ========================================================= */
 
 .vec-logout-btn {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+
   gap: 13px;
 
   width: 100%;
   padding: 14px 18px;
 
   border: none;
-  background: transparent;
+
+  /* NORMAL = GOLD */
+  background: #ffcc00;
 
   border-radius: 14px;
 
@@ -360,298 +692,494 @@
   font-size: 17.5px;
   font-weight: 500;
 
-  color: var(--text-main);
+  /* NORMAL TEXT */
+  color: #1a1a1a;
 
   cursor: pointer;
   text-align: left;
+  box-sizing: border-box;
 
   transition:
-    background 0.1s ease,
-    color 0.1s ease,
+    background 0.2s ease,
+    color 0.2s ease,
     transform 0.15s ease;
 }
 
+
+/* =========================================================
+   WHEN USER TOUCHES / HOVERS LOGOUT
+   ========================================================= */
+
 .vec-logout-btn:hover {
-  background: var(--gold);
-  color: #1a1a1a;
+  /* HOVER / TOUCH = BROWN */
+  background: #660000;
+
+  /* WHITE TEXT */
+  color: #ffffff;
 }
 
-.vec-logout-btn:focus-visible {
-  outline: 2px solid var(--maroon);
-  outline-offset: 2px;
-}
 
-.vec-logout-btn:active {
-  transform: scale(0.99);
-}
+/* =========================================================
+   LOGOUT ICON
+   ========================================================= */
 
 .vec-logout-btn .vec-icon {
   width: 19px;
   height: 19px;
-
   flex-shrink: 0;
 
-  color: var(--maroon);
+  /* NORMAL ICON */
+  color: #800000;
+
+  transition: color 0.2s ease;
 }
 
-.vec-logout-btn .vec-label {
-  flex: 1;
-  white-space: nowrap;
+
+/* ICON WHEN HOVERED / TOUCHED */
+
+.vec-logout-btn:hover .vec-icon {
+  color: #ffffff;
 }
 
-/* ---------- Collapsed Logout ---------- */
 
-.vec-sidebar.collapsed .vec-sidebar-footer {
-  padding: 0 10px 20px;
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.vec-logout-btn:focus-visible {
+  outline: 2px solid #800000;
+  outline-offset: 2px;
 }
 
-.vec-sidebar.collapsed .vec-logout-btn {
+
+/* =========================================================
+   ACTIVE / PRESS
+   ========================================================= */
+
+.vec-logout-btn:active {
+  transform: scale(0.98);
+}
+
+
+/* =========================================================
+   COLLAPSED LOGOUT
+   ========================================================= */
+
+.vec-sidebar.collapsed:not(:hover) .vec-sidebar-footer {
+  padding: 10px 10px 20px;
+}
+
+.vec-sidebar.collapsed:not(:hover) .vec-logout-btn {
   justify-content: center;
   padding: 14px 0;
   gap: 0;
 }
 
-.vec-sidebar.collapsed .vec-logout-btn .vec-label {
+.vec-sidebar.collapsed:not(:hover) .vec-logout-btn .vec-label {
   display: none;
 }
 
-/* ---------- Overlay ---------- */
+
+/*
+ * When collapsed sidebar is hovered,
+ * expand logout button.
+ */
+
+.vec-sidebar.collapsed:hover .vec-sidebar-footer {
+  padding: 10px 10px 20px;
+}
+
+
+.vec-sidebar.collapsed:hover .vec-logout-btn {
+  justify-content: flex-start;
+
+  padding: 14px 18px;
+
+  gap: 13px;
+}
+
+
+.vec-sidebar.collapsed:hover .vec-logout-btn .vec-label {
+  display: block;
+}
+
+
+/* =========================================================
+   OVERLAY
+   ========================================================= */
 
 .vec-overlay {
   display: none;
 }
 
-/* ---------- Responsive ---------- */
 
-/* Half-screen / tablet */
+/* =========================================================
+   TABLET
+   ========================================================= */
 
 @media (max-width: 900px) and (min-width: 601px) {
-  .vec-sidebar {
-    width: 80px;
-  }
-  .vec-collapse-btn {
-  display: none;
-}
 
-  .vec-sidebar .vec-section-label,
+  .vec-shell {
+    width: var(--sidebar-collapsed-width);
+
+    min-width: var(--sidebar-collapsed-width);
+
+    flex-basis: var(--sidebar-collapsed-width);
+  }
+
+
+  .vec-sidebar {
+    width: var(--sidebar-collapsed-width);
+  }
+
+
+  .vec-sidebar:hover {
+    width: var(--sidebar-width);
+  }
+
+
   .vec-sidebar .vec-label,
   .vec-sidebar .vec-chevron {
     display: none;
   }
 
-  .vec-sidebar .vec-submenu {
-    display: none;
-  }
 
-  .vec-sidebar .vec-item-btn {
-    justify-content: center;
-    padding: 14px 0;
-    gap: 0;
-  }
-
-  .vec-sidebar .vec-header {
-    justify-content: center;
-    padding: 16px 0;
-  }
-
-  .vec-sidebar:hover {
-    width: 280px;
-  }
-
-  .vec-sidebar:hover .vec-section-label,
   .vec-sidebar:hover .vec-label,
   .vec-sidebar:hover .vec-chevron {
     display: revert;
   }
 
+
+  .vec-sidebar .vec-item-btn {
+    justify-content: center;
+
+    padding: 14px 0;
+
+    gap: 0;
+  }
+
+
   .vec-sidebar:hover .vec-item-btn {
     justify-content: flex-start;
+
     padding: 14px 18px;
+
     gap: 13px;
   }
 
-  .vec-sidebar:hover .vec-header {
-    justify-content: flex-start;
-    padding: 16px 14px;
+
+  .vec-sidebar .vec-submenu {
+    display: none;
   }
 
-  /* Logout expands together with sidebar */
+
+  .vec-sidebar:hover .vec-submenu.open {
+    display: flex;
+  }
+
 
   .vec-sidebar .vec-sidebar-footer {
-    padding: 0 10px 20px;
+    padding: 10px 10px 20px;
   }
+
 
   .vec-sidebar .vec-logout-btn {
     justify-content: center;
+
     padding: 14px 0;
+
     gap: 0;
   }
+
 
   .vec-sidebar .vec-logout-btn .vec-label {
     display: none;
   }
 
-  .vec-sidebar:hover .vec-sidebar-footer {
-    padding: 0 14px 20px;
-  }
 
   .vec-sidebar:hover .vec-logout-btn {
     justify-content: flex-start;
+
     padding: 14px 18px;
+
     gap: 13px;
   }
+
 
   .vec-sidebar:hover .vec-logout-btn .vec-label {
     display: block;
   }
 }
 
-/* ---------- True Mobile ---------- */
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 @media (max-width: 600px) {
 
-  /* Mobile does not reserve sidebar space */
+  /*
+   * Mobile doesn't reserve sidebar width.
+   */
+
   .vec-shell {
     width: 100%;
+
     min-width: 0;
+
     flex: 0 0 auto;
-    padding-left: 0;
   }
+
+
+  /* =======================================================
+     MOBILE TOPBAR
+     ======================================================= */
 
   .vec-topbar {
     display: flex;
+
     align-items: center;
+
     gap: 12px;
 
     position: sticky;
+
     top: 0;
 
     width: 100%;
+
     height: 56px;
 
     background: var(--panel);
-    border-bottom: 1px solid var(--border);
+
+    border-bottom:
+      1px solid var(--border);
 
     padding: 0 16px;
 
-    z-index: 30;
+    z-index: 1100;
+
+    box-sizing: border-box;
   }
+
 
   .vec-topbar-title {
     font-size: 14px;
+
     font-weight: 600;
+
     color: var(--maroon);
   }
 
+
+  /* =======================================================
+     HAMBURGER
+     ======================================================= */
+
   .vec-hamburger {
-    background: var(--maroon-soft);
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background:
+      rgba(128, 0, 0, 0.08);
+
     border: none;
 
     border-radius: 8px;
 
-    width: 34px;
-    height: 34px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
     color: var(--maroon);
+
     cursor: pointer;
   }
 
-  .vec-sidebar {
-    position: fixed;
 
+  /* =======================================================
+     MOBILE SIDEBAR
+     ======================================================= */
+
+  .vec-sidebar {
     top: 0;
+
     left: 0;
 
     width: 280px;
+
     height: 100vh;
 
-    transform: translateX(-100%);
+    transform:
+      translateX(-100%);
 
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+    box-shadow:
+      4px 0 24px rgba(0, 0, 0, 0.18);
+
+    z-index: 1200;
   }
+
 
   .vec-sidebar.mobile-open {
-    transform: translateX(0);
+    transform:
+      translateX(0);
   }
 
-  /* Mobile drawer always full width */
+
+  /*
+   * Mobile always shows expanded layout.
+   */
+
   .vec-sidebar.collapsed {
     width: 280px;
   }
 
-  .vec-sidebar.collapsed .vec-section-label,
-  .vec-sidebar.collapsed .vec-label,
-  .vec-sidebar.collapsed .vec-chevron {
-    display: revert;
+
+  .vec-sidebar.collapsed:hover {
+    width: 280px;
   }
+
+
+  .vec-sidebar.collapsed .vec-label {
+    display: block;
+  }
+
+
+  .vec-sidebar.collapsed .vec-chevron {
+    display: block;
+  }
+
+
+  .vec-sidebar.collapsed .vec-item-btn {
+    justify-content: flex-start;
+
+    padding: 14px 18px;
+
+    gap: 13px;
+  }
+
+
+  .vec-sidebar.collapsed .vec-submenu {
+    display: none;
+  }
+
 
   .vec-sidebar.collapsed .vec-submenu.open {
     display: flex;
   }
 
-  .vec-sidebar.collapsed .vec-item-btn {
-    justify-content: flex-start;
-    padding: 14px 18px;
-    gap: 13px;
-  }
 
   .vec-sidebar.collapsed .vec-logout-btn {
     justify-content: flex-start;
+
     padding: 14px 18px;
+
     gap: 13px;
   }
+
 
   .vec-sidebar.collapsed .vec-logout-btn .vec-label {
     display: block;
   }
 
-  .vec-collapse-btn {
+
+  /* =======================================================
+     MOBILE HEADER
+     ======================================================= */
+
+  .vec-sidebar-header {
+    height: 62px;
+
+    min-height: 62px;
+
+    justify-content: flex-end;
+
+    padding: 0 14px;
+  }
+
+
+  /*
+   * Hide desktop toggle on mobile.
+   */
+
+  .vec-sidebar-toggle {
     display: none;
   }
+
+
+  /*
+   * Show X.
+   */
 
   .vec-close-btn {
     display: inline-flex;
   }
+
+
+  /* =======================================================
+     MOBILE OVERLAY
+     ======================================================= */
 
   .vec-overlay.mobile-open {
     display: block;
 
     position: fixed;
+
     inset: 0;
 
-    background: rgba(20, 0, 0, 0.35);
+    background:
+      rgba(20, 0, 0, 0.35);
 
-    z-index: 35;
-  }
-}
-
-/* ---------- Sidebar Header ---------- */
-
-.vec-sidebar-header {
-  display: none;
-}
-
-.vec-sidebar.collapsed .vec-sidebar-header {
-  justify-content: center;
-  padding: 16px 0;
-}
-@media (max-width: 600px) {
-
-  .vec-sidebar-header {
-    display: flex;
-    align-items: center;
-    min-height: 62px;
-    padding: 16px 14px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    z-index: 1150;
   }
 
-  .vec-close-btn {
-    display: inline-flex;
+
+  /*
+   * Mobile nav.
+   */
+
+  .vec-nav {
+    padding:
+      14px 10px 20px;
   }
 
+
+  /*
+   * Mobile logout.
+   */
+
+  .vec-sidebar-footer {
+    padding:
+      10px 10px 20px;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+  .vec-sidebar {
+    width: 270px;
+  }
+
+  .vec-sidebar.collapsed {
+    width: 270px;
+  }
+
+  .vec-item-btn {
+    font-size: 16px;
+  }
+
+  .vec-subitem-btn {
+    font-size: 14px;
+  }
+
+  .vec-logout-btn {
+    font-size: 16px;
+  }
 }
