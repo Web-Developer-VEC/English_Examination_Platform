@@ -51,7 +51,7 @@ router.get(
 
 
 // Upload Student Excel
-router.post("/studentsupload",student_upload_Middleware, studentsUpload);
+router.post("/studentsupload",roleByAccess(["admin"]),student_upload_Middleware, studentsUpload);
 router.put("/studentsupdate", roleByAccess(["admin"]),student_upload_Middleware, updateStudent);
 // Upload Audio + Excel
 router.post("/questionsupload",roleByAccess(["admin"]), questions_upload_Middleware, questionsupload);
