@@ -10,10 +10,13 @@ import { Navigate, useNavigate } from "react-router-dom";
 const AdminLogin = () => {
     clearAdminSession();
     clearStudentSession();
-    const [showPassword, setShowPassword] = useState(false);
-     const [loginError, setLoginError] = useState("");
-    const [formData, setFormData] = useState({ identifier: "", password: "" });
+
     const navigate = useNavigate();
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [loginError, setLoginError] = useState("");
+    const [formData, setFormData] = useState({ identifier: "", password: "" });
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -34,10 +37,7 @@ const AdminLogin = () => {
                     "studentSession"
                 );
                 toast.success("Login successfull");
-                // Optional: remove old student session
-                sessionStorage.removeItem(
-                    "studentSession"
-                );
+                
                 saveAdminSession({
                     token: response.token,
                     sessionId: response.sessionId,
@@ -116,7 +116,7 @@ const AdminLogin = () => {
                                         onClick={() => setShowPassword((v) => !v)}
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                                     </button>
                                 </div>
                             </div>
@@ -138,9 +138,8 @@ const AdminLogin = () => {
                                         className="login-footer__link"
                                         onClick={() => navigate("/forgot-password")}
                                     >
-                                        Forgot your password?
+                                        Reset your password
                                     </button>
-                                    {/* <p className="login-footer__link">Ask other admin to reset the password</p> */}
                                 </>
                             </div>
                         </form>

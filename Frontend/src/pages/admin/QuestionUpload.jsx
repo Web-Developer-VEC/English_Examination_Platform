@@ -97,8 +97,7 @@ function QuestionUploadCard() {
 
   const handleTemplateDownload = () => {
     const link = document.createElement("a");
-    link.href =
-      "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/QUESTION_BANK_TEMPLATE.xlsx";
+    link.href = `${import.meta.env.VITE_BASE_URL}/QUESTION_BANK_TEMPLATE.xlsx`;
     link.download = "QUESTION_BANK_TEMPLATE.xlsx";
     document.body.appendChild(link);
     link.click();
@@ -141,9 +140,7 @@ function QuestionUploadCard() {
         );
       }
 
-      toast.success(
-        "Question uploaded successfully."
-      );
+      toast.success("Question uploaded successfully.");
 
       setQuestionCode("");
       setAudioFile(null);
@@ -429,13 +426,7 @@ function DeleteQuestionCard() {
       // 1. GET FORM DATA
       // =====================================================
 
-      const formData =
-        await getQuestionFormData();
-
-      console.log(
-        "GET FORM DATA RESPONSE:",
-        formData
-      );
+      const formData = await getQuestionFormData();
 
       if (!formData.success) {
         throw new Error(
@@ -451,17 +442,11 @@ function DeleteQuestionCard() {
       const questionList =
         formData?.data?.tests || [];
 
-      console.log(
-        "QUESTION LIST:",
-        questionList
-      );
-
       // =====================================================
       // 3. FIND QUESTION USING QUESTION CODE
       // =====================================================
 
-      const enteredQuestionCode =
-        questionCode.trim().toLowerCase();
+      const enteredQuestionCode = questionCode.trim().toLowerCase();
 
       const questionSet =
         questionList.find(
@@ -471,11 +456,6 @@ function DeleteQuestionCard() {
               .toLowerCase() ===
             enteredQuestionCode
         );
-
-      console.log(
-        "MATCHED QUESTION SET:",
-        questionSet
-      );
 
       if (!questionSet) {
 
@@ -492,13 +472,7 @@ function DeleteQuestionCard() {
       // 4. GET QUESTION SET ID
       // =====================================================
 
-      const questionSetId =
-        questionSet.questionSetId;
-
-      console.log(
-        "QUESTION SET ID:",
-        questionSetId
-      );
+      const questionSetId = questionSet.questionSetId;
 
       if (!questionSetId) {
         throw new Error(
@@ -510,13 +484,7 @@ function DeleteQuestionCard() {
       // 5. DELETE QUESTION SET
       // =====================================================
 
-      const deleteData =
-        await deleteQuestionSet(questionSetId);
-
-      console.log(
-        "DELETE RESPONSE:",
-        deleteData
-      );
+      const deleteData = await deleteQuestionSet(questionSetId);
 
       if (!deleteData.success) {
         throw new Error(
