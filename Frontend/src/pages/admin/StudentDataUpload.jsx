@@ -31,7 +31,7 @@ import {
 } from "../../services/adminService";
 import "./StudentDataUpload.css";
 
-const TEMPLATE_URL = `${import.meta.env.VITE_BASE_URL}/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx`;
+const TEMPLATE_URL = `${import.meta.env.VITE_BASE_URL}/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx`;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const STUDENTS_PER_PAGE = 50;

@@ -97,7 +97,7 @@ function QuestionUploadCard() {
 
   const handleTemplateDownload = () => {
     const link = document.createElement("a");
-    link.href = `${import.meta.env.VITE_BASE_URL}/QUESTION_BANK_TEMPLATE.xlsx`;
+    link.href = `${import.meta.env.VITE_BASE_URL}/templates/QUESTION_BANK_TEMPLATE.xlsx`;
     link.download = "QUESTION_BANK_TEMPLATE.xlsx";
     document.body.appendChild(link);
     link.click();
