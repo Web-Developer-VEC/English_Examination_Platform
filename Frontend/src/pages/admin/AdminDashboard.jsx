@@ -361,7 +361,7 @@ export default function AdminDashboard() {
                                         .filter(Boolean),
                                 ]}
                                 onChange={setDepartment}
-                                placeholder="Select Department"
+                                placeholder="Select Branch"
                             />
 
                         </div>
@@ -453,7 +453,7 @@ export default function AdminDashboard() {
                         }}
                     >
                         <TableHeading>
-                            Department
+                            Branch
                         </TableHeading>
 
                         <TableHeading>
