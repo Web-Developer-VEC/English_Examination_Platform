@@ -53,9 +53,9 @@ export default function InstructionsPage() {
 
         try {
 
-                // ==========================================
-                // GET STUDENT SESSION
-                // ==========================================
+            // ==========================================
+            // GET STUDENT SESSION
+            // ==========================================
 
             const session = getStudentSession();
 
@@ -418,11 +418,11 @@ export default function InstructionsPage() {
                         <div className="space-y-5">
                             <Instruction
                                 number="01"
-                                text="Use headphones or earphones during the assessment."
+                                text="Use headphones or earphones throughout the assessment."
                             />
                             <Instruction
                                 number="02"
-                                text="Make sure you are in a quiet environment before starting."
+                                text="Remain in a quiet and distraction-free environment."
                             />
                             <Instruction
                                 number="03"
@@ -430,19 +430,19 @@ export default function InstructionsPage() {
                             />
                             <Instruction
                                 number="04"
-                                text="Do not refresh, close, or navigate away from the browser during the assessment."
+                                text="Refreshing, switching tabs, or leaving the assessment will be considered malpractice."
                             />
                             <Instruction
                                 number="05"
-                                text="Ensure that you have a stable internet connection throughout the test."
+                                text="Maintain a stable internet connection throughout the assessment."
                             />
                             <Instruction
                                 number="06"
-                                text="The timer will begin immediately after you start the assessment."
+                                text="The timer starts immediately when the assessment begins."
                             />
                             <Instruction
                                 number="07"
-                                text="Complete all questions within the allotted time."
+                                text="Complete and submit all questions within the allotted time."
                             />
                         </div>
                         {/* DIVIDER */}
