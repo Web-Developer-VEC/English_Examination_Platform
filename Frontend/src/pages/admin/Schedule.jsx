@@ -88,6 +88,12 @@ const dropdownArrowClasses = (isOpen) =>
   `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
   }`;
 
+// Same visual family as dropdownTriggerClasses (rounded-xl, px-4 py-3, gap-3),
+// used for plain (non-toggle) fields like Date and Duration so every box in
+// the Date / Start / End / Duration row matches height, radius, and spacing.
+const staticFieldClasses =
+  "flex w-full items-center gap-3 rounded-xl border border-black/15 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:border-black/30 focus-within:border-[#fdcc03] focus-within:shadow-[0_0_0_3px_rgba(253,204,3,0.15)]";
+
 const dropdownPanelClasses =
   "absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] animate-[dropdownIn_0.15s_ease-out]";
 
@@ -289,7 +295,7 @@ function AnalogClockPicker({
             <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
           )}
           <span
-            className={`flex-1 truncate text-[15px] font-medium ${displayValue ? "text-black" : "text-black/45"
+            className={`flex-1 min-w-0 truncate text-[14px] font-medium ${displayValue ? "text-black" : "text-black/45"
               }`}
           >
             {displayValue || "Select time"}
@@ -489,6 +495,7 @@ export default function Schedule() {
   const [endHour, setEndHour] = useState("");
   const [endMinute, setEndMinute] = useState("");
   const [endPeriod, setEndPeriod] = useState("AM");
+  const [duration, setDuration] = useState("");
 
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -689,6 +696,7 @@ export default function Schedule() {
     endHour,
     endMinute,
     endPeriod,
+    duration,
   });
 
   // Applies a saved draft (or blanks everything if none was saved yet)
@@ -712,6 +720,7 @@ export default function Schedule() {
     setEndHour(d.endHour || "");
     setEndMinute(d.endMinute || "");
     setEndPeriod(d.endPeriod || "AM");
+    setDuration(d.duration || "");
     setAdmissionSearch("");
   };
 
@@ -904,6 +913,14 @@ export default function Schedule() {
     const hasEndTime = endHour && endMinute && endPeriod;
     if (!hasStartTime) problems.push("Start Time is required");
     if (!hasEndTime) problems.push("End Time is required");
+
+    const durationNumber = Number(duration);
+    if (!duration.trim()) {
+      problems.push("Duration is required");
+    } else if (!Number.isInteger(durationNumber) || durationNumber <= 0) {
+      problems.push("Duration must be a positive whole number of minutes");
+    }
+
     // Start time cannot be in the past when scheduling for today
     if (date && hasStartTime) {
       const now = new Date();
@@ -936,8 +953,16 @@ export default function Schedule() {
         startPeriod,
       );
       const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
+
       if (endMinutes <= startMinutes) {
         problems.push("End Time must be after Start Time");
+      } else if (duration.trim()) {
+        const durationNumber = Number(duration);
+        const windowMinutes = endMinutes - startMinutes;
+
+        if (Number.isInteger(durationNumber) && durationNumber > windowMinutes) {
+          problems.push("Duration cannot be greater than the Start Time to End Time window");
+        }
       }
     }
 
@@ -978,9 +1003,8 @@ export default function Schedule() {
       startPeriod,
     );
     const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
-    const duration =
-      toMinutesSinceMidnight(endHour, endMinute, endPeriod) -
-      toMinutesSinceMidnight(startHour, startMinute, startPeriod);
+    const durationMinutes = Number(duration);
+
     const combosToSubmit = selectedCombos
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
@@ -1001,7 +1025,7 @@ export default function Schedule() {
           semester: semester.toLowerCase(),
           section: combo.section,
           admissionNo: selectedAdmissionNos,
-          duration,
+          duration: durationMinutes,
           startTime,
           endTime,
         };
@@ -1488,25 +1512,54 @@ export default function Schedule() {
                 )}
               </div>
 
-              {/* Test Code */}
-              <div ref={questionCodeRef} className="relative">
-                <label className={labelClasses}>Question Code</label>
-                <ThemeDropdown
-                  icon={BookOpenCheck}
-                  value={questionCode}
-                  options={TEST_CODE_LABELS}
-                  onChange={setquestionCode}
-                  placeholder="Select Test Code"
-                  loading={isLoadingScheduleData}
-                />
-              </div>
+              {/* Question Code / Date / Start Time / End Time / Duration */}
+              <style>
+                {`
+    /* Force the empty dd-mm-yyyy segments to render at full text contrast
+       instead of the browser's faint placeholder tone. */
+    .date-input-dark {
+      color-scheme: light;
+    }
+    .date-input-dark::-webkit-datetime-edit-text,
+    .date-input-dark::-webkit-datetime-edit-month-field,
+    .date-input-dark::-webkit-datetime-edit-day-field,
+    .date-input-dark::-webkit-datetime-edit-year-field {
+      color: #1F2937;
+    }
+    .date-input-dark::-webkit-calendar-picker-indicator {
+      margin-left: auto;
+      opacity: 0.6;
+    }
+    /* Hide native number spinner so it never crowds the "mins" suffix. */
+    .no-spinner::-webkit-outer-spin-button,
+    .no-spinner::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .no-spinner {
+      -moz-appearance: textfield;
+    }
+  `}
+              </style>
 
-              {/* Date / Start Time / End Time */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
+              {/* Question Code (2 boxes wide) + Date (1 box wide, matches the row below) */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div ref={questionCodeRef} className="relative sm:col-span-2 min-w-0">
+                  <label className={labelClasses}>Question Code</label>
+                  <ThemeDropdown
+                    icon={BookOpenCheck}
+                    value={questionCode}
+                    options={TEST_CODE_LABELS}
+                    onChange={setquestionCode}
+                    placeholder="Select Test Code"
+                    loading={isLoadingScheduleData}
+                  />
+                </div>
+
+                <div className="min-w-0">
                   <label className={labelClasses}>Date</label>
-                  <div className="relative">
-                    <CalendarDays className={iconLeftClasses} />
+                  <div className={staticFieldClasses}>
+                    <CalendarDays size={18} strokeWidth={2} className="shrink-0 text-black/60" />
                     <input
                       type="date"
                       value={date}
@@ -1518,43 +1571,69 @@ export default function Schedule() {
                         ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                       })()}
                       onChange={(e) => setDate(e.target.value)}
-                      className={boxClasses + " pr-2"}
+                      className="date-input-dark w-full flex-1 bg-transparent text-[14px] font-medium text-black outline-none"
                     />
                   </div>
                 </div>
+              </div>
 
-                <AnalogClockPicker
-                  label="Start Time"
-                  IconComponent={Clock3}
-                  hour={startHour}
-                  minute={startMinute}
-                  period={startPeriod}
-                  selectedDate={date}
-                  minDateTime={
-                    (() => {
-                      const now = new Date();
-                      return now.getHours() * 60 + now.getMinutes();
-                    })()
-                  }
-                  onChange={({ hour, minute, period }) => {
-                    setStartHour(hour);
-                    setStartMinute(minute);
-                    setStartPeriod(period);
-                  }}
-                />
+              {/* Start Time / End Time / Duration — 3 equal boxes */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="min-w-0">
+                  <AnalogClockPicker
+                    label="Start Time"
+                    IconComponent={Clock3}
+                    hour={startHour}
+                    minute={startMinute}
+                    period={startPeriod}
+                    selectedDate={date}
+                    minDateTime={
+                      (() => {
+                        const now = new Date();
+                        return now.getHours() * 60 + now.getMinutes();
+                      })()
+                    }
+                    onChange={({ hour, minute, period }) => {
+                      setStartHour(hour);
+                      setStartMinute(minute);
+                      setStartPeriod(period);
+                    }}
+                  />
+                </div>
 
-                <AnalogClockPicker
-                  label="End Time"
-                  IconComponent={Clock4}
-                  hour={endHour}
-                  minute={endMinute}
-                  period={endPeriod}
-                  onChange={({ hour, minute, period }) => {
-                    setEndHour(hour);
-                    setEndMinute(minute);
-                    setEndPeriod(period);
-                  }}
-                />
+                <div className="min-w-0">
+                  <AnalogClockPicker
+                    label="End Time"
+                    IconComponent={Clock4}
+                    hour={endHour}
+                    minute={endMinute}
+                    period={endPeriod}
+                    onChange={({ hour, minute, period }) => {
+                      setEndHour(hour);
+                      setEndMinute(minute);
+                      setEndPeriod(period);
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <label className={labelClasses}>Duration</label>
+                  <div className={staticFieldClasses}>
+                    <Clock3 size={18} strokeWidth={2} className="shrink-0 text-black/60" />
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      placeholder=""
+                      className="no-spinner w-full flex-1 bg-transparent text-[14px] font-medium text-black outline-none placeholder:text-black/45"
+                    />
+                    <span className="shrink-0 text-xs font-semibold text-[#808080]">
+                      mins
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
