@@ -28,24 +28,37 @@
         }
 
         .header {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            text-align: left;
             margin-bottom: 20px;
         }
 
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             object-fit: contain;
-            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
-        .header h1 {
+        .header-text {
+            text-align: center;
+        }
+
+        .header-text h1 {
             margin: 0;
             font-size: 24px;
         }
 
-        .header h2 {
-            margin: 8px 0;
+        .header-text h4 {
+            margin: 4px 0;
+            font-weight: normal;
+        }
+
+        .header-text h2 {
+            margin: 6px 0;
             font-size: 18px;
         }
 
@@ -125,9 +138,13 @@
             alt="College Logo"
         >
 
-        <h1>Velammal Engineering College</h1>
-        <h2>English Department</h2>
-        <h2>Examination Report</h2>
+        <div class="header-text">
+            <h1>Velammal Engineering College</h1>
+            <h4><i>(An Autonomous Institution, Affiliated to Anna University, Chennai)</i></h4>
+            <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
+            <h2>English Department</h2>
+            <h2>Examination Report</h2>
+        </div>
 
     </div>
 
