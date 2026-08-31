@@ -4,8 +4,9 @@ import Register from "../auth/Register"
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { saveStudentSession,clearStudentSession,clearAdminSession } from "../../utils/helpers";
+import { saveStudentSession, clearStudentSession, clearAdminSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
   clearStudentSession();
@@ -39,15 +40,20 @@ const StudentLogin = () => {
       );
 
       if (response.success) {
+
         sessionStorage.removeItem(
           "adminSession"
         );
+
+        toast.success("Login successfull");
         saveStudentSession({
           token: response.token,
           user: response.user
         });
-
-        navigate("/student/dashboard");
+        setTimeout(() => {
+          navigate("/student/dashboard");
+        }, 2000);
+        
       }
 
     } catch (error) {
@@ -63,6 +69,7 @@ const StudentLogin = () => {
   };
 
   return (<>
+    <ToastContainer position="bottom-right" autoClose="2000"/>
     <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
@@ -110,7 +117,7 @@ const StudentLogin = () => {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
           </div>
         </div>

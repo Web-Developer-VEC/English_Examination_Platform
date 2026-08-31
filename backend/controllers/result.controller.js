@@ -5,7 +5,7 @@ const puppeteer = require("puppeteer");
 const { ObjectId } = require("mongodb");
 
 const { getDB } = require("../config/db");
-const { getFromS3, uploadToS3 } = require("../service/s3.service");
+const { uploadToS3 } = require("../service/s3.service");
 
 // ============================================================
 // GENERATE EXAM REPORT PDF
@@ -33,7 +33,7 @@ const generateExamReport = async (req, res) => {
     // ====================================================
     // CLEAN FILTERS
     // ====================================================
-    const { batch, department, section, cie, semester, academicYear } = data;
+    const { batch, department, section, cie, semester, academicYear, category } = data;
 
     const cleanBatch =
       batch && typeof batch === "string" && batch.trim() !== ""
@@ -72,6 +72,26 @@ const generateExamReport = async (req, res) => {
     const cieValue = isCieReport ? cie.trim() : null;
 
     console.log("isCieReport:", isCieReport);
+
+    // ====================================================
+    // DETERMINE REPORT CATEGORY (regular vs university)
+    // ====================================================
+    const cleanCategory =
+      category && typeof category === "string" && category.trim() !== ""
+        ? category.trim().toLowerCase()
+        : null;
+
+    const isUniversityReport = cleanCategory === "university";
+
+    const signLeftLabel = isUniversityReport
+      ? "Internal Examiner's Sign"
+      : "Staff's Sign";
+
+    const signRightLabel = isUniversityReport
+      ? "External Examiner's Sign"
+      : "HOD's Sign";
+
+    console.log("isUniversityReport:", isUniversityReport);
 
     // ====================================================
     // GET DATABASE
@@ -261,9 +281,9 @@ const generateExamReport = async (req, res) => {
       }
 
       const entry = studentTests.get(testKey);
-      const category = (record.category || "").toString().trim().toLowerCase();
+      const recordCategory = (record.category || "").toString().trim().toLowerCase();
 
-      if (category === "retest") {
+      if (recordCategory === "retest") {
         entry.retest = record.obtainedMarks ?? 0;
       } else {
         entry.normal = record.obtainedMarks ?? 0;
@@ -365,16 +385,16 @@ const generateExamReport = async (req, res) => {
     }
 
     // ====================================================
-    // GET LOGO FROM S3
+    // GET LOGO FROM LOCAL FILE
     // ====================================================
-    const logoKey = "english_exam_platform/assets/logo.png";
+    const logoPath = path.join(__dirname, "../assets/vec-logo.png");
     let logoBase64;
 
     try {
-      const logoBuffer = await getFromS3(logoKey);
+      const logoBuffer = fs.readFileSync(logoPath);
       logoBase64 = logoBuffer.toString("base64");
     } catch (error) {
-      console.error("S3 Logo Error:", error);
+      console.error("Local Logo Error:", error);
       return res.status(500).json({
         success: false,
         message: "College logo not found.",
@@ -409,7 +429,9 @@ const generateExamReport = async (req, res) => {
       .replace("{{STAFF}}", staffValue) // Replaced duplicates with a single tag
       .replace("{{MARKS_HEADERS}}", extraHeaderCells)
       .replace("{{ROWS}}", rows)
-      .replace("{{TOTAL_STUDENTS}}", studentRoster.length);
+      .replace("{{TOTAL_STUDENTS}}", studentRoster.length)
+      .replace("{{SIGN_LEFT_LABEL}}", signLeftLabel)
+      .replace("{{SIGN_RIGHT_LABEL}}", signRightLabel);
 
     // ====================================================
     // LAUNCH PUPPETEER

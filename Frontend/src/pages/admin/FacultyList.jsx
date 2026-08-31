@@ -246,10 +246,7 @@ const FacultyList = () => {
         );
       }
 
-      console.log(
-        "SCHEDULE DATA:",
-        result
-      );
+      console.log("SCHEDULE DATA:",result);
 
       const rows =
         result?.data
@@ -267,14 +264,10 @@ const FacultyList = () => {
       );
 
     } catch (error) {
-      console.error(
-        "Schedule data error:",
-        error
-      );
+      console.error("Schedule data error:",error);
 
       showPopup(
-        "error",
-        error?.message ||
+        "Error",
         "Unable to load department and section"
       );
 
@@ -314,10 +307,7 @@ const FacultyList = () => {
         );
       }
 
-      console.log(
-        "STAFF DATA:",
-        result
-      );
+      console.log("STAFF DATA:",result);
 
       const rows =
         result?.data?.staff ||
@@ -352,14 +342,10 @@ const FacultyList = () => {
       );
 
     } catch (error) {
-      console.error(
-        "Get staff error:",
-        error
-      );
+      console.error("Get staff error:",error);
 
       showPopup(
-        "error",
-        error?.message ||
+        "Error",
         "Unable to load staff"
       );
 
@@ -1088,14 +1074,10 @@ const FacultyList = () => {
           "Photo compressed successfully"
         );
       } catch (error) {
-        console.error(
-          "Image compression error:",
-          error
-        );
+        console.error("Image compression error:",error);
 
         showPopup(
           "error",
-          error?.message ||
           "Unable to compress photo"
         );
       } finally {
@@ -1305,10 +1287,7 @@ const FacultyList = () => {
         data: completeStaffList,
       };
 
-      console.log(
-        "STAFF COLLECTION PAYLOAD:",
-        JSON.stringify(payload, null, 2)
-      );
+      console.log("STAFF COLLECTION PAYLOAD:",JSON.stringify(payload, null, 2));
 
       const result = await updateStaff(payload);
 
@@ -1347,11 +1326,8 @@ const FacultyList = () => {
       showPopup(
         "error",
         status === 413
-          ? serverMessage ||
-            "Photo/data is too large. Please choose a smaller photo."
-          : serverMessage ||
-            error?.message ||
-            "Unable to save staff"
+          ? "Photo/data is too large. Please choose a smaller photo."
+          : "Unable to save staff"
       );
     } finally {
       setSaving(false);
@@ -1415,10 +1391,7 @@ const FacultyList = () => {
         data: remainingStaff,
       };
 
-      console.log(
-        "STAFF DELETE COLLECTION PAYLOAD:",
-        JSON.stringify(payload, null, 2)
-      );
+      console.log("STAFF DELETE COLLECTION PAYLOAD:",JSON.stringify(payload, null, 2));
 
       const result = await updateStaff(payload);
 
@@ -1440,10 +1413,7 @@ const FacultyList = () => {
         "Staff deleted successfully"
       );
     } catch (error) {
-      console.error(
-        "Staff delete error:",
-        error
-      );
+      console.error("Staff delete error:",error);
 
       const serverMessage =
         error?.response?.data?.message ||
@@ -1451,9 +1421,7 @@ const FacultyList = () => {
 
       showPopup(
         "error",
-        serverMessage ||
-          error?.message ||
-          "Unable to delete staff"
+        "Unable to delete staff"
       );
     } finally {
       setSaving(false);

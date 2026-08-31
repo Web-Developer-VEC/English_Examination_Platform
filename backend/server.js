@@ -53,11 +53,11 @@ app.use((req, res, next) => {
   });
 
 
-
+  next();
     });
 
-    next();
-});
+  
+
 
 // Register Routes
 app.use("/api", indexRoutes);

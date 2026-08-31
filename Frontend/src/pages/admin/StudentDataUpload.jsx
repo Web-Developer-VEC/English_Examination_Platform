@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   UserRound,
   CloudUpload,
@@ -31,7 +31,7 @@ import {
 } from "../../services/adminService";
 import "./StudentDataUpload.css";
 
-const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
+const TEMPLATE_URL = `${import.meta.env.VITE_BASE_URL}/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx`;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const STUDENTS_PER_PAGE = 50;
@@ -333,7 +333,6 @@ const StudentDataUpload = () => {
       setStudents([]);
 
       showExistingError(
-        error?.message ||
         "Unable to load batch, department and section data."
       );
     } finally {
@@ -420,7 +419,7 @@ const StudentDataUpload = () => {
       console.error("Student upload error:", error);
 
       showMessage(
-        error?.message || "Something went wrong while uploading.",
+        "Something went wrong while uploading.",
         "error"
       );
     } finally {
@@ -458,10 +457,7 @@ const StudentDataUpload = () => {
         section: selectedSection,
       });
 
-      console.log(
-        "Existing student data API response:",
-        data
-      );
+      console.log("Existing student data API response:",data);
 
       if (data?.success === false) {
         throw new Error(
@@ -484,7 +480,7 @@ const StudentDataUpload = () => {
 
       setStudents([]);
       showExistingError(
-        error?.message || "Unable to load existing student data."
+        "Unable to load existing student data."
       );
     } finally {
       setLoadingStudents(false);
