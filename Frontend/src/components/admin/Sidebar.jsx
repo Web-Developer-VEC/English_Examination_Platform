@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getAdminSession } from "../../utils/helpers";
 
 import {
   LayoutDashboard,
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
     key: "faculty",
     label: "Faculty",
     icon: Users,
+    adminOnly: true,
 
     children: [
       {
@@ -68,18 +70,23 @@ const NAV_ITEMS = [
         icon: ShieldCheck,
         location: "/admin/StudentProfileAccess",
       },
-
-      {
-        key: "student-result",
-        label: "Result Download",
-        icon: ClipboardList,
-        location: "/admin/student-result",
-      },
     ],
+  },
+
+  // STAFF + ADMIN
+  {
+    key: "student-result",
+    label: "Result Download",
+    icon: ClipboardList,
+    location: "/admin/student-result",
   },
 ];
 
 export default function AdminSidebar() {
+
+  const session = getAdminSession();
+const role = session?.user?.role;
+console.log("ROLE:", role);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -274,8 +281,10 @@ export default function AdminSidebar() {
           aria-label="Main navigation"
         >
 
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
+{NAV_ITEMS
+    .filter((item) => !item.adminOnly || role === "admin")
+    .map((item) => {
+                  const Icon = item.icon;
             const hasChildren = !!item.children;
 
             /*
