@@ -47,11 +47,6 @@ const processQueue = async () => {
       })
     );
 
-    console.log(
-      `Sent batch: ${batch.length}`,
-      results.map((r) => r.status)
-    );
-
     // Ensure max 14 emails per second
     const elapsed = Date.now() - startTime;
     const waitTime = Math.max(0, 1000 - elapsed);

@@ -1,8 +1,8 @@
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 const crypto = require("crypto");
-const { sendOtpEmail } = require("../service/forgetPass_mail.service");
+const { sendOtpEmail } = require("../../service/forgetPass_mail.service");
 const bcrypt = require("bcryptjs");
-const { addEmailToQueue } = require("../utils/sesEmailQueue");
+const { addEmailToQueue } = require("../../utils/sesEmailQueue");
 
 require("dotenv").config();
 

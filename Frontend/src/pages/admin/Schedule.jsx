@@ -467,7 +467,7 @@ export default function Schedule() {
   // questionSetId is looked up from TEST_CODE_OPTIONS at submit time.
   const [questionCode, setquestionCode] = useState("");
 
-  // Department & Section (multi-select combo picker)
+  // Branch & Section (multi-select combo picker)
   const [selectedCombos, setSelectedCombos] = useState([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -654,7 +654,6 @@ export default function Schedule() {
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
   const captureCurrentFields = () => ({
-    academicYear,
     semester,
     cie,
     batch,
@@ -676,7 +675,13 @@ export default function Schedule() {
   // Applies a saved draft (or blanks everything if none was saved yet)
   const applyFields = (draft) => {
     const d = draft || {};
-    setAcademicYear(d.academicYear || "");
+    // NOTE: academicYear is intentionally NOT part of the per-category
+    // draft. It is a single global value fetched once from the server
+    // (see scheduleData.academicYear / the fetchScheduleData effect) and
+    // must stay in sync across Normal / Retest / University. Resetting it
+    // here on every category switch was emptying it for any category that
+    // didn't have a saved draft yet, which in turn emptied BATCH_OPTIONS
+    // and disabled the Batch dropdown for Retest/University.
     setSemester(d.semester || "");
     setCie(d.cie || "");
     setBatch(d.batch || "");
@@ -869,7 +874,7 @@ export default function Schedule() {
       problems.push("CIE (I, II, or III) is required for Normal category");
     if (!batch) problems.push("Batch is required");
     if (selectedCombos.length === 0)
-      problems.push("Select at least one Department & Section");
+      problems.push("Select at least one Branch & Section");
     if (!questionCode) problems.push("Test Code is required");
     if (!date) problems.push("Date is required");
     if (date) {
@@ -1169,9 +1174,9 @@ export default function Schedule() {
                 </div>
               )}
 
-              {/* Department & Section */}
+              {/* Branch & Section */}
               <div ref={pickerRef} className="relative">
-                <label className={labelClasses}>Department &amp; Section</label>
+                <label className={labelClasses}>Branch &amp; Section</label>
                 <button
                   type="button"
                   disabled={isLoadingScheduleData}
@@ -1185,7 +1190,7 @@ export default function Schedule() {
                   >
                     {selectedCombos.length
                       ? `${selectedCombos.length} Selected`
-                      : "Select department & section"}
+                      : "Select branch & section"}
                   </span>
                   <span className={dropdownArrowClasses(isPickerOpen)}>
                     {isPickerOpen ? (

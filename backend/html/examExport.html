@@ -29,16 +29,17 @@
 
         .header {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: 5px;
             text-align: left;
             margin-bottom: 20px;
         }
 
         .logo {
-            width: 70px;
-            height: 70px;
+            width: 100px;
+            height: 100px;
             object-fit: contain;
             flex-shrink: 0;
         }
@@ -113,15 +114,18 @@
         .signature-box {
             width: 220px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
         }
 
         .signature-box .sign-line {
             border-top: 1px solid #333;
-            margin-bottom: 6px;
             height: 40px;
         }
 
         .signature-box .sign-label {
+            padding: 10px;
+            border-top: 1px solid black;
             font-size: 12px;
             font-weight: bold;
         }
@@ -142,8 +146,7 @@
             <h1>Velammal Engineering College</h1>
             <h4><i>(An Autonomous Institution, Affiliated to Anna University, Chennai)</i></h4>
             <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
-            <h2>English Department</h2>
-            <h2>Examination Report</h2>
+            <h2>English Department - Examination Report</h2>
         </div>
 
     </div>
@@ -158,7 +161,7 @@
 
 
         <div>
-            <span class="filter-item">Department:</span>
+            <span class="filter-item">Branch:</span>
             {{DEPARTMENT}}
         </div>
 
@@ -212,12 +215,10 @@
     <div class="signature-block">
 
         <div class="signature-box">
-            <div class="sign-line"></div>
             <div class="sign-label">{{SIGN_LEFT_LABEL}}</div>
         </div>
 
         <div class="signature-box">
-            <div class="sign-line"></div>
             <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
         </div>
 

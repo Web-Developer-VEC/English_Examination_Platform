@@ -60,8 +60,9 @@ const StudentLogin = () => {
 
       console.error("Login error:", error);
 
-      if (error.response) {
-        setLoginError("Wrong username or password");
+      if (error.response) {  
+        const backendError = error.response.data?.message || error.response.data?.error || error.response.data?.detail;
+        setLoginError(backendError || "Wrong username or password");
       } else {
         setLoginError("Unable to connect to server");
       }
@@ -105,7 +106,7 @@ const StudentLogin = () => {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
+              placeholder="DD-MM-YYYY"
               value={formData.password}
               onChange={handleChange}
               autoComplete="current-password"
