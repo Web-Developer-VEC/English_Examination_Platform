@@ -47,13 +47,17 @@ app.use(secureNoSQLMiddleware);
 
 // Request Logger
 app.use((req, res, next) => {
-    
-    res.on("finish", () => {
-        console.log("Hits :", req.originalUrl);
+
+  res.on("finish", () => {
+    console.log("Hits :", req.originalUrl);
+  });
+
+
+  next();
     });
-    
-    next();
-});
+
+  
+
 
 // Register Routes
 app.use("/api", indexRoutes);
