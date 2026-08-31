@@ -8,7 +8,7 @@ const{deleteScheduledExam}=require("../../controllers/delete.schedule.controller
 const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
 router.get("/getformdata", roleByAccess(["admin","staff"]),getformdata);
-router.get("/getscheduleexams", roleByAccess(["admin","staff"]),getScheduledExams);
+router.get("/getscheduleexams", roleByAccess(["admin"]),getScheduledExams);
 router.post("/scheduleexam",roleByAccess(["admin"]) ,scheduleExam);
 router.delete("/delete-scheduled-exam", roleByAccess(["admin"]),deleteScheduledExam);
 
