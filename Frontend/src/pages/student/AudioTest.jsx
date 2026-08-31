@@ -1040,7 +1040,7 @@ export default function AudioTest() {
                 {/* LEFT COLUMN: Player & Questions */}
                 <div className="w-full flex flex-col gap-6">
                     {/* SUBJECT INFORMATION */}
-                    {/* SUBJECT INFORMATION */}
+                   
                     <div className="text-center flex justify-center items-center gap-210">
 
                         <div>
@@ -1049,7 +1049,7 @@ export default function AudioTest() {
                             </p>
 
                             <span className="text-lg md:text-xl font-semibold text-slate-700">
-                                23OEE301T
+                                23EN103L
                             </span>
                         </div>
 
@@ -1059,7 +1059,7 @@ export default function AudioTest() {
                             </p>
 
                             <span className="text-lg md:text-xl font-semibold text-slate-700">
-                                MPMC
+                                TECHNICAL ENGLISH
                             </span>
                         </div>
 
