@@ -113,7 +113,7 @@ const normalizeStudent = (student = {}) => ({
 
   phone: getValue(student, ["phone"]),
 
-  department: getValue(student, ["department"]),
+  department: getValue(student, ["branch"]),
 
   year: getValue(student, ["year"]),
 
@@ -874,7 +874,7 @@ const StudentProfileAccess = () => {
                 onChange={
                   handleDepartmentChange
                 }
-                placeholder="Select Department"
+                placeholder="Select Branch"
                 loading={
                   loadingScheduleData
                 }

@@ -1,5 +1,5 @@
-const { getDB } = require("../config/db");
-const { generateStudentExamPDF } = require("../service/student_result.service");
+const { getDB } = require("../../config/db");
+const { generateStudentExamPDF } = require("../../service/student_result.service");
 
 const checkCompletedExams = async () => {
   try {
@@ -42,7 +42,6 @@ const checkCompletedExams = async () => {
         try {
           // await generateStudentExamPDF(test._id, admissionNo);
 
-          console.log(`Result generated: ${test._id} - ${admissionNo}`);
         } catch (error) {
           // Student didn't attend / exam attempt doesn't exist
           if (error.message === "Student exam attempt not found.") {

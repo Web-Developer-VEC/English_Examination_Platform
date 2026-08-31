@@ -1722,7 +1722,7 @@
   gap: 2px;
 }
 
-.assignment-chip-department {
+.assignment-chip-branch {
   overflow: hidden;
   color: var(--faculty-text);
   font-size: 11px;

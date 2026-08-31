@@ -1,19 +1,19 @@
 const { ObjectId } = require("mongodb");
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 
-const deleteScheduledExam = async (req, res) => {
+const deleteQuestionSet = async (req, res) => {
     try {
 
-        const { testId } = req.body;
+        const { questionSetId } = req.body;
 
         // =====================================================
         // VALIDATION
         // =====================================================
 
-        if (!testId) {
+        if (!questionSetId) {
             return res.status(400).json({
                 success: false,
-                message: "testId is required."
+                message: "questionSetId is required."
             });
         }
 
@@ -21,36 +21,36 @@ const deleteScheduledExam = async (req, res) => {
         // VALIDATE OBJECT ID
         // =====================================================
 
-        if (!ObjectId.isValid(testId)) {
+        if (!ObjectId.isValid(questionSetId)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid testId."
+                message: "Invalid questionSetId."
             });
         }
 
         const db = getDB();
 
         // =====================================================
-        // FIND SCHEDULED EXAM
+        // FIND QUESTION SET
         // =====================================================
 
-        const exam = await db.collection("schedule").findOne({
-            _id: new ObjectId(testId)
+        const questionSet = await db.collection("questions").findOne({
+            _id: new ObjectId(questionSetId)
         });
 
-        if (!exam) {
+        if (!questionSet) {
             return res.status(404).json({
                 success: false,
-                message: "Scheduled exam not found."
+                message: "Question set not found."
             });
         }
 
         // =====================================================
-        // DELETE SCHEDULED EXAM
+        // DELETE ENTIRE QUESTION SET
         // =====================================================
 
-        const result = await db.collection("schedule").deleteOne({
-            _id: new ObjectId(testId)
+        const result = await db.collection("questions").deleteOne({
+            _id: new ObjectId(questionSetId)
         });
 
         // =====================================================
@@ -60,7 +60,7 @@ const deleteScheduledExam = async (req, res) => {
         if (result.deletedCount === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Scheduled exam could not be deleted."
+                message: "Question set could not be deleted."
             });
         }
 
@@ -70,14 +70,14 @@ const deleteScheduledExam = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Scheduled exam deleted successfully.",
-            testId: testId
+            message: "Question set deleted successfully.",
+            questionSetId: questionSetId
         });
 
     } catch (error) {
 
         console.error(
-            "DELETE SCHEDULED EXAM ERROR:",
+            "DELETE QUESTION SET ERROR:",
             error
         );
 
@@ -91,5 +91,5 @@ const deleteScheduledExam = async (req, res) => {
 };
 
 module.exports = {
-    deleteScheduledExam
+    deleteQuestionSet
 };

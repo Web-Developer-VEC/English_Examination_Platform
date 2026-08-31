@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 const crypto = require("crypto");
 
 // ============================================================
@@ -206,21 +206,6 @@ const autoSubmitExam = async (db, examAttempt, test) => {
       },
     );
 
-    if (updateResult.modifiedCount === 1) {
-      console.log(`[AUTO SUBMIT] Exam submitted successfully`);
-
-      console.log(`Exam ID     : ${examAttempt._id}`);
-
-      console.log(`Admission No: ${examAttempt.admissionNo}`);
-
-      console.log(`Test ID     : ${test._id}`);
-
-      console.log(`Marks       : ${obtainedMarks}/${totalMarks}`);
-    } else {
-      console.log(
-        `[AUTO SUBMIT] Attempt already submitted: ${examAttempt._id}`,
-      );
-    }
   } catch (error) {
     console.error(`[AUTO SUBMIT ERROR] ${examAttempt._id}`, error);
   }
@@ -303,23 +288,6 @@ const checkExams = async () => {
         },
       );
 
-      if (updateResult.modifiedCount === 1) {
-        console.log(`[EXAM CRON] Test code generated`);
-
-        console.log(`Test ID   : ${test._id}`);
-
-        console.log(`Test Code : ${testcode}`);
-
-        console.log(`Category  : ${test.category}`);
-
-        console.log(`Department: ${test.eligibility?.department}`);
-
-        console.log(`Batch     : ${test.eligibility?.batch}`);
-
-        console.log(`Section   : ${test.eligibility?.section}`);
-
-        console.log(`Start Time: ${test.startTime}`);
-      }
     }
 
     // ====================================================

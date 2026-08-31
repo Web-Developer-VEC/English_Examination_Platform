@@ -1723,7 +1723,7 @@ const FacultyList = () => {
 
           <input
             type="text"
-            placeholder="Search faculty, department or section..."
+            placeholder="Search faculty, branch or section..."
             value={search}
             onChange={(event) =>
               setSearch(
@@ -2014,11 +2014,11 @@ const FacultyList = () => {
                       <div>
 
                         <label className="assignment-label">
-                          Department & Section
+                          Branch & Section
                         </label>
 
                         <p className="assignment-selector-hint">
-                          Select any remaining Department & Section classes
+                          Select any remaining Branch & Section classes
                         </p>
 
                       </div>
@@ -2157,7 +2157,7 @@ const FacultyList = () => {
 
                                 <div className="assignment-chip-content">
 
-                                  <span className="assignment-chip-department">
+                                  <span className="assignment-chip-Branch">
                                     {
                                       item.department
                                     }

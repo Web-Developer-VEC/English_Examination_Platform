@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 
 // =====================================================
 // START EXAM
@@ -180,15 +180,15 @@ const startExam = async (req, res) => {
 
     // =====================================================
     // ALREADY SUBMITTED
-    // =====================================================
+    // // =====================================================
 
-    if (alreadyAttempted && alreadyAttempted.status === false) {
-      return res.status(403).json({
-        success: false,
-        message: "You have already attended this examination.",
-        status: false,
-      });
-    }
+    // if (alreadyAttempted && alreadyAttempted.status === false) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "You have already attended this examination.",
+    //     status: false,
+    //   });
+    // }
 
     // =====================================================
     // EXAM ALREADY STARTED

@@ -35,7 +35,8 @@ const NAV_ITEMS = [
     icon: Users,
     adminOnly: true,
 
-    children: [
+  },
+
       {
         key: "faculty-list",
         label: "Faculty Incharge",
@@ -70,9 +71,7 @@ const NAV_ITEMS = [
         icon: ShieldCheck,
         location: "/admin/StudentProfileAccess",
       },
-    ],
-  },
-
+    
   // STAFF + ADMIN
   {
     key: "student-result",
