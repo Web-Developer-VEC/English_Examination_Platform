@@ -5,13 +5,14 @@ import AdminLogin from "../components/admin/AdminLogin";
 import StudentLogin from "../components/student/StudentLogin";
 import StudentProtectedRoute from "../components/auth/StudentProtectedRoute";
 import AdminProtectedRoute from "../components/auth/AdminProtectedRoute";
+import PWALaunch from "../components/common/PWALaunch";
 import ForgetPassword from "../components/auth/ForgetPassword";
 
 import StudentLayout from "../layouts/StudentLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import ExamLayout from "../layouts/ExamLayout";
 
-import StartTest from "../pages/student/StartTest";
+import Instruction from "../pages/student/StartTest";
 import AudioTest from "../pages/student/AudioTest";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -32,15 +33,18 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<AdminLogin />} />
       <Route path="/studentlogin" element={<StudentLogin />} />
+      <Route path="/pwa-launch" element={<PWALaunch />} />
       <Route path="/forgot-password" element={<ForgetPassword />} />
 
       {/* Student */}
       <Route element={<StudentProtectedRoute />}>
         <Route path="/student" element={<StudentLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<StudentDashboard />} />
         </Route>
         <Route path="/exam" element={<ExamLayout />}>
-          <Route path="instruction" element={<StartTest />} />
+          <Route index element={<Navigate to="instruction" replace/>}/>
+          <Route path="instruction" element={<Instruction />} />
           <Route path="audiotest" element={<AudioTest />} />
         </Route>
       </Route>

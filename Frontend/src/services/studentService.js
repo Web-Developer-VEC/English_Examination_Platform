@@ -75,7 +75,6 @@ export const updateStudent = async (updateData) => {
         "student/updatestudent",
         updateData 
     );
-
     return response.data;
 };
 
