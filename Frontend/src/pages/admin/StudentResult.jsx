@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React , { useEffect, useMemo, useState } from "react";
 import {
   GraduationCap,
   Building2,
@@ -511,15 +511,12 @@ export default function StudentResult() {
             data.message || "Failed to fetch form data."
           );
         }
-        console.log("GETSCHEDULEDATA RESPONSE:", data);
 
         const rawArray = findArrayInResponse(data);
 
         const normalizedData = rawArray
           .map(normalizeScheduleRecord)
           .filter((item) => item.batch || item.dept || item.section);
-
-        console.log("NORMALIZED SCHEDULE DATA:", normalizedData);
 
         setScheduleData(normalizedData);
 
@@ -630,18 +627,8 @@ export default function StudentResult() {
       semester: semesterValue,
     };
 
-    console.log(
-      "EXAM REPORT REQUEST:",
-      requestBody
-    );
-
     const responseData =
       await getExamResults(requestBody);
-
-    console.log(
-      "EXAM REPORT RESPONSE:",
-      responseData
-    );
 
     if (
       !responseData.success ||
@@ -656,11 +643,6 @@ export default function StudentResult() {
 
     const pdfUrl =
       responseData.data.url;
-
-    console.log(
-      "PDF URL:",
-      pdfUrl
-    );
 
     window.open(
       pdfUrl,
@@ -698,13 +680,11 @@ export default function StudentResult() {
         sem,
       };
 
-      console.log("SELECTED RESULT FILTERS:", filters);
       await fetchStudentResults(filters);
 
       setSubmittedFilters(filters);
       setShowResults(false);
 
-      console.log("PDF downloaded successfully.");
     } catch (err) {
       console.error("PDF download error:", err);
       setError(

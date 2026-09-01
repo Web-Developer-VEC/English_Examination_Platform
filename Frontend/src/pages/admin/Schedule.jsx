@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -47,13 +47,6 @@ export const colors = {
 
 const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 
-// const ACADEMIC_YEAR_OPTIONS = [
-//   "2023-2024",
-//   "2024-2025",
-//   "2025-2026",
-//   "2026-2027",
-//   "2027-2028",
-// ];
 const SEMESTER_OPTIONS = ["Odd", "Even"];
 const CIE_OPTIONS = ["I", "II", "III"];
 // 12-hour clock face values
@@ -454,6 +447,10 @@ function AnalogClockPicker({
 
 // SCHEDULE COMPONENT
 export default function Schedule() {
+  const pickerRef = useRef(null);
+  const admissionPickerRef = useRef(null);
+  const questionCodeRef = useRef(null);
+
   // ---------------- STATE ----------------
   const [category, setCategory] = useState("Normal");
   const [academicYear, setAcademicYear] = useState("");
@@ -467,12 +464,10 @@ export default function Schedule() {
   // Department & Section (multi-select combo picker)
   const [selectedCombos, setSelectedCombos] = useState([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const pickerRef = useRef(null);
 
   // Admission Numbers (multi-select) — now shown for BOTH Normal and Retest
   const [selectedAdmissionNos, setSelectedAdmissionNos] = useState([]);
   const [isAdmissionPickerOpen, setIsAdmissionPickerOpen] = useState(false);
-  const admissionPickerRef = useRef(null);
   const [admissionSearch, setAdmissionSearch] = useState("");
   const [showAllAdmissions, setShowAllAdmissions] = useState(false);
 
@@ -502,7 +497,6 @@ export default function Schedule() {
   const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
   const [scheduleDataError, setScheduleDataError] = useState("");
   const [questionCodeSpace, setQuestionCodeSpace] = useState(false);
-  const questionCodeRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -513,21 +507,6 @@ export default function Schedule() {
 
       try {
         const body = await getScheduleFormData();
-
-        console.log(
-          "GET SCHEDULE DATA RESPONSE:",
-          body
-        );
-
-        console.log(
-          "TESTS FROM BACKEND:",
-          body?.data?.tests
-        );
-
-        console.log(
-          "BATCH DEPARTMENT SECTIONS:",
-          body?.data?.batchDepartmentSections
-        );
 
         if (body?.success === false) {
           throw new Error(
@@ -555,14 +534,9 @@ export default function Schedule() {
       } catch (error) {
 
         if (!cancelled) {
-          console.error(
-            "Schedule data fetch error:",
-            error
-          );
+          console.error("Schedule data fetch error:",error);
 
           setScheduleDataError(
-            error?.response?.data?.message ||
-            error?.message ||
             "Failed to load batches/departments/test codes."
           );
         }
@@ -951,7 +925,6 @@ export default function Schedule() {
   // ---------------- SUBMIT ----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🔥 HANDLE SUBMIT CALLED");
 
     const problems = validateForm();
     if (problems.length > 0) {
@@ -1009,7 +982,6 @@ export default function Schedule() {
         if (category === "Normal") {
           payload.cie = cie;
         }
-        console.log("SCHEDULE PAYLOAD:", payload);
         return scheduleExam(payload).then((body) => {
 
           if (body?.success === false) {
