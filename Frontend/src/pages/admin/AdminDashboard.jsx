@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteScheduledExam, getScheduleExams } from "../../services/adminService";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import { getAdminSession } from "../../utils/helpers";
 export default function AdminDashboard() {
 
     const navigate = useNavigate();
@@ -14,7 +15,11 @@ export default function AdminDashboard() {
     const [status, setStatus] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedDate, setSelectedDate] = useState("");
+const session = getAdminSession();
 
+const role = (session?.user.role || "").toLowerCase();
+
+const isAdmin = role === "admin";
     const recordsPerPage = 5;
     const getDynamicStatus = (startTime, endTime) => {
         if (!startTime || !endTime) {
@@ -300,7 +305,7 @@ export default function AdminDashboard() {
                         </p>
 
                     </div>
-
+                    {isAdmin && (
                     <button
                         type="button"
                         onClick={() => navigate("/admin/schedule")}
@@ -308,7 +313,7 @@ export default function AdminDashboard() {
                     >
                         + Schedule Test
                     </button>
-
+                     )}
                 </div>
 
                 {/* SUMMARY CARDS */}
