@@ -1,4 +1,4 @@
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 
 const getformdata = async (req, res) => {
   try {

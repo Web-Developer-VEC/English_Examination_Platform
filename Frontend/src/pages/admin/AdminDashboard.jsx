@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    ClipboardList, CalendarDays, Activity, CircleCheck
-} from "lucide-react";
 import { deleteScheduledExam, getScheduleExams } from "../../services/adminService";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import { getAdminSession } from "../../utils/helpers";
 export default function AdminDashboard() {
+
+    const navigate = useNavigate();
 
     const [tests, setTests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -14,33 +14,31 @@ export default function AdminDashboard() {
     const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
-    const recordsPerPage = 5;
     const [selectedDate, setSelectedDate] = useState("");
-    const navigate = useNavigate();
+const session = getAdminSession();
+
+const role = (session?.user.role || "").toLowerCase();
+
+const isAdmin = role === "admin";
+    const recordsPerPage = 5;
     const getDynamicStatus = (startTime, endTime) => {
         if (!startTime || !endTime) {
             return "Upcoming";
         }
-
         const now = new Date();
         const start = new Date(startTime);
         const end = new Date(endTime);
-
         if (now < start) {
             return "Upcoming";
         }
-
         if (now >= start && now <= end) {
             return "Ongoing";
         }
-
         return "Completed";
     };
-
     useEffect(() => {
         let interval;
         let isMounted = true;
-
         const fetchTests = async () => {
             try {
                 setError("");
@@ -96,8 +94,6 @@ export default function AdminDashboard() {
 
                 if (isMounted) {
                     setError(
-                        err.response?.data?.message ||
-                        err.message ||
                         "Unable to load tests."
                     );
                 }
@@ -230,35 +226,6 @@ export default function AdminDashboard() {
         setCurrentPage(1);
     }, [department, category, status, selectedDate]);
 
-    const handleDownload = (test) => {
-        const content = `
-Exam ID: ${test.id}
-Category: ${test.category}
-Section: ${test.section}
-Test Code: ${test.testCode}
-Date: ${test.date}
-Start Time: ${test.startTime || "N/A"}
-End Time: ${test.endTime || "N/A"}
-Status: ${test.status}
-`;
-
-        const blob = new Blob([content], {
-            type: "text/plain",
-        });
-
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `exam-${test.testCode || test.id}.txt`;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        URL.revokeObjectURL(url);
-    };
-
     const handleCancel = async (test) => {
 
         const confirmed = window.confirm(
@@ -269,8 +236,7 @@ Status: ${test.status}
 
         try {
 
-            const result =
-                await deleteScheduledExam(test.id);
+            const result = await deleteScheduledExam(test.id);
 
             if (!result.success) {
                 throw new Error(
@@ -296,8 +262,6 @@ Status: ${test.status}
             );
 
             toast.error(
-                error.response?.data?.message ||
-                error.message ||
                 "Unable to cancel the test."
             );
         }
@@ -341,7 +305,7 @@ Status: ${test.status}
                         </p>
 
                     </div>
-
+                    {isAdmin && (
                     <button
                         type="button"
                         onClick={() => navigate("/admin/schedule")}
@@ -349,7 +313,7 @@ Status: ${test.status}
                     >
                         + Schedule Test
                     </button>
-
+                     )}
                 </div>
 
                 {/* SUMMARY CARDS */}
@@ -394,8 +358,6 @@ Status: ${test.status}
 
                         <div>
 
-
-
                             <ThemeDropdown
                                 value={department}
                                 options={[
@@ -404,7 +366,7 @@ Status: ${test.status}
                                         .filter(Boolean),
                                 ]}
                                 onChange={setDepartment}
-                                placeholder="Select Department"
+                                placeholder="Select Branch"
                             />
 
                         </div>
@@ -496,7 +458,7 @@ Status: ${test.status}
                         }}
                     >
                         <TableHeading>
-                            Department
+                            Branch
                         </TableHeading>
 
                         <TableHeading>

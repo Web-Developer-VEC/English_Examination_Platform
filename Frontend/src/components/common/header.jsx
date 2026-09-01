@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BookOpenCheck } from "lucide-react";
-import "./Header.css";
+import "./header.css";
 import collegeLogo from "../../assets/logo/college-logo.png";
 import {
     getAdminSession,

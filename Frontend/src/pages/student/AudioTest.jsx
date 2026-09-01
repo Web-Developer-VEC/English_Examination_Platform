@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import tick from "../../assets/images/tick.png";
 import {
     shuffleOptions,
     remainingPlays,
@@ -42,15 +41,13 @@ export default function AudioTest() {
     const [warningMessage, setWarningMessage] = useState("");
     const [showWarning, setShowWarning] = useState(false);
     const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
-    
+
     const examData = location.state;
     const studentSession = getStudentSession();
     const admissionNo = studentSession?.user?.admissionNo;
     const testId = examData?.testId;
     const MAX_PLAYS = 2;
-    const remainingTime = Math.max(duration - currentTime, 0);
     const audioProgress = duration > 0 ? ((duration - currentTime) / duration) * 100 : 0;
-    const examDuration = examData?.duration || 0;
     const totalExamTime = (examData?.duration || 0) * 60;
     const examRemainingPercentage =
         totalExamTime > 0
@@ -112,8 +109,6 @@ export default function AudioTest() {
             const violationNo =
                 response?.malpractice?.violationNo || 0;
 
-            const remaining =response?.malpractice?.remaining || 0;
-
             setViolations(violationNo);
 
             // ==========================================
@@ -154,11 +149,7 @@ export default function AudioTest() {
 
         } catch (error) {
 
-            console.error("MALPRACTICE REPORT FAILED:",error);
-
-            console.error("SERVER RESPONSE:",error.response?.data);
-
-            console.error("STATUS:",error.response?.status);
+            console.error("MALPRACTICE REPORT FAILED:", error);
 
             /*
              * IMPORTANT:
@@ -187,7 +178,6 @@ export default function AudioTest() {
                         testId
                     );
                     setWarningMessage(
-                        data?.message ||
                         "Malpractice limit exceeded. Examination has been closed."
                     );
 
@@ -258,11 +248,8 @@ export default function AudioTest() {
 
         } catch (error) {
 
-            console.error("ANSWER SYNC FAILED:",error);
+            console.error("ANSWER SYNC FAILED:", error);
 
-            console.error("SERVER RESPONSE:",error.response?.data);
-
-            console.error("STATUS:",error.response?.status);
         } finally {
             setSyncingQuestions(prev => ({
                 ...prev,
@@ -290,7 +277,7 @@ export default function AudioTest() {
         // Get logged-in student
         const session = getStudentSession();
         if (!session?.user?.admissionNo) {
-            console.error("Student session not found.");
+            navigate("/studentlogin");
             return;
         }
         // Make sure we have testId
@@ -331,23 +318,11 @@ export default function AudioTest() {
                 }
             }, 1000);
         } catch (error) {
-            console.error("EXAM SUBMISSION FAILED:",error);
-            console.error("SERVER RESPONSE:",error.response?.data);
-            console.error("STATUS:",error.response?.status);
+            console.error("EXAM SUBMISSION FAILED:", error);
             // Allow the student to try submitting again
             setIsSubmitting(false);
         }
     };
-
-    const terminateTest = () => {
-        clearTestState();
-        /*
-            Backend
-            status:"TERMINATED"
-            reason:"Multiple Violations"
-        */
-        navigate("/studentlogin");
-    }
 
     useEffect(() => {
 
@@ -400,8 +375,6 @@ export default function AudioTest() {
 
         if (!session?.user?.admissionNo) {
 
-            console.error("Student session not found.");
-
             navigate("/studentlogin");
 
             return;
@@ -414,7 +387,7 @@ export default function AudioTest() {
 
         if (!examData.testId) {
 
-            console.error("Test ID not found.");
+            console.error("Entered wrong Testcode");
 
             navigate("/exam/instruction");
 
@@ -588,6 +561,21 @@ export default function AudioTest() {
 
         };
 
+        const handleVisibilityChange = () => {
+            if (document.hidden && !examClosedRef.current) {
+                handleViolation(
+                    "Exam window was moved to the background."
+                );
+            }
+        };
+
+        const handleWindowBlur = () => {
+            if (!examClosedRef.current) {
+                handleViolation(
+                    "Exam window lost focus."
+                );
+            }
+        };
 
         // ==========================================
         // RIGHT CLICK
@@ -622,8 +610,7 @@ export default function AudioTest() {
                 "MediaPlayPause",
                 "MediaTrackNext",
                 "MediaTrackPrevious",
-                "MediaStop",
-                "AudioVolumeMute"
+                "MediaStop"
             ];
 
             if (
@@ -646,9 +633,10 @@ export default function AudioTest() {
 
             if (
                 e.key === "PrintScreen" ||
-                e.code === "PrintScreen"
+                code === "PrintScreen"
             ) {
                 e.preventDefault();
+                e.stopPropagation();
 
                 handleViolation(
                     "Print Screen key pressed."
@@ -657,14 +645,27 @@ export default function AudioTest() {
                 return;
             }
 
+            if (e.key === "Meta") {
+                e.preventDefault();
+                e.stopPropagation();
+
+                handleViolation(
+                    "Windows key pressed."
+                );
+
+                return;
+            }
+
 
             // ==========================================
-            // CTRL
+            // CTRL KEY
             // VIOLATION
             // ==========================================
 
             if (e.key === "Control") {
+
                 e.preventDefault();
+                e.stopPropagation();
 
                 handleViolation(
                     "Ctrl key pressed."
@@ -675,12 +676,14 @@ export default function AudioTest() {
 
 
             // ==========================================
-            // SHIFT
+            // SHIFT KEY
             // VIOLATION
             // ==========================================
 
             if (e.key === "Shift") {
+
                 e.preventDefault();
+                e.stopPropagation();
 
                 handleViolation(
                     "Shift key pressed."
@@ -691,17 +694,47 @@ export default function AudioTest() {
 
 
             // ==========================================
-            // EXISTING RESTRICTED SHORTCUTS
+            // FUNCTION KEYS
+            // ==========================================
+
+            const restrictedFunctionKeys = [
+                "F4",
+                "F5",
+                "F6",
+                "F7",
+                "F8",
+                "F9",
+                "F10",
+                "F11",
+                "F12"
+            ];
+
+            if (restrictedFunctionKeys.includes(e.key)) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                handleViolation(
+                    `${e.key} key pressed.`
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // RESTRICTED SHORTCUTS
             // ==========================================
 
             if (
-                key === "f12" || key=="f11"||key=="f10"||key=="f9"||key=="f8"||key=="f7"||key=="f6"||key=="f5"||key=="f4"||key=="f3"||key=="f2"||key=="f1"||
                 (e.ctrlKey && key === "r") ||
                 (e.ctrlKey && key === "u") ||
                 (e.ctrlKey && e.shiftKey && key === "i") ||
                 (e.ctrlKey && e.shiftKey && key === "j")
             ) {
+
                 e.preventDefault();
+                e.stopPropagation();
 
                 handleViolation(
                     "Restricted keyboard shortcut detected."
@@ -710,7 +743,6 @@ export default function AudioTest() {
                 return;
             }
         };
-
         // ==========================================
         // KEY UP
         // ==========================================
@@ -730,9 +762,9 @@ export default function AudioTest() {
             ) {
                 e.preventDefault();
                 e.stopPropagation();
+                handleViolation("Media key pressed.");
             }
         };
-
         // ==========================================
         // PRINT
         // ==========================================
@@ -753,6 +785,11 @@ export default function AudioTest() {
         document.addEventListener(
             "visibilitychange",
             visibilityHandler
+        );
+
+        document.addEventListener(
+            "visibilitychange",
+            handleVisibilityChange
         );
 
         document.addEventListener(
@@ -777,6 +814,10 @@ export default function AudioTest() {
             beforePrintHandler
         );
 
+        window.addEventListener(
+            "blur",
+            handleWindowBlur
+        );
 
         // ==========================================
         // CLEANUP
@@ -787,6 +828,16 @@ export default function AudioTest() {
             document.removeEventListener(
                 "visibilitychange",
                 visibilityHandler
+            );
+
+            window.removeEventListener(
+                "blur",
+                handleWindowBlur
+            );
+
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange
             );
 
             document.removeEventListener(
@@ -835,7 +886,7 @@ export default function AudioTest() {
                     admissionNo,
                     testId
                 );
-                navigate("/studentlogin");
+                navigate("/student/dashboard");
             }
         };
 
@@ -962,23 +1013,24 @@ export default function AudioTest() {
                 </div>
             )}
 
-            {/* STICKY SUB-HEADER (Timer Only) */}
-            <div className=" sticky top-0 z-40 flex-shrink-0">
-                <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-end">
-                    <div className="flex items-center px-4 py-2 rounded-lg border border-slate-300 bg-white">
+            {/* FIXED EXAM TIMER */}
+            <div className="fixed top-[160px] left-0 right-0 z-50">
+                <div className="flex justify-center items-center py-3">
+                    <div className="flex items-center px-5 py-2 rounded-lg border border-slate-300 bg-white shadow-sm">
 
                         <span className="text-lg font-medium text-gray-700">
                             Time Left:
                         </span>
 
                         <span
-                            className={`ml-2 text-lg font-semibold ${examRemainingPercentage < 10
+                            className={`ml-2 text-lg font-bold ${examRemainingPercentage < 10
                                 ? "text-red-600"
                                 : "text-green-600"
                                 }`}
                         >
                             {formatTime(examRemaining)}
                         </span>
+
                     </div>
                 </div>
             </div>
@@ -987,6 +1039,31 @@ export default function AudioTest() {
             <main className="max-w-[1200px] mx-auto w-full px-4 md:px-6 py-6 flex-1">
                 {/* LEFT COLUMN: Player & Questions */}
                 <div className="w-full flex flex-col gap-6">
+                    {/* SUBJECT INFORMATION */}
+                   
+                    <div className="text-center flex justify-center items-center gap-210">
+
+                        <div>
+                            <p className="text-sm md:text-base font-semibold text-slate-500">
+                                Subject Code
+                            </p>
+
+                            <span className="text-lg md:text-xl font-semibold text-slate-700">
+                                23EN103L
+                            </span>
+                        </div>
+
+                        <div>
+                            <p className="text-sm md:text-base font-semibold text-slate-500">
+                                Subject Name
+                            </p>
+
+                            <span className="text-lg md:text-xl font-semibold text-slate-700">
+                                TECHNICAL ENGLISH
+                            </span>
+                        </div>
+
+                    </div>
                     {/* MODERN AUDIO PLAYER */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col sm:flex-row items-center gap-5">
                         <audio

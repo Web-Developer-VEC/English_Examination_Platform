@@ -4,12 +4,14 @@ const router = express.Router();
 
 const {
   generateStudentResult,
-} = require("../../controllers/srudentResult.controller");
+} = require("../../controllers/student/studentResult.controller");
 
 const {
   getStudentByUsername,
-} = require("../../controllers/student.controller");
-const { updateStudent } = require("../../controllers/edit.student.controller");
+} = require("../../controllers/admin/student.controller");
+const {
+  updateStudent,
+} = require("../../controllers/student/edit.student.controller");
 const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
 router.put("/updatestudent", roleByAccess(["student"]), updateStudent);

@@ -105,7 +105,6 @@ const StudentDashboard = () => {
       // not `data.student`.
       // Backend returns the updated student under `data.data`,
       // not `data.student`.
-      console.log("Updated student:", data.data);
 
       if (data.data) {
         setStudent(data.data);
@@ -142,8 +141,6 @@ const StudentDashboard = () => {
 
       // axios puts the backend's JSON error body on error.response.data
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
           "Failed to update profile",
       );
     } finally {
@@ -160,7 +157,6 @@ const StudentDashboard = () => {
   // ============================================================
 
   const handleSendResult = async (testId) => {
-    console.log("SEND BUTTON TEST ID:", testId);
 
     if (!testId || testId === "-") {
       toast.warning("This exam is missing a valid test id and cannot be sent.");
@@ -175,15 +171,11 @@ const StudentDashboard = () => {
     setSendingId(testId);
 
     try {
-      console.log("Sending student result:", {
-        testId,
-        admissionNo: student.admissionNo,
-      });
-
+    
       const data = await sendStudentResult(testId, student.admissionNo);
-      toast.success("Result sent to mail successfully");
-
-      console.log("studentresult response:", data);
+      if(data.success){
+        toast.success("Result sent to mail successfully");
+      }
 
       if (!data.success) {
         throw new Error(data.message || "Failed to send result");
@@ -202,8 +194,6 @@ const StudentDashboard = () => {
       console.error("Error sending result:", error);
 
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
           "Failed to send result",
       );
     } finally {
@@ -239,20 +229,19 @@ const StudentDashboard = () => {
         const session = getStudentSession();
 
         if (!session || !session.user) {
-          throw new Error("No logged-in student found. Please log in again.");
+          navigate("/studentlogin");
         }
 
         const username = session.user.username;
 
         if (!username) {
-          throw new Error("No logged-in student found. Please log in again.");
+          navigate("/studentlogin");
         }
 
         // NOTE: this service call does not attach session.token as an
         // Authorization header. If your backend requires it here, add
         // it via an interceptor in services/api.js instead of per-call.
         const result = await getStudent(username);
-        console.log("result:", result);
 
         if (!result.success) {
           throw new Error(result.message || "Failed to fetch student data");
@@ -265,8 +254,6 @@ const StudentDashboard = () => {
         if (!result.student) {
           throw new Error("Student information was not returned by backend.");
         }
-
-        console.log("Student data from DB:", result.student);
 
         setStudent(result.student);
         setEditForm(result.student);
@@ -282,7 +269,6 @@ const StudentDashboard = () => {
             ? result.data.exams
             : [];
 
-        console.log("BACKEND EXAMS:", backendExams);
 
         // Anything sent earlier in this login session should still show
         // as "Sent" after a refresh.
@@ -298,10 +284,6 @@ const StudentDashboard = () => {
             typeof exam.testId === "object"
               ? exam.testId?.$oid || String(exam.testId)
               : exam.testId || "";
-
-          console.log("Exam being formatted:", exam);
-          console.log("Exam ID:", examId);
-          console.log("Test ID:", testId);
 
           return {
             // Unique exam document ID
@@ -327,15 +309,11 @@ const StudentDashboard = () => {
           };
         });
 
-        console.log("FINAL TEST RESULTS:", formattedTestResults);
-
         setTestResults(formattedTestResults);
       } catch (error) {
         console.error("Error fetching student:", error);
 
         setFetchError(
-          error.response?.data?.message ||
-            error.message ||
             "Failed to load student data",
         );
       } finally {
@@ -1379,7 +1357,7 @@ const StudentDashboard = () => {
           FOOTER
       ======================================================== */}
 
-      <Footer />
+      {/* <Footer /> */}
       <ToastContainer
         position="bottom-right"
         autoClose={3000}

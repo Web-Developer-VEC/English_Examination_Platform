@@ -9,7 +9,7 @@ const secureNoSQLMiddleware =
 
 const scheduleMongoHealthCheck =
     require("./middleware/security/mongo_health_check");
-const xssSanitizer = require("./middleware/security/xss");
+// const xssSanitizer = require("./middleware/security/xss");
 
 const indexRoutes = require("./routes/index.routes");
 const startExamCron =
@@ -41,21 +41,17 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-app.use(xssSanitizer);
+// app.use(xssSanitizer);
 // NoSQL Injection Protection
 app.use(secureNoSQLMiddleware);
 
 // Request Logger
 app.use((req, res, next) => {
-
-  res.on("finish", () => {
-    console.log("Hits :", req.originalUrl);
-  });
-
-
-
+    
+    res.on("finish", () => {
+        console.log("Hits :", req.originalUrl);
     });
-
+    
     next();
 });
 

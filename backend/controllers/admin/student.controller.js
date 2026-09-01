@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
-const parseStudentExcel = require("../utils/parseStudentExcel");
-const { getDB } = require("../config/db");
+const parseStudentExcel = require("../../utils/parseStudentExcel");
+const { getDB } = require("../../config/db");
 
 const studentsUpload = async (req, res) => {
   try {
@@ -11,7 +11,7 @@ const studentsUpload = async (req, res) => {
     const students = await Promise.all(
       parsedStudents.map(async (student) => ({
         ...student,
-        studentEditEnabled:true,
+        studentEditEnabled: true,
         username: student.admissionNo,
         password: student.dob,
         createdAt: new Date(),
@@ -158,87 +158,87 @@ const getStudentByUsername = async (req, res) => {
       });
     }
 
-    student.studentEditEnabled = student?.studentEditEnabled ? student.studentEditEnabled : false;
- // Get student's exam results with question details
-const exams = await db
-  .collection("exam")
-  .aggregate([
-    // Find exams for this student
-    {
-      $match: {
-        admissionNo: student.admissionNo,
-      },
-    },
-
-    // Get question details using questionSetId
-    {
-      $lookup: {
-        from: "questions",
-        localField: "questionSetId",
-        foreignField: "_id",
-        as: "questionDetails",
-      },
-    },
-
-    // Convert questionDetails array into object
-    {
-      $unwind: {
-        path: "$questionDetails",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-
-    // Format response
-    {
-      $project: {
-        _id: 0,
-
-        // Test ID
-        testId: 1,
-
-        // Question Set details
-        questionSetId: 1,
-        questionCode: "$questionDetails.questionCode",
-
-        // If cie exists → category = cie value
-        // Example: cie = "cieI" → category = "cieI"
-        category: {
-          $cond: [
-            {
-              $and: [
-                { $ne: ["$cie", null] },
-                { $ne: ["$cie", ""] },
-              ],
-            },
-            "$cie",
-            "$category",
-          ],
+    student.studentEditEnabled = student?.studentEditEnabled
+      ? student.studentEditEnabled
+      : false;
+    // Get student's exam results with question details
+    const exams = await db
+      .collection("exam")
+      .aggregate([
+        // Find exams for this student
+        {
+          $match: {
+            admissionNo: student.admissionNo,
+          },
         },
 
-        // CIE value
-        cie: 1,
+        // Get question details using questionSetId
+        {
+          $lookup: {
+            from: "questions",
+            localField: "questionSetId",
+            foreignField: "_id",
+            as: "questionDetails",
+          },
+        },
 
-        // Marks
-        obtainedMarks: 1,
-        totalMarks: 1,
-      },
-    },
+        // Convert questionDetails array into object
+        {
+          $unwind: {
+            path: "$questionDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
 
-    // Sort latest exam first
-    {
-      $sort: {
-        startedAt: -1,
-      },
-    },
-  ])
-  .toArray();
+        // Format response
+        {
+          $project: {
+            _id: 0,
 
-return res.json({
-  success: true,
-  student,
-  totalExams: exams.length,
-  exams,
-}); } catch (error) {
+            // Test ID
+            testId: 1,
+
+            // Question Set details
+            questionSetId: 1,
+            questionCode: "$questionDetails.questionCode",
+
+            // If cie exists → category = cie value
+            // Example: cie = "cieI" → category = "cieI"
+            category: {
+              $cond: [
+                {
+                  $and: [{ $ne: ["$cie", null] }, { $ne: ["$cie", ""] }],
+                },
+                "$cie",
+                "$category",
+              ],
+            },
+
+            // CIE value
+            cie: 1,
+
+            // Marks
+            obtainedMarks: 1,
+            totalMarks: 1,
+          },
+        },
+
+        // Sort latest exam first
+        {
+          $sort: {
+            startedAt: -1,
+          },
+        },
+      ])
+      .toArray();
+
+    return res.json({
+      success: true,
+      student,
+      totalExams: exams.length,
+      exams,
+    });
+  } catch (error) {
     console.error("GET STUDENT BY USERNAME ERROR:", error);
 
     return res.status(500).json({

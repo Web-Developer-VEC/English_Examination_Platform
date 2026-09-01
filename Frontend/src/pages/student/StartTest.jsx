@@ -11,14 +11,11 @@ export default function InstructionsPage() {
         message: ""
     });
     const [accepted, setAccepted] = useState(false);
-    const [isStarting, setIsStarting] = useState(false);
-    const [error, setError] = useState("");
     const [testCode, setTestCode] = useState("");
 
     const navigate = useNavigate();
     const isValidTestCode = /^[A-Z0-9]+$/.test(testCode);
     const testCodeRef = useRef(null);
-    const testContainerRef = useRef(null);
 
     const enterFullscreen = async () => {
         try {
@@ -44,27 +41,6 @@ export default function InstructionsPage() {
         });
     };
 
-    const handleAccept = async (event) => {
-
-        const checked = event.target.checked;
-
-        setAccepted(checked);
-
-        if (checked) {
-
-            await enterFullscreen();
-
-            setTimeout(() => {
-                testCodeRef.current?.focus();
-            }, 100);
-
-        } else {
-
-            setTestCode("");
-
-        }
-    };
-
     // TEST CODE HANDLER
     const handleTestCodeChange = (event) => {
         let value = event.target.value.toUpperCase();
@@ -74,24 +50,16 @@ export default function InstructionsPage() {
 
     // START TEST
     const handleStartTest = async () => {
-        console.log("🔥 START TEST BUTTON CLICKED");
-        console.log("Test Code:", testCode);
 
         try {
 
-                // ==========================================
-                // GET STUDENT SESSION
-                // ==========================================
+            // ==========================================
+            // GET STUDENT SESSION
+            // ==========================================
 
             const session = getStudentSession();
 
             if (!session?.user?.admissionNo) {
-
-                showStatusPopup(
-                    "Student session not found. Please login again."
-                );
-
-
                 navigate("/studentlogin");
 
                 return;
@@ -99,12 +67,6 @@ export default function InstructionsPage() {
 
             const admissionNo =
                 session.user.admissionNo;
-
-            console.log(
-                "Student Admission No:",
-                admissionNo
-            );
-
 
             // ==========================================
             // START EXAM
@@ -115,22 +77,11 @@ export default function InstructionsPage() {
                 admissionNo
             );
 
-            console.log(
-                "🔥 BACKEND RESPONSE:",
-                response
-            );
-
-
             // ==========================================
             // SUCCESS
             // ==========================================
 
             if (response?.success) {
-
-                showStatusPopup(
-                    "Test started successfully!",
-                    "success"
-                );
 
                 navigate("/exam/audiotest", {
                     state: {
@@ -144,7 +95,7 @@ export default function InstructionsPage() {
         } catch (error) {
 
             console.error(
-                "🔥 START EXAM FAILED:",
+                "START EXAM FAILED:",
                 error
             );
 
@@ -162,7 +113,7 @@ export default function InstructionsPage() {
             if (status === 400) {
 
                 showStatusPopup(
-                    message || "Invalid request. Please check the test code."
+                    "Invalid request. Please check the test code."
                 );
 
             }
@@ -175,7 +126,7 @@ export default function InstructionsPage() {
             else if (status === 403) {
 
                 showStatusPopup(
-                    message || "You have already taken this test."
+                    "You have already taken this test."
                 );
 
             }
@@ -188,7 +139,7 @@ export default function InstructionsPage() {
             else if (status === 404) {
 
                 showStatusPopup(
-                    message || "Invalid test code or student not found."
+                    "Student not found."
                 );
 
             }
@@ -214,7 +165,7 @@ export default function InstructionsPage() {
             else if (!error.response) {
 
                 showStatusPopup(
-                    "Unable to connect to server."
+                    "Poor internet connection.."
                 );
 
             }
@@ -243,8 +194,6 @@ export default function InstructionsPage() {
 
             if (!document.fullscreenElement) {
 
-                console.log("⚠️ Fullscreen exited");
-
                 setShowFullscreenPopup(true);
             }
 
@@ -271,8 +220,6 @@ export default function InstructionsPage() {
         const handleKeyDown = (e) => {
 
             if (e.key === "F11") {
-
-                e.preventDefault();
 
                 setShowFullscreenPopup(true);
 
@@ -307,7 +254,6 @@ export default function InstructionsPage() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                console.log("F12 blocked on Start Test page");
             }
 
         };
@@ -349,14 +295,7 @@ export default function InstructionsPage() {
                             type="button"
                             onClick={async () => {
 
-                                console.log("🔥 RESTORE FULLSCREEN CLICKED");
-
                                 const success = await enterFullscreen();
-
-                                console.log(
-                                    "🔥 FULLSCREEN RESULT:",
-                                    success
-                                );
 
                                 if (success) {
                                     setShowFullscreenPopup(false);
@@ -479,11 +418,11 @@ export default function InstructionsPage() {
                         <div className="space-y-5">
                             <Instruction
                                 number="01"
-                                text="Use headphones or earphones during the assessment."
+                                text="Use headphones or earphones throughout the assessment."
                             />
                             <Instruction
                                 number="02"
-                                text="Make sure you are in a quiet environment before starting."
+                                text="Remain in a quiet and distraction-free environment."
                             />
                             <Instruction
                                 number="03"
@@ -491,19 +430,19 @@ export default function InstructionsPage() {
                             />
                             <Instruction
                                 number="04"
-                                text="Do not refresh, close, or navigate away from the browser during the assessment."
+                                text="Refreshing, switching tabs, or leaving the assessment will be considered malpractice."
                             />
                             <Instruction
                                 number="05"
-                                text="Ensure that you have a stable internet connection throughout the test."
+                                text="Maintain a stable internet connection throughout the assessment."
                             />
                             <Instruction
                                 number="06"
-                                text="The timer will begin immediately after you start the assessment."
+                                text="The timer starts immediately when the assessment begins."
                             />
                             <Instruction
                                 number="07"
-                                text="Complete all questions within the allotted time."
+                                text="Complete and submit all questions within the allotted time."
                             />
                         </div>
                         {/* DIVIDER */}

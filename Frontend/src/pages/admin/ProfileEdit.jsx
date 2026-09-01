@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getScheduleFormData,
   getExistingStudents,
@@ -8,7 +8,6 @@ import {
 } from "../../services/adminService";
 import {
   ShieldCheck,
-  UserRoundCog,
   Users,
   GraduationCap,
   Building2,
@@ -20,18 +19,14 @@ import {
   ChevronRight,
   Filter,
   CalendarDays,
-  Plus,
-  Trash2,
   Pencil,
   Power,
   UserCheck,
-  UserX,
   AlertCircle,
   X,
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
-import api from "../../services/api";
 
 import "./ProfileEdit.css";
 
@@ -118,7 +113,7 @@ const normalizeStudent = (student = {}) => ({
 
   phone: getValue(student, ["phone"]),
 
-  department: getValue(student, ["department"]),
+  department: getValue(student, ["branch"]),
 
   year: getValue(student, ["year"]),
 
@@ -288,8 +283,6 @@ const StudentProfileAccess = () => {
     } catch (error) {
       console.error("Schedule data error:", error);
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to load filter data.",
         "error"
       );
@@ -403,8 +396,6 @@ const StudentProfileAccess = () => {
       console.error("Student fetch error:", error);
       setStudents([]);
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to load student data.",
         "error"
       );
@@ -454,8 +445,6 @@ const StudentProfileAccess = () => {
     } catch (error) {
       console.error("Profile access update error:", error);
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to update profile access.",
         "error"
       );
@@ -510,8 +499,6 @@ const StudentProfileAccess = () => {
     } catch (error) {
       console.error("Bulk profile access update error:", error);
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to update student permissions.",
         "error"
       );
@@ -563,8 +550,6 @@ const StudentProfileAccess = () => {
       console.error("Academic year fetch error:", error);
 
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to load academic year.",
         "error"
       );
@@ -635,8 +620,6 @@ const StudentProfileAccess = () => {
       console.error("Academic year update error:", error);
 
       showMessage(
-        error?.response?.data?.message ||
-        error?.message ||
         "Unable to update academic year.",
         "error"
       );
@@ -891,7 +874,7 @@ const StudentProfileAccess = () => {
                 onChange={
                   handleDepartmentChange
                 }
-                placeholder="Select Department"
+                placeholder="Select Branch"
                 loading={
                   loadingScheduleData
                 }

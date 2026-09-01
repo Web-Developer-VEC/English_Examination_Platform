@@ -1,21 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
 import { loginUser } from "../../services/authService";
-import { saveAdminSession,clearAdminSession,clearStudentSession } from "../../utils/helpers";
+import { saveAdminSession, clearAdminSession, clearStudentSession } from "../../utils/helpers";
 import Footer from "../common/footer.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
-    clearAdminSession();
-    clearStudentSession();
-    const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({ identifier: "", password: "" });
+    
+
     const navigate = useNavigate();
+
+    useEffect(() => {
+        clearAdminSession();
+        clearStudentSession();
+    }, []);
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [loginError, setLoginError] = useState("");
+    const [formData, setFormData] = useState({ identifier: "", password: "" });
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setLoginError("");
     };
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,46 +40,36 @@ const AdminLogin = () => {
                 sessionStorage.removeItem(
                     "studentSession"
                 );
-                // Save admin session
-
-
-                // Optional: remove old student session
-                sessionStorage.removeItem(
-                    "studentSession"
-                );
+                toast.success("Login successfull");
+                
                 saveAdminSession({
                     token: response.token,
                     sessionId: response.sessionId,
                     expiresAt: response.expiresAt,
                     user: response.user
                 });
-                navigate("/admin");
+                setTimeout(() => {
+                    navigate("/admin");
+                }, 2000);
+
             }
 
         } catch (error) {
 
-            console.error(
-                "Login error:",
-                error
-            );
-
             if (error.response) {
 
-                toast.error(
-                    error.response.data.message
-                );
+                setLoginError("Wrong Username or Password");
 
             } else {
 
-                toast.error(
-                    "Unable to connect to server"
-                );
+                setLoginError("Unable to connect to server");
             }
         }
     };
 
     return (
         <>
+            <ToastContainer position="bottom-right" autoClose="2000" />
             <div className="flex justify-center">
                 <div className="flex justify-center pt-10">
                     <div className="login-card">
@@ -121,7 +120,7 @@ const AdminLogin = () => {
                                         onClick={() => setShowPassword((v) => !v)}
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                                     </button>
                                 </div>
                             </div>
@@ -130,6 +129,11 @@ const AdminLogin = () => {
                                 <LogIn size={18} />
                                 Login
                             </button>
+                            {loginError && (
+                                <p className="mt-3 text-center text-red-600 text-sm font-medium">
+                                    {loginError}
+                                </p>
+                            )}
 
                             <div className="login-footer">
                                 <>
@@ -138,9 +142,8 @@ const AdminLogin = () => {
                                         className="login-footer__link"
                                         onClick={() => navigate("/forgot-password")}
                                     >
-                                        Forgot your password?
+                                        Reset your password
                                     </button>
-                                    {/* <p className="login-footer__link">Ask other admin to reset the password</p> */}
                                 </>
                             </div>
                         </form>

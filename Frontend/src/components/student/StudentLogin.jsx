@@ -1,13 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import Register from "../auth/Register"
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { saveStudentSession,clearStudentSession,clearAdminSession } from "../../utils/helpers";
+import { saveStudentSession, clearStudentSession, clearAdminSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
+
+  const enterFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (error) {
+      console.error("Fullscreen request failed:", error);
+    }
+  };
+
   clearStudentSession();
   clearAdminSession();
   const [showPassword, setShowPassword] = useState(false);
@@ -39,15 +51,20 @@ const StudentLogin = () => {
       );
 
       if (response.success) {
+
         sessionStorage.removeItem(
           "adminSession"
         );
+
+        toast.success("Login successfull");
         saveStudentSession({
           token: response.token,
           user: response.user
         });
+        setTimeout(() => {
+          navigate("/student/dashboard");
+        }, 2000);
 
-        navigate("/student/dashboard");
       }
 
     } catch (error) {
@@ -55,7 +72,8 @@ const StudentLogin = () => {
       console.error("Login error:", error);
 
       if (error.response) {
-        setLoginError("Wrong username or password");
+        const backendError = error.response.data?.message || error.response.data?.error || error.response.data?.detail;
+        setLoginError(backendError || "Wrong username or password");
       } else {
         setLoginError("Unable to connect to server");
       }
@@ -63,6 +81,7 @@ const StudentLogin = () => {
   };
 
   return (<>
+    <ToastContainer position="bottom-right" autoClose="2000" />
     <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
@@ -84,6 +103,7 @@ const StudentLogin = () => {
               placeholder="Enter your User Name"
               value={formData.identifier}
               onChange={handleChange}
+              onFocus={enterFullscreen}
               autoComplete="username"
               required
             />
@@ -98,7 +118,7 @@ const StudentLogin = () => {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
+              placeholder="DD-MM-YYYY"
               value={formData.password}
               onChange={handleChange}
               autoComplete="current-password"
@@ -110,7 +130,7 @@ const StudentLogin = () => {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
           </div>
         </div>
