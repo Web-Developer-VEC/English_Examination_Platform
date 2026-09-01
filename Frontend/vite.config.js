@@ -7,7 +7,6 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-
     VitePWA({
       registerType: "autoUpdate",
 
@@ -44,4 +43,7 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    host: "0.0.0.0",
+  },
 });

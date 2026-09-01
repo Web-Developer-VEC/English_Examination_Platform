@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
-const { getDB } = require("../config/db");
-const { toIST } = require("../helper/ist_converter");
+const { getDB } = require("../../config/db");
+const { toIST } = require("../../helper/ist_converter");
 
 const scheduleExam = async (req, res) => {
     try {
@@ -173,8 +173,6 @@ const scheduleExam = async (req, res) => {
         // =====================================================
 
         const normalizedSemester =semester;
-        console.log(normalizedSemester!="even");
-        console.log(normalizedSemester!="odd");
 
         if (
             normalizedSemester !="odd" &&
@@ -327,7 +325,14 @@ const scheduleExam = async (req, res) => {
                     "Question set not found."
             });
         }
+        const requiredDuration = questionSet.audioDurationMinutes * 2;
 
+        if (Number(duration) < requiredDuration) {
+            return res.status(400).json({
+                success: false,
+                message: `Duration must be at least ${requiredDuration} minutes.`
+            });
+        }   
         // =====================================================
         // DUPLICATE SCHEDULE CHECK
         // =====================================================

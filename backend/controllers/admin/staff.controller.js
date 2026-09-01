@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs"); // npm install bcryptjs
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 
 const SALT_ROUNDS = 10;
 

@@ -1,4 +1,5 @@
 const Busboy = require("busboy");
+const { parseBuffer } = require("music-metadata");
 const { uploadToS3 } = require("../service/s3.service");
 
 const questions_upload_Middleware = (req, res, next) => {
@@ -28,12 +29,14 @@ const questions_upload_Middleware = (req, res, next) => {
     });
 
     file.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+
       req.files[fieldname] = {
         fieldname,
         filename: info.filename,
         mimeType: info.mimeType,
-        size: Buffer.concat(chunks).length,
-        buffer: Buffer.concat(chunks),
+        size: buffer.length,
+        buffer,
       };
     });
   });
@@ -64,6 +67,22 @@ const questions_upload_Middleware = (req, res, next) => {
         });
       }
 
+      // Get audio duration
+      const metadata = await parseBuffer(
+        audio.buffer,
+        {
+          mimeType: audio.mimeType,
+          filename: audio.filename,
+        }
+      );
+
+      // Duration is returned in seconds
+      const audioDurationMinutes = metadata.format.duration
+        ? Number((metadata.format.duration / 60).toFixed(2))
+        : 0;
+
+      console.log("Audio Duration:", audioDurationMinutes, "minutes");
+
       // Upload audio to S3
       const uploadedAudio = await uploadToS3(
         audio,
@@ -73,9 +92,11 @@ const questions_upload_Middleware = (req, res, next) => {
       req.uploadedData = {
         questionCode,
         audio: uploadedAudio,
+        audioDurationMinutes,
       };
 
       next();
+
     } catch (error) {
       next(error);
     }
