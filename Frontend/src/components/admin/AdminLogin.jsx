@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "../auth/LoginForm.css";
@@ -8,10 +8,14 @@ import Footer from "../common/footer.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
-    clearAdminSession();
-    clearStudentSession();
+    
 
     const navigate = useNavigate();
+
+    useEffect(() => {
+        clearAdminSession();
+        clearStudentSession();
+    }, []);
 
     const [showPassword, setShowPassword] = useState(false);
     const [loginError, setLoginError] = useState("");

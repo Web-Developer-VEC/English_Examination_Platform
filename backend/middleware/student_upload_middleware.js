@@ -37,7 +37,6 @@ const student_upload_Middleware = (req, res, next) => {
   busboy.on("finish", async () => {
     try {
       const { student_data } = req.files;
-      console.log(req.files);
       if (!student_data) {
         return res.status(400).json({
           success: false,

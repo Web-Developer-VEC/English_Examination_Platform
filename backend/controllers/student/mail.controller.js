@@ -1,6 +1,6 @@
 
 const { SendEmailCommand } = require("@aws-sdk/client-ses");
-const { ses } = require("../config/ses");
+const { ses } = require("../../config/ses");
 
 const sendTestEmail = async (req, res) => {
   try {

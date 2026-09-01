@@ -1013,23 +1013,24 @@ export default function AudioTest() {
                 </div>
             )}
 
-            {/* STICKY SUB-HEADER (Timer Only) */}
-            <div className=" sticky top-0 z-40 flex-shrink-0">
-                <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-end">
-                    <div className="flex items-center px-4 py-2 rounded-lg border border-slate-300 bg-white">
+            {/* FIXED EXAM TIMER */}
+            <div className="fixed top-[160px] left-0 right-0 z-50">
+                <div className="flex justify-center items-center py-3">
+                    <div className="flex items-center px-5 py-2 rounded-lg border border-slate-300 bg-white shadow-sm">
 
                         <span className="text-lg font-medium text-gray-700">
                             Time Left:
                         </span>
 
                         <span
-                            className={`ml-2 text-lg font-semibold ${examRemainingPercentage < 10
+                            className={`ml-2 text-lg font-bold ${examRemainingPercentage < 10
                                 ? "text-red-600"
                                 : "text-green-600"
                                 }`}
                         >
                             {formatTime(examRemaining)}
                         </span>
+
                     </div>
                 </div>
             </div>
@@ -1038,6 +1039,31 @@ export default function AudioTest() {
             <main className="max-w-[1200px] mx-auto w-full px-4 md:px-6 py-6 flex-1">
                 {/* LEFT COLUMN: Player & Questions */}
                 <div className="w-full flex flex-col gap-6">
+                    {/* SUBJECT INFORMATION */}
+                   
+                    <div className="text-center flex justify-center items-center gap-210">
+
+                        <div>
+                            <p className="text-sm md:text-base font-semibold text-slate-500">
+                                Subject Code
+                            </p>
+
+                            <span className="text-lg md:text-xl font-semibold text-slate-700">
+                                23EN103L
+                            </span>
+                        </div>
+
+                        <div>
+                            <p className="text-sm md:text-base font-semibold text-slate-500">
+                                Subject Name
+                            </p>
+
+                            <span className="text-lg md:text-xl font-semibold text-slate-700">
+                                TECHNICAL ENGLISH
+                            </span>
+                        </div>
+
+                    </div>
                     {/* MODERN AUDIO PLAYER */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col sm:flex-row items-center gap-5">
                         <audio

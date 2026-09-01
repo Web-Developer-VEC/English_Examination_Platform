@@ -1,4 +1,4 @@
-const { generateStudentExamPDF } = require("../service/student_result.service"); 
+const { generateStudentExamPDF } = require("../../service/student_result.service"); 
 
 const generateStudentResult = async (req, res) => {
   try {

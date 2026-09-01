@@ -1357,7 +1357,7 @@ const StudentDashboard = () => {
           FOOTER
       ======================================================== */}
 
-      <Footer />
+      {/* <Footer /> */}
       <ToastContainer
         position="bottom-right"
         autoClose={3000}
