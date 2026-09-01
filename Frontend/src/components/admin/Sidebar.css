@@ -393,13 +393,9 @@
 .vec-item-btn:hover {
   background: var(--gold);
   color: #1a1a1a;
-  transform: scale(1.01);
 }
 
-.vec-item-btn:hover .vec-icon {
-    transform: rotate(15deg);
 
-}
 /* Focus */
 
 .vec-item-btn:focus-visible {
@@ -688,7 +684,7 @@
   border: none;
 
   /* NORMAL = GOLD */
-  /* background: #ffcc00; */
+  background: #ffcc00;
 
   border-radius: 14px;
 
@@ -716,11 +712,10 @@
 
 .vec-logout-btn:hover {
   /* HOVER / TOUCH = BROWN */
-  background: #ffcc00;
-  /* background: #660000; */
+  background: #660000;
 
   /* WHITE TEXT */
-  /* color: #ffffff; */
+  color: #ffffff;
 }
 
 
@@ -742,9 +737,9 @@
 
 /* ICON WHEN HOVERED / TOUCHED */
 
-/* .vec-logout-btn:hover .vec-icon {
+.vec-logout-btn:hover .vec-icon {
   color: #ffffff;
-} */
+}
 
 
 /* =========================================================

@@ -29,13 +29,7 @@ const NAV_ITEMS = [
     location: "/admin/dashboard",
   },
 
-  {
-    key: "faculty",
-    label: "Faculty",
-    icon: Users,
-    adminOnly: true,
-
-  },
+  
 
       {
         key: "faculty-list",
@@ -72,6 +66,9 @@ const NAV_ITEMS = [
         location: "/admin/StudentProfileAccess",
       },
     
+  // STAFF + ADMIN
+ 
+
   // STAFF + ADMIN
   {
     key: "student-result",

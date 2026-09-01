@@ -2,7 +2,7 @@ import { FaRegCopyright } from "react-icons/fa";
 
 export default function Footer() {
     return (
-        <footer className="text-center text-black-400 mt-10">
+        <footer className="text-center text-gray-500 mt-10">
             <FaRegCopyright className="inline mr-1" />
 
             <a

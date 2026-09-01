@@ -137,7 +137,7 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid username or password",
+        message: "User Not found",
       });
     }
 
@@ -162,7 +162,7 @@ const login = async (req, res) => {
         if (!isMatch) {
           return res.status(401).json({
             success: false,
-            message: "Invalid username or password",
+            message: "Incorrect Password",
           });
         }
       }
@@ -177,7 +177,7 @@ const login = async (req, res) => {
       if (!isMatch) {
         return res.status(401).json({
           success: false,
-          message: "Invalid username or password",
+          message: "Incorrect Password",
         });
       }
     }

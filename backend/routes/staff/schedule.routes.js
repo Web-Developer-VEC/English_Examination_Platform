@@ -19,7 +19,7 @@ router.get(
   getScheduledExams,
 );
 router.post("/scheduleexam", roleByAccess(["admin"]), scheduleExam);
-router.delete(
+router.post(
   "/delete-scheduled-exam",
   roleByAccess(["admin"]),
   deleteScheduledExam,

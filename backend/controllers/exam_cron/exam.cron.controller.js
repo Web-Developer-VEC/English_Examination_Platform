@@ -236,7 +236,7 @@ const checkExams = async () => {
     const upcomingTests = [];
 
     const oneMinuteFromNow = new Date(now);
-    oneMinuteFromNow.setMinutes(oneMinuteFromNow.getMinutes() + 1);
+    oneMinuteFromNow.setMinutes(oneMinuteFromNow.getMinutes() + 10);
 
     for (const test of schedules) {
       const startTime = new Date(test.startTime);
