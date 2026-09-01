@@ -1,8 +1,8 @@
 const Cron = require("node-cron");
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
-const { checkExams } = require("../controllers/exam.cron.controller");
-const { checkCompletedExams } = require("../controllers/auto_mail.controller");
+const { checkExams } = require("../controllers/exam_cron/exam.cron.controller");
+const { checkCompletedExams } = require("../controllers/exam_cron/auto_mail.controller");
 
 
 

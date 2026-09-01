@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React , { useEffect, useMemo, useState } from "react";
 import {
   GraduationCap,
   Building2,
@@ -157,8 +157,8 @@ const normalizeScheduleRecord = (item) => {
     dept: getValue(item, [
       "dept",
       "Dept",
-      "department",
-      "Department",
+      "branch",
+      "Branch",
       "department_name",
       "departmentName",
       "dept_name",
@@ -511,7 +511,6 @@ export default function StudentResult() {
             data.message || "Failed to fetch form data."
           );
         }
-        console.log("GETSCHEDULEDATA RESPONSE:", data);
 
         const rawArray = findArrayInResponse(data);
 
@@ -519,13 +518,11 @@ export default function StudentResult() {
           .map(normalizeScheduleRecord)
           .filter((item) => item.batch || item.dept || item.section);
 
-        console.log("NORMALIZED SCHEDULE DATA:", normalizedData);
-
         setScheduleData(normalizedData);
 
         if (normalizedData.length === 0) {
           setError(
-            "No Batch, Department or Section data was returned by the schedule API.",
+            "No Batch, Branch or Section data was returned by the schedule API.",
           );
         }
       } catch (err) {
@@ -596,7 +593,7 @@ export default function StudentResult() {
   // ---------------------------------------------------
   const validate = () => {
     if (!batch || !dept || !section || !cie || !sem) {
-      setError("Please select Batch, Department, Section, CIE and Semester.");
+      setError("Please select Batch, Branch, Section, CIE and Semester.");
       return false;
     }
 
@@ -630,18 +627,8 @@ export default function StudentResult() {
       semester: semesterValue,
     };
 
-    console.log(
-      "EXAM REPORT REQUEST:",
-      requestBody
-    );
-
     const responseData =
       await getExamResults(requestBody);
-
-    console.log(
-      "EXAM REPORT RESPONSE:",
-      responseData
-    );
 
     if (
       !responseData.success ||
@@ -656,11 +643,6 @@ export default function StudentResult() {
 
     const pdfUrl =
       responseData.data.url;
-
-    console.log(
-      "PDF URL:",
-      pdfUrl
-    );
 
     window.open(
       pdfUrl,
@@ -698,13 +680,11 @@ export default function StudentResult() {
         sem,
       };
 
-      console.log("SELECTED RESULT FILTERS:", filters);
       await fetchStudentResults(filters);
 
       setSubmittedFilters(filters);
       setShowResults(false);
 
-      console.log("PDF downloaded successfully.");
     } catch (err) {
       console.error("PDF download error:", err);
       setError(
@@ -825,7 +805,7 @@ export default function StudentResult() {
 
               {/* DEPARTMENT */}
               <SelectField
-                label="Department"
+                label="Branch"
                 IconComponent={Building2}
                 value={dept}
                 onChange={(value) => {
@@ -837,7 +817,7 @@ export default function StudentResult() {
                   setError("");
                 }}
                 options={departmentOptions}
-                placeholder={batch ? "Select Department" : "Select Batch First"}
+                placeholder={batch ? "Select Branch" : "Select Batch First"}
                 disabled={!batch || departmentOptions.length === 0}
               />
 
@@ -855,7 +835,7 @@ export default function StudentResult() {
                 }}
                 options={sectionOptions}
                 placeholder={
-                  dept ? "Select Section" : "Select Department First"
+                  dept ? "Select Section" : "Select Branch First"
                 }
                 disabled={!dept || sectionOptions.length === 0}
               />
@@ -929,7 +909,7 @@ export default function StudentResult() {
             <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3">
               {[
                 ["Batch", submittedFilters.batch],
-                ["Department", submittedFilters.dept],
+                ["Branch", submittedFilters.dept],
                 ["Section", submittedFilters.section],
                 ["CIE", submittedFilters.cie],
                 ["Semester", submittedFilters.sem],

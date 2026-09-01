@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   UserRound,
   CloudUpload,
@@ -31,7 +31,7 @@ import {
 } from "../../services/adminService";
 import "./StudentDataUpload.css";
 
-const TEMPLATE_URL = "https://adminvec.s3.ap-south-1.amazonaws.com/english_exam_platform/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx";
+const TEMPLATE_URL = `${import.meta.env.VITE_BASE_URL}/templates/STUDENT_DATA_UPLOAD_TEMPLATE.xlsx`;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const STUDENTS_PER_PAGE = 50;
@@ -58,7 +58,7 @@ const normalizeStudent = (student = {}) => ({
   admissionNo: getValue(student, ["admissionNo",]),
   email: getValue(student, ["email"]),
   phone: getValue(student, ["phone"]),
-  department: getValue(student, ["department"]),
+  department: getValue(student, ["branch"]),
   year: getValue(student, ["year"]),
   section: getValue(student, ["section"]),
   batch: getValue(student, ["batch"]),
@@ -78,7 +78,7 @@ const uploadInstructions = [
   {
     id: "02",
     title: "Keep the column names unchanged",
-    description: "Use the exact template headers: Name, Reg_no, Admission_no, Email, Phone, Department, Year, Section, Batch, DOB."
+    description: "Use the exact template headers: Name, Reg_no, Admission_no, Email, Phone, Branch, Year, Section, Batch, DOB."
   },
   {
     id: "03",
@@ -295,7 +295,7 @@ const StudentDataUpload = () => {
         throw new Error(
           getErrorMessage(
             data,
-            "Unable to load batch, department and section data."
+            "Unable to load batch, branch and section data."
           )
         );
       }
@@ -333,8 +333,7 @@ const StudentDataUpload = () => {
       setStudents([]);
 
       showExistingError(
-        error?.message ||
-        "Unable to load batch, department and section data."
+        "Unable to load batch, branch and section data."
       );
     } finally {
       setLoadingScheduleData(false);
@@ -420,7 +419,7 @@ const StudentDataUpload = () => {
       console.error("Student upload error:", error);
 
       showMessage(
-        error?.message || "Something went wrong while uploading.",
+        "Something went wrong while uploading.",
         "error"
       );
     } finally {
@@ -434,7 +433,7 @@ const StudentDataUpload = () => {
   } = {}) => {
     if (!selectedBatch || !selectedDepartment || !selectedSection) {
       showExistingError(
-        "Please select batch, department and section."
+        "Please select batch, branch and section."
       );
       return;
     }
@@ -458,10 +457,7 @@ const StudentDataUpload = () => {
         section: selectedSection,
       });
 
-      console.log(
-        "Existing student data API response:",
-        data
-      );
+      console.log("Existing student data API response:",data);
 
       if (data?.success === false) {
         throw new Error(
@@ -484,7 +480,7 @@ const StudentDataUpload = () => {
 
       setStudents([]);
       showExistingError(
-        error?.message || "Unable to load existing student data."
+        "Unable to load existing student data."
       );
     } finally {
       setLoadingStudents(false);
@@ -769,7 +765,7 @@ const StudentDataUpload = () => {
                 <div>
                   <h2>Existing Student Data</h2>
                   <p>
-                    Select a batch, department and section to view uploaded
+                    Select a batch, branch and section to view uploaded
                     students
                   </p>
                 </div>
@@ -803,14 +799,14 @@ const StudentDataUpload = () => {
                 </div>
 
                 <div className="filter-field">
-                  <label htmlFor="student-department">Department</label>
+                  <label htmlFor="student-branch">Branch</label>
 
                   <ThemeDropdown
                     icon={Building2}
                     value={selectedDepartment}
                     options={departmentOptions}
                     onChange={handleDepartmentChange}
-                    placeholder="Select Department"
+                    placeholder="Select Branch"
                     disabled={!selectedBatch || loadingScheduleData}
                     loading={loadingScheduleData}
                   />
@@ -944,7 +940,7 @@ const StudentDataUpload = () => {
                         <th>Admission No.</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Department</th>
+                        <th>Branch</th>
                         <th>Year</th>
                         <th>Section</th>
                         <th>Batch</th>
@@ -997,7 +993,7 @@ const StudentDataUpload = () => {
                             <td>{student.phone || "-"}</td>
 
                             <td>
-                              <span className="department-badge">
+                              <span className="branch-badge">
                                 {student.department ||
                                   selectedDepartment ||
                                   "-"}
@@ -1104,10 +1100,10 @@ const StudentDataUpload = () => {
                     <Database size={34} />
                   </div>
 
-                  <h3>Select Batch, Department &amp; Section</h3>
+                  <h3>Select Batch, Branch &amp; Section</h3>
 
                   <p>
-                    Choose the batch, department and section above
+                    Choose the batch, branch and section above
                     to view the existing records.
                   </p>
                 </div>

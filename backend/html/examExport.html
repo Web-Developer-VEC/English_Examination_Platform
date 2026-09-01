@@ -14,31 +14,52 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             color: #222;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .header {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-align: left;
             margin-bottom: 20px;
         }
 
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             object-fit: contain;
-            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
-        .header h1 {
+        .header-text {
+            text-align: center;
+        }
+
+        .header-text h1 {
             margin: 0;
             font-size: 24px;
         }
 
-        .header h2 {
-            margin: 8px 0;
+        .header-text h4 {
+            margin: 4px 0;
+            font-weight: normal;
+        }
+
+        .header-text h2 {
+            margin: 6px 0;
             font-size: 18px;
         }
 
@@ -79,6 +100,35 @@
             margin-top: 20px;
             font-size: 13px;
         }
+
+        /* ==========================
+           SIGNATURE BLOCK
+           ========================== */
+        .signature-block {
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 60px;
+        }
+
+        .signature-box {
+            width: 220px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .signature-box .sign-line {
+            border-top: 1px solid #333;
+            height: 40px;
+        }
+
+        .signature-box .sign-label {
+            padding: 10px;
+            border-top: 1px solid black;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -92,9 +142,12 @@
             alt="College Logo"
         >
 
-        <h1>Velammal Engineering College</h1>
-        <h2>English Department</h2>
-        <h2>Examination Report</h2>
+        <div class="header-text">
+            <h1>Velammal Engineering College</h1>
+            <h4><i>(An Autonomous Institution, Affiliated to Anna University, Chennai)</i></h4>
+            <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
+            <h2>English Department - Examination Report</h2>
+        </div>
 
     </div>
 
@@ -105,10 +158,10 @@
             <span class="filter-item">Batch:</span>
             {{BATCH}}
         </div>
-        
+
 
         <div>
-            <span class="filter-item">Department:</span>
+            <span class="filter-item">Branch:</span>
             {{DEPARTMENT}}
         </div>
 
@@ -122,7 +175,7 @@
             {{CIE}}
         </div>
         <div>
-            <span class="filter-item">Staff:</span>
+            <span class="filter-item">Faculty Incharge:</span>
             {{STAFF}}
         </div>
 
@@ -155,6 +208,19 @@
 
         <strong>Total Students:</strong>
         {{TOTAL_STUDENTS}}
+
+    </div>
+
+
+    <div class="signature-block">
+
+        <div class="signature-box">
+            <div class="sign-label">{{SIGN_LEFT_LABEL}}</div>
+        </div>
+
+        <div class="signature-box">
+            <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
+        </div>
 
     </div>
 

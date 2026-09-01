@@ -4,10 +4,10 @@ const {
   submitExam,
   startExam,
   syncExam,
-} = require("../../controllers/exam.controller");
+} = require("../../controllers/student/exam.controller");
 const {
   reportMalpractice,
-} = require("../../controllers/malpractice.controller");
+} = require("../../controllers/student/malpractice.controller");
 const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
 const router = express.Router();

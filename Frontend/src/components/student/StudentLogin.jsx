@@ -4,8 +4,9 @@ import Register from "../auth/Register"
 import "../auth/LoginForm.css";
 import Footer from "../common/footer.jsx"
 import { loginUser } from "../../services/authService.js";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { saveStudentSession,clearStudentSession,clearAdminSession } from "../../utils/helpers";
+import { saveStudentSession, clearStudentSession, clearAdminSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
   clearStudentSession();
@@ -39,23 +40,29 @@ const StudentLogin = () => {
       );
 
       if (response.success) {
+
         sessionStorage.removeItem(
           "adminSession"
         );
+
+        toast.success("Login successfull");
         saveStudentSession({
           token: response.token,
           user: response.user
         });
-
-        navigate("/student/dashboard");
+        setTimeout(() => {
+          navigate("/student/dashboard");
+        }, 2000);
+        
       }
 
     } catch (error) {
 
       console.error("Login error:", error);
 
-      if (error.response) {
-        setLoginError("Wrong username or password");
+      if (error.response) {  
+        const backendError = error.response.data?.message || error.response.data?.error || error.response.data?.detail;
+        setLoginError(backendError || "Wrong username or password");
       } else {
         setLoginError("Unable to connect to server");
       }
@@ -63,6 +70,7 @@ const StudentLogin = () => {
   };
 
   return (<>
+    <ToastContainer position="bottom-right" autoClose="2000"/>
     <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
@@ -98,7 +106,7 @@ const StudentLogin = () => {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
+              placeholder="DD-MM-YYYY"
               value={formData.password}
               onChange={handleChange}
               autoComplete="current-password"
@@ -110,7 +118,7 @@ const StudentLogin = () => {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
           </div>
         </div>
@@ -126,7 +134,7 @@ const StudentLogin = () => {
         </button>
 
         <div className="login-footer">
-          <>
+          {/* <>
 <button
   type="button"
   className="login-footer__link"
@@ -134,11 +142,11 @@ const StudentLogin = () => {
 >
   Forgot your password?
 </button>           
- {/* <p className="login-footer__link">Contact your mentor</p>  */}
-            {/* <button type="button" className="login-signup" onClick={() => navigate("/register")} >
+ <p className="login-footer__link">Contact your mentor</p>  
+            <button type="button" className="login-signup" onClick={() => navigate("/register")} >
               New Student? Sign Up
-            </button> */}
-          </>
+            </button> 
+          </> */}
         </div>
       </form>
     </div>

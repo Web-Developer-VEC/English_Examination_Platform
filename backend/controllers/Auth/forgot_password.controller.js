@@ -1,8 +1,8 @@
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 const crypto = require("crypto");
-const { sendOtpEmail } = require("../service/forgetPass_mail.service");
+const { sendOtpEmail } = require("../../service/forgetPass_mail.service");
 const bcrypt = require("bcryptjs");
-const { addEmailToQueue } = require("../utils/sesEmailQueue");
+const { addEmailToQueue } = require("../../utils/sesEmailQueue");
 
 require("dotenv").config();
 
@@ -38,6 +38,7 @@ const forgotpassword = async (req, res) => {
     // FIND USER
     const user = await db.collection(collection).findOne({
       username: normalizedUsername,
+      role: role
     });
 
     if (!user) {

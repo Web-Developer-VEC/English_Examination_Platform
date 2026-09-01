@@ -1,4 +1,4 @@
-const { getDB } = require("../config/db");
+const { getDB } = require("../../config/db");
 
 // =====================================================
 // UPDATE ACADEMIC YEAR
@@ -184,11 +184,11 @@ const updateStudentEditPermission = async (req, res) => {
                 });
             }
 
-            if (typeof student.editEnabled !== "boolean") {
+            if (typeof student.studentEditEnabled !== "boolean") {
                 return res.status(400).json({
                     success: false,
                     message:
-                        `editEnabled must be true or false for admissionNo ${student.admissionNo}.`
+                        `studentEditEnabled must be true or false for admissionNo ${student.admissionNo}.`
                 });
             }
         }
@@ -205,8 +205,8 @@ const updateStudentEditPermission = async (req, res) => {
             const admissionNo =
                 String(student.admissionNo).trim();
 
-            const editEnabled =
-                student.editEnabled;
+            const studentEditEnabled =
+                student.studentEditEnabled;
 
             // ---------------------------------------------
             // UPDATE STUDENT DOCUMENT
@@ -220,7 +220,7 @@ const updateStudentEditPermission = async (req, res) => {
 
                 {
                     $set: {
-                        editEnabled,
+                        studentEditEnabled,
                         updatedAt: new Date()
                     }
                 }
@@ -244,7 +244,7 @@ const updateStudentEditPermission = async (req, res) => {
 
             updatedStudents.push({
                 admissionNo,
-                editEnabled
+                studentEditEnabled
             });
         }
 
@@ -330,7 +330,7 @@ const getStudentEditPermission = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 admissionNo: admissionNo.trim(),
-                editEnabled: false
+                studentEditEnabled: false
             });
 
         }
@@ -347,9 +347,9 @@ const getStudentEditPermission = async (req, res) => {
 
             admissionNo: admissionNo.trim(),
 
-            editEnabled:
+            studentEditEnabled:
                 studentPermission
-                    ? studentPermission.editEnabled
+                    ? studentPermission.studentEditEnabled
                     : false
 
         });

@@ -4,8 +4,8 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 const { ObjectId } = require("mongodb");
 
-const { getDB } = require("../config/db");
-const { getFromS3, uploadToS3 } = require("../service/s3.service");
+const { getDB } = require("../../config/db");
+const { getFromS3, uploadToS3 } = require("../../service/s3.service");
 
 // ============================================================
 // GENERATE EXAM REPORT PDF
@@ -27,13 +27,11 @@ const generateExamReport = async (req, res) => {
       });
     }
 
-    console.log("JSON DATA:");
-    console.log(data);
 
     // ====================================================
     // CLEAN FILTERS
     // ====================================================
-    const { batch, department, section, cie, semester, academicYear } = data;
+    const { batch, department, section, cie, semester, academicYear, category } = data;
 
     const cleanBatch =
       batch && typeof batch === "string" && batch.trim() !== ""
@@ -109,7 +107,6 @@ const generateExamReport = async (req, res) => {
       })
       .toArray();
 
-    console.log(`Found ${studentRoster.length} student(s) in roster`);
 
     if (studentRoster.length === 0) {
       return res.status(404).json({
@@ -142,7 +139,6 @@ const generateExamReport = async (req, res) => {
       scheduleFilter.cie = cieValue;
     }
 
-    console.log("SCHEDULE FILTER:", scheduleFilter);
 
     // ====================================================
     // FETCH TEST COLUMNS FROM "schedule"
@@ -158,7 +154,6 @@ const generateExamReport = async (req, res) => {
       })
       .toArray();
 
-    console.log(`Found ${scheduleTests.length} schedule test(s)`);
 
     if (scheduleTests.length === 0) {
       return res.status(404).json({
@@ -220,7 +215,6 @@ const generateExamReport = async (req, res) => {
       examFilter.section = cleanSec;
     }
 
-    console.log("EXAM FILTER:", examFilter);
 
     // ====================================================
     // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
@@ -236,8 +230,6 @@ const generateExamReport = async (req, res) => {
         obtainedMarks: 1,
       })
       .toArray();
-
-    console.log(`Found ${examRecords.length} exam attempt(s)`);
 
     // ====================================================
     // BUILD admissionNo -> questionSetId -> {normal, retest}
@@ -261,23 +253,22 @@ const generateExamReport = async (req, res) => {
       }
 
       const entry = studentTests.get(testKey);
-      const category = (record.category || "").toString().trim().toLowerCase();
+      const recordCategory = (record.category || "").toString().trim().toLowerCase();
 
-      if (category === "retest") {
+      if (recordCategory === "retest") {
         entry.retest = record.obtainedMarks ?? 0;
       } else {
         entry.normal = record.obtainedMarks ?? 0;
       }
     });
 
-    console.log(`Found ${studentRoster.length} student row(s)`);
 
     // ====================================================
     // GENERATE TABLE HEADER
     // ====================================================
     const extraHeaderCells = testColumns
       .map((col) => `<th>${col.label}</th>`)
-      .join("");
+      .join("")+'<th>Marks</th>';
 
     // ====================================================
     // GENERATE TABLE ROWS
@@ -285,7 +276,7 @@ const generateExamReport = async (req, res) => {
     const rows = studentRoster
       .map((student, index) => {
         const studentTests = examMap.get(student.admissionNo);
-
+let total = 0;
         const marksCells = testColumns
           .map((col) => {
             const entry = studentTests
@@ -300,6 +291,7 @@ const generateExamReport = async (req, res) => {
                 markDisplay = entry.normal;
               }
             }
+            if(markDisplay!="AB") total+=markDisplay;
 
             return `<td>${markDisplay}</td>`;
           })
@@ -311,6 +303,7 @@ const generateExamReport = async (req, res) => {
                         <td>${student.admissionNo || "-"}</td>
                         <td class="name">${student.name || "-"}</td>
                         ${marksCells}
+                        <td>${total=='AB' ? total: total+'/10' }</td>
                     </tr>
                 `;
       })
@@ -331,17 +324,10 @@ const generateExamReport = async (req, res) => {
       staffFilter.department && staffFilter.section;
 
     if (hasEnoughDetailsForStaff) {
-      console.log("STAFF FILTER:", staffFilter);
 
       const staffMember = await db.collection("staff").findOne(staffFilter, {
         projection: { _id: 0, name: 1 },
       });
-
-      console.log(
-        staffMember
-          ? `Found mentor: ${staffMember.name}`
-          : "No mentor found for this class",
-      );
 
       if (staffMember && staffMember.name) {
         staffValue = staffMember.name;
@@ -365,16 +351,16 @@ const generateExamReport = async (req, res) => {
     }
 
     // ====================================================
-    // GET LOGO FROM S3
+    // GET LOGO FROM LOCAL FILE
     // ====================================================
-    const logoKey = "english_exam_platform/assets/logo.png";
+    const logoPath = path.join(__dirname, "../assets/logo.png");
     let logoBase64;
 
     try {
-      const logoBuffer = await getFromS3(logoKey);
+      const logoBuffer = fs.readFileSync(logoPath);
       logoBase64 = logoBuffer.toString("base64");
     } catch (error) {
-      console.error("S3 Logo Error:", error);
+      console.error("Local Logo Error:", error);
       return res.status(500).json({
         success: false,
         message: "College logo not found.",
@@ -409,7 +395,9 @@ const generateExamReport = async (req, res) => {
       .replace("{{STAFF}}", staffValue) // Replaced duplicates with a single tag
       .replace("{{MARKS_HEADERS}}", extraHeaderCells)
       .replace("{{ROWS}}", rows)
-      .replace("{{TOTAL_STUDENTS}}", studentRoster.length);
+      .replace("{{TOTAL_STUDENTS}}", studentRoster.length)
+      .replace("{{SIGN_LEFT_LABEL}}", signLeftLabel)
+      .replace("{{SIGN_RIGHT_LABEL}}", signRightLabel);
 
     // ====================================================
     // LAUNCH PUPPETEER
@@ -466,8 +454,6 @@ const generateExamReport = async (req, res) => {
     };
 
     const uploadResult = await uploadToS3(file, "reports");
-
-    console.log("PDF uploaded to S3:", uploadResult);
 
     // ====================================================
     // RESPONSE
