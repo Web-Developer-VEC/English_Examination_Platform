@@ -5,6 +5,7 @@ import AdminLogin from "../components/admin/AdminLogin";
 import StudentLogin from "../components/student/StudentLogin";
 import StudentProtectedRoute from "../components/auth/StudentProtectedRoute";
 import AdminProtectedRoute from "../components/auth/AdminProtectedRoute";
+import PWALaunch from "../components/common/PWALaunch";
 import ForgetPassword from "../components/auth/ForgetPassword";
 
 import StudentLayout from "../layouts/StudentLayout";
@@ -32,6 +33,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<AdminLogin />} />
       <Route path="/studentlogin" element={<StudentLogin />} />
+      <Route path="/pwa-launch" element={<PWALaunch />} />
       <Route path="/forgot-password" element={<ForgetPassword />} />
 
       {/* Student */}
