@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import StudentFullscreen from "../components/student/StudentFullscreen";
+import useOnlineStatus from "../hooks/useOnlineStatus";
+import Boot from "../components/common/boot";
 
 import Register from "../components/auth/Register";
 import AdminLogin from "../components/admin/AdminLogin";
@@ -27,7 +29,11 @@ import FacultyList from "../pages/admin/FacultyList";
 import StudentDataUpload from "../pages/admin/StudentDataUpload";
 import StudentResult from "../pages/admin/StudentResult";
 import ProfileEdit from "../pages/admin/ProfileEdit";
+
+
+
 export default function AppRoutes() {
+
   return (
     <Routes>
       {/* Authentication */}
@@ -58,7 +64,7 @@ export default function AppRoutes() {
 
           {/* Exam */}
           <Route path="/exam" element={<ExamLayout />}>
-            <Route index element={<Navigate to="instruction" replac/>}/>
+            <Route index element={<Navigate to="instruction" replace/>}/>
             <Route path="instruction" element={<Instruction />}/>
             <Route path="audiotest" element={<AudioTest />}/>
           </Route>
