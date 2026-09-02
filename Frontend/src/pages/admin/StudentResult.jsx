@@ -154,16 +154,17 @@ const normalizeScheduleRecord = (item) => {
       "academicYear",
     ]),
 
-    dept: getValue(item, [
-      "dept",
-      "Dept",
-      "branch",
-      "Branch",
-      "department_name",
-      "departmentName",
-      "dept_name",
-      "deptName",
-    ]),
+dept: getValue(item, [
+  "dept",
+  "Dept",
+  "department",        
+  "branch",
+  "Branch",
+  "dept_name",
+  "deptName",
+]),
+
+
 
     section: getValue(item, [
       "section",
@@ -505,6 +506,7 @@ export default function StudentResult() {
 
       try {
         const data = await getFormData();
+console.log("YRYUi🐦‍🔥🐦‍🔥🐦‍🔥",JSON.stringify(data,null,2));
 
         if (!data.success) {
           throw new Error(
@@ -800,7 +802,6 @@ export default function StudentResult() {
                 }}
                 options={batchOptions}
                 placeholder="Select Batch"
-                disabled={batchOptions.length === 0}
               />
 
               {/* DEPARTMENT */}
@@ -818,7 +819,6 @@ export default function StudentResult() {
                 }}
                 options={departmentOptions}
                 placeholder={batch ? "Select Branch" : "Select Batch First"}
-                disabled={!batch || departmentOptions.length === 0}
               />
 
               {/* SECTION */}
