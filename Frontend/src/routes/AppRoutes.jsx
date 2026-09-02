@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import StudentFullscreen from "../components/student/StudentFullscreen";
 
 import Register from "../components/auth/Register";
 import AdminLogin from "../components/admin/AdminLogin";
@@ -32,20 +33,35 @@ export default function AppRoutes() {
       {/* Authentication */}
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<AdminLogin />} />
-      <Route path="/studentlogin" element={<StudentLogin />} />
       <Route path="/pwa-launch" element={<PWALaunch />} />
       <Route path="/forgot-password" element={<ForgetPassword />} />
 
-      {/* Student */}
-      <Route element={<StudentProtectedRoute />}>
-        <Route path="/student" element={<StudentLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<StudentDashboard />} />
-        </Route>
-        <Route path="/exam" element={<ExamLayout />}>
-          <Route index element={<Navigate to="instruction" replace/>}/>
-          <Route path="instruction" element={<Instruction />} />
-          <Route path="audiotest" element={<AudioTest />} />
+
+      {/* =========================
+          ALL STUDENT PAGES
+         ========================= */}
+
+      <Route element={<StudentFullscreen />}>
+
+        {/* Student Login */}
+        <Route path="/studentlogin" element={<StudentLogin />}/>
+
+        {/* Protected Student Pages */}
+        <Route element={<StudentProtectedRoute />}>
+
+          {/* Student */}
+          <Route path="/student" element={<StudentLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<StudentDashboard />}/>
+          </Route>
+
+
+          {/* Exam */}
+          <Route path="/exam" element={<ExamLayout />}>
+            <Route index element={<Navigate to="instruction" replac/>}/>
+            <Route path="instruction" element={<Instruction />}/>
+            <Route path="audiotest" element={<AudioTest />}/>
+          </Route>
         </Route>
       </Route>
 
@@ -70,3 +86,4 @@ export default function AppRoutes() {
     </Routes>
   );
 }
+
