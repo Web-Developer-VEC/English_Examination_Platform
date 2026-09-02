@@ -214,9 +214,9 @@ const generateExamReport = async (req, res) => {
     if (cleanSec) {
       examFilter.section = cleanSec;
     }
-    if (cleanCategory) {
-  examFilter.category = cleanCategory;
-}
+//     if (cleanCategory) {
+//   examFilter.category = cleanCategory;
+// }
 
 
     // ====================================================
