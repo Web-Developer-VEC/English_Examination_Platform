@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import StudentFullscreen from "../components/student/StudentFullscreen";
+import NotFound from "../components/common/NotFound";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import Boot from "../components/common/boot";
 
@@ -88,7 +89,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

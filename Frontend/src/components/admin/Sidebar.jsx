@@ -167,7 +167,7 @@ console.log("ROLE:", role);
     setCollapsed(true);
     setHovering(false);
 
-    navigate("/login");
+    navigate("/");
   };
 
   /*

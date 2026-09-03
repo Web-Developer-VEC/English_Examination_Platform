@@ -867,35 +867,50 @@ export default function AudioTest() {
     }, [examData, navigate]);
 
     useEffect(() => {
-        if (!examData?.endTime) return;
 
-        const updateExamTimer = () => {
-            const end = new Date(examData.endTime).getTime();
-            const now = Date.now();
+        if (!examData?.duration) {
+            return;
+        }
 
-            const remaining = Math.max(
-                Math.floor((end - now) / 1000),
-                0
-            );
+        // Backend duration is in minutes
+        const totalSeconds =
+            Number(examData.duration) * 60;
 
-            setExamRemaining(remaining);
+        setExamRemaining(totalSeconds);
 
-            if (remaining === 0) {
-                // Exam time finished
-                clearTestState(
-                    admissionNo,
-                    testId
-                );
-                navigate("/student/dashboard");
-            }
+        const timer = setInterval(() => {
+
+            setExamRemaining((prev) => {
+
+                if (prev <= 1) {
+
+                    clearInterval(timer);
+
+                    clearTestState(
+                        admissionNo,
+                        testId
+                    );
+
+                    navigate("/student/dashboard");
+
+                    return 0;
+                }
+
+                return prev - 1;
+            });
+
+        }, 1000);
+
+        return () => {
+            clearInterval(timer);
         };
 
-        updateExamTimer();
-
-        const timer = setInterval(updateExamTimer, 1000);
-
-        return () => clearInterval(timer);
-    }, [examData?.endTime, navigate]);
+    }, [
+        examData?.duration,
+        admissionNo,
+        testId,
+        navigate
+    ]);
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-[#800000]/10 flex flex-col">
@@ -1040,7 +1055,7 @@ export default function AudioTest() {
                 {/* LEFT COLUMN: Player & Questions */}
                 <div className="w-full flex flex-col gap-6">
                     {/* SUBJECT INFORMATION */}
-                   
+
                     <div className="text-center flex justify-center items-center gap-210">
 
                         <div>
