@@ -113,7 +113,7 @@ export default function InstructionsPage() {
             if (status === 400) {
 
                 showStatusPopup(
-                    "Invalid request. Please check the test code."
+                    message || "Invalid request. Please check the test code."
                 );
 
             }
@@ -126,7 +126,7 @@ export default function InstructionsPage() {
             else if (status === 403) {
 
                 showStatusPopup(
-                    "You have already taken this test."
+                    message || "You have already taken this test."
                 );
 
             }
@@ -139,7 +139,7 @@ export default function InstructionsPage() {
             else if (status === 404) {
 
                 showStatusPopup(
-                    "Student not found."
+                    message || "Student not found."
                 );
 
             }
@@ -152,7 +152,7 @@ export default function InstructionsPage() {
             else if (status === 500) {
 
                 showStatusPopup(
-                    "Server error. Please try again later."
+                    message || "Server error. Please try again later."
                 );
 
             }
@@ -165,7 +165,7 @@ export default function InstructionsPage() {
             else if (!error.response) {
 
                 showStatusPopup(
-                    "Poor internet connection.."
+                    message || "Poor internet connection.."
                 );
 
             }
