@@ -52,14 +52,6 @@ export default function NotFound() {
                         Go Back
                     </button>
 
-                    <button
-                        onClick={() => navigate("/")}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#800000] text-white font-semibold text-sm hover:bg-[#6b0000] transition shadow-md"
-                    >
-                        <Home size={18} />
-                        Go to Login
-                    </button>
-
                 </div>
 
                 {/* Footer text */}

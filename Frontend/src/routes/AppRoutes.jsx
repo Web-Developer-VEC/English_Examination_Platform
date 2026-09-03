@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import StudentFullscreen from "../components/student/StudentFullscreen";
 import NotFound from "../components/common/NotFound";
-import useOnlineStatus from "../hooks/useOnlineStatus";
-import Boot from "../components/common/boot";
 
 import Register from "../components/auth/Register";
 import AdminLogin from "../components/admin/AdminLogin";
