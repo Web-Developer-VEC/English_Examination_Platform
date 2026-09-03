@@ -1015,7 +1015,7 @@ export default function AudioTest() {
 
             {/* FIXED EXAM TIMER */}
             <div className="fixed top-[160px] left-0 right-0 z-50">
-                <div className="flex justify-center items-center py-3">
+                <div className="flex justify-end items-center py-3">
                     <div className="flex items-center px-5 py-2 rounded-lg border border-slate-300 bg-white shadow-sm">
 
                         <span className="text-lg font-medium text-gray-700">
@@ -1059,7 +1059,7 @@ export default function AudioTest() {
                             </p>
 
                             <span className="text-lg md:text-xl font-semibold text-slate-700">
-                                TECHNICAL ENGLISH
+                                TECHNICAL ENGLISH LABORATORY
                             </span>
                         </div>
 
