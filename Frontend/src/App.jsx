@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import Header from "./components/common/header";
 import AppRoutes from "./routes/AppRoutes";
 import DesktopOnly from "./components/common/DesktopOnly";
