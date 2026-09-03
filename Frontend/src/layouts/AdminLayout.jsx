@@ -3,8 +3,10 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/admin/Sidebar";
 import Footer from "../components/common/footer";
 import Boot from "../components/common/boot";
+import useOnlineStatus from "../hooks/useOnlineStatus";
 
 export default function AdminLayout() {
+    const isOnline = useOnlineStatus();
     const location = useLocation();
 
     const [showBoot, setShowBoot] = useState(true);
@@ -30,6 +32,9 @@ export default function AdminLayout() {
         };
     }, [location.pathname]);
 
+
+
+
     return (
         <div className="bg-gray-100">
 
@@ -40,10 +45,11 @@ export default function AdminLayout() {
                 <main
                     className="flex-1 relative bg-gray-100"
                 >
-                    {showBoot && (
+                    {(showBoot || !isOnline) && (
                         <Boot
                             isAuth={true}
                             isLoaded={isLoaded}
+                            isOffline={!isOnline}
                         />
                     )}
 

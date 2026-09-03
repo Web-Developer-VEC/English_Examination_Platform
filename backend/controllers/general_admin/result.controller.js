@@ -214,6 +214,9 @@ const generateExamReport = async (req, res) => {
     if (cleanSec) {
       examFilter.section = cleanSec;
     }
+//     if (cleanCategory) {
+//   examFilter.category = cleanCategory;
+// }
 
 
     // ====================================================
@@ -337,7 +340,7 @@ let total = 0;
     // ====================================================
     // GET HTML TEMPLATE FROM LOCAL FILE
     // ====================================================
-    const templatePath = path.join(__dirname, "../html/examExport.html");
+    const templatePath = path.join(__dirname, "../../html/examExport.html");
     let html;
 
     try {
@@ -353,7 +356,7 @@ let total = 0;
     // ====================================================
     // GET LOGO FROM LOCAL FILE
     // ====================================================
-    const logoPath = path.join(__dirname, "../assets/logo.png");
+    const logoPath = path.join(__dirname, "../../assets/logo.png");
     let logoBase64;
 
     try {
@@ -380,8 +383,21 @@ let total = 0;
       ? cleanSem.charAt(0).toUpperCase() + cleanSem.slice(1)
       : "All";
     const cieDisplay = isCieReport ? `CIE ${cieValue}` : "All";
+    const cleanCategory =
+      category && typeof category === "string" && category.trim() !== ""
+        ? category.trim().toLowerCase()
+        : null;
 
-    // ====================================================
+  const isUniversityReport = cleanCategory === "university";
+
+    const signLeftLabel = isUniversityReport
+      ? "Internal Examiner's Signature"
+      : "Staff's Signature";
+
+    const signRightLabel = isUniversityReport
+      ? "External Examiner's Signature"
+      : "HOD's Signature";
+          // ====================================================
     // REPLACE HTML PLACEHOLDERS
     // ====================================================
     html = html
