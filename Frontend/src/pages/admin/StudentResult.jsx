@@ -1,4 +1,4 @@
-import React , { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   GraduationCap,
   Building2,
@@ -31,7 +31,7 @@ const colors = {
 // -----------------------------------------------------
 const CIE_OPTIONS = ["I", "II", "III"];
 const SEM_OPTIONS = ["Odd", "Even"];
-
+const CATEGORY_OPTIONS=["Normal","Retest","University"]
 // -----------------------------------------------------
 // FAIL GRADES
 // -----------------------------------------------------
@@ -157,13 +157,14 @@ const normalizeScheduleRecord = (item) => {
     dept: getValue(item, [
       "dept",
       "Dept",
+      "department",
       "branch",
       "Branch",
-      "department_name",
-      "departmentName",
       "dept_name",
       "deptName",
     ]),
+
+
 
     section: getValue(item, [
       "section",
@@ -478,6 +479,7 @@ export default function StudentResult() {
   // CIE and Semester are fixed options
   const [cie, setCie] = useState("");
   const [sem, setSem] = useState("");
+  const [category, setCategory] = useState("");
 
   // ---------------------------------------------------
   // API DATA
@@ -505,6 +507,7 @@ export default function StudentResult() {
 
       try {
         const data = await getFormData();
+        console.log("YRYUi🐦‍🔥🐦‍🔥🐦‍🔥", JSON.stringify(data, null, 2));
 
         if (!data.success) {
           throw new Error(
@@ -592,8 +595,8 @@ export default function StudentResult() {
   // VALIDATE
   // ---------------------------------------------------
   const validate = () => {
-    if (!batch || !dept || !section || !cie || !sem) {
-      setError("Please select Batch, Branch, Section, CIE and Semester.");
+    if (!batch || !dept || !section || !cie || !sem  || !category) {
+      setError("Please select Batch, Branch, Section, CIE and Semester and Category.");
       return false;
     }
 
@@ -625,8 +628,9 @@ export default function StudentResult() {
       section: filters.section,
       cie: filters.cie,
       semester: semesterValue,
+      category: filters.category,
     };
-
+console.log("Backend Request Body:", requestBody);
     const responseData =
       await getExamResults(requestBody);
 
@@ -678,7 +682,9 @@ export default function StudentResult() {
         section,
         cie,
         sem,
+        category,
       };
+      console.log("Selected Filters:", filters);
 
       await fetchStudentResults(filters);
 
@@ -800,7 +806,6 @@ export default function StudentResult() {
                 }}
                 options={batchOptions}
                 placeholder="Select Batch"
-                disabled={batchOptions.length === 0}
               />
 
               {/* DEPARTMENT */}
@@ -818,7 +823,6 @@ export default function StudentResult() {
                 }}
                 options={departmentOptions}
                 placeholder={batch ? "Select Branch" : "Select Batch First"}
-                disabled={!batch || departmentOptions.length === 0}
               />
 
               {/* SECTION */}
@@ -869,6 +873,24 @@ export default function StudentResult() {
                 placeholder="Select Semester"
                 disabled={false}
               />
+
+
+              {/*CATEGORY*/}
+              <SelectField
+                label="Category"
+                IconComponent={CalendarRange}
+                value={category}
+                onChange={(value) => {
+                  console.log("Selected Category:", value);
+
+                  setCategory(value);
+                  setShowResults(false);
+                  setError("");
+                }}
+                options={CATEGORY_OPTIONS}
+                placeholder="Select Category"
+                disabled={false}
+              />
             </div>
           )}
 
@@ -913,6 +935,7 @@ export default function StudentResult() {
                 ["Section", submittedFilters.section],
                 ["CIE", submittedFilters.cie],
                 ["Semester", submittedFilters.sem],
+                ["Category", submittedFilters.category],
               ].map(([label, value]) => (
                 <span
                   key={label}

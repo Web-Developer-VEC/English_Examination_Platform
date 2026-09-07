@@ -867,35 +867,50 @@ export default function AudioTest() {
     }, [examData, navigate]);
 
     useEffect(() => {
-        if (!examData?.endTime) return;
 
-        const updateExamTimer = () => {
-            const end = new Date(examData.endTime).getTime();
-            const now = Date.now();
+        if (!examData?.duration) {
+            return;
+        }
 
-            const remaining = Math.max(
-                Math.floor((end - now) / 1000),
-                0
-            );
+        // Backend duration is in minutes
+        const totalSeconds =
+            Number(examData.duration) * 60;
 
-            setExamRemaining(remaining);
+        setExamRemaining(totalSeconds);
 
-            if (remaining === 0) {
-                // Exam time finished
-                clearTestState(
-                    admissionNo,
-                    testId
-                );
-                navigate("/student/dashboard");
-            }
+        const timer = setInterval(() => {
+
+            setExamRemaining((prev) => {
+
+                if (prev <= 1) {
+
+                    clearInterval(timer);
+
+                    clearTestState(
+                        admissionNo,
+                        testId
+                    );
+
+                    navigate("/student/dashboard");
+
+                    return 0;
+                }
+
+                return prev - 1;
+            });
+
+        }, 1000);
+
+        return () => {
+            clearInterval(timer);
         };
 
-        updateExamTimer();
-
-        const timer = setInterval(updateExamTimer, 1000);
-
-        return () => clearInterval(timer);
-    }, [examData?.endTime, navigate]);
+    }, [
+        examData?.duration,
+        admissionNo,
+        testId,
+        navigate
+    ]);
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-[#800000]/10 flex flex-col">
@@ -1015,7 +1030,7 @@ export default function AudioTest() {
 
             {/* FIXED EXAM TIMER */}
             <div className="fixed top-[160px] left-0 right-0 z-50">
-                <div className="flex justify-center items-center py-3">
+                <div className="flex justify-end items-center py-3">
                     <div className="flex items-center px-5 py-2 rounded-lg border border-slate-300 bg-white shadow-sm">
 
                         <span className="text-lg font-medium text-gray-700">
@@ -1040,7 +1055,7 @@ export default function AudioTest() {
                 {/* LEFT COLUMN: Player & Questions */}
                 <div className="w-full flex flex-col gap-6">
                     {/* SUBJECT INFORMATION */}
-                   
+
                     <div className="text-center flex justify-center items-center gap-210">
 
                         <div>
@@ -1059,7 +1074,7 @@ export default function AudioTest() {
                             </p>
 
                             <span className="text-lg md:text-xl font-semibold text-slate-700">
-                                TECHNICAL ENGLISH
+                                TECHNICAL ENGLISH LABORATORY
                             </span>
                         </div>
 

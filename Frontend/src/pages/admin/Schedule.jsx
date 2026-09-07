@@ -541,7 +541,7 @@ export default function Schedule() {
       } catch (error) {
 
         if (!cancelled) {
-          console.error("Schedule data fetch error:",error);
+          console.error("Schedule data fetch error:", error);
 
           setScheduleDataError(
             "Failed to load batches/departments/test codes."
@@ -1043,18 +1043,25 @@ export default function Schedule() {
         `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
       );
       resetFormFields();
-    } else if (successCount > 0) {
-      toast.success(
-        `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
-      );
-      setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
-      );
     } else {
-      setErrorMessage(
-        failures.map((f) => f.reason?.message || "Unknown error").join(" • "),
-      );
-    }
+  if (successCount > 0) {
+    toast.success(
+      `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
+    );
+  }
+
+  setErrorMessage(
+    failures
+      .map((f) => {
+        if (f.reason?.response?.status === 409) {
+          return "Invalid schedule details. Please check and try again.";
+        }
+
+        return "Unable to create the schedule. Please try again.";
+      })
+      .join(" • ")
+  );
+}
 
   };
 

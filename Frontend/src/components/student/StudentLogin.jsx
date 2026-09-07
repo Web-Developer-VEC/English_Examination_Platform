@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
 import Register from "../auth/Register"
 import "../auth/LoginForm.css";
@@ -9,6 +9,17 @@ import { useNavigate } from "react-router-dom";
 import { saveStudentSession, clearStudentSession, clearAdminSession } from "../../utils/helpers";
 
 const StudentLogin = () => {
+
+  const enterFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (error) {
+      console.error("Fullscreen request failed:", error);
+    }
+  };
+
   clearStudentSession();
   clearAdminSession();
   const [showPassword, setShowPassword] = useState(false);
@@ -53,14 +64,14 @@ const StudentLogin = () => {
         setTimeout(() => {
           navigate("/student/dashboard");
         }, 2000);
-        
+
       }
 
     } catch (error) {
 
       console.error("Login error:", error);
 
-      if (error.response) {  
+      if (error.response) {
         const backendError = error.response.data?.message || error.response.data?.error || error.response.data?.detail;
         setLoginError(backendError || "Wrong username or password");
       } else {
@@ -70,7 +81,7 @@ const StudentLogin = () => {
   };
 
   return (<>
-    <ToastContainer position="bottom-right" autoClose="2000"/>
+    <ToastContainer position="bottom-right" autoClose="2000" />
     <div className="flex pt-10 justify-center"><div className="login-card">
       {/* Heading */}
       <div className="login-heading">
@@ -92,6 +103,7 @@ const StudentLogin = () => {
               placeholder="Enter your User Name"
               value={formData.identifier}
               onChange={handleChange}
+              onFocus={enterFullscreen}
               autoComplete="username"
               required
             />

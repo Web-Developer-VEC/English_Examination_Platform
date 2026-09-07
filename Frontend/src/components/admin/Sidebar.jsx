@@ -40,6 +40,7 @@ const NAV_ITEMS = [
         label: "Faculty Incharge",
         icon: UserCog,
         location: "/admin/FacultyIncharge",
+           adminOnly: true,
       },
 
       {
@@ -47,6 +48,7 @@ const NAV_ITEMS = [
         label: "Question Upload",
         icon: ClipboardPlus,
         location: "/admin/questionupload",
+           adminOnly: true,
       },
 
       {
@@ -54,6 +56,7 @@ const NAV_ITEMS = [
         label: "Schedule Test",
         icon: CalendarClock,
         location: "/admin/schedule",
+           adminOnly: true,
       },
 
       {
@@ -61,6 +64,7 @@ const NAV_ITEMS = [
         label: "Student Data Upload",
         icon: UploadCloud,
         location: "/admin/StudentData",
+           adminOnly: true,
       },
 
       {
@@ -68,6 +72,7 @@ const NAV_ITEMS = [
         label: "Student Profile Access",
         icon: ShieldCheck,
         location: "/admin/StudentProfileAccess",
+           adminOnly: true,
       },
 
       {
@@ -164,7 +169,7 @@ console.log("ROLE:", role);
     setCollapsed(true);
     setHovering(false);
 
-    navigate("/login");
+    navigate("/");
   };
 
   /*

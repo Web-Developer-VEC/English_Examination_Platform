@@ -255,8 +255,9 @@ const scheduleExam = async (req, res) => {
         // DATE VALIDATION
         // =====================================================
 
-        const start = new Date(startTime);
-        const end = new Date(endTime);
+const start = new Date(`${startTime}+05:30`);
+const end = new Date(`${endTime}+05:30`);
+
         // ==========================
         // Date Validation
         // ==========================
