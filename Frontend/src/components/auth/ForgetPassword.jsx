@@ -301,7 +301,6 @@ const ForgetPassword = () => {
                   className="w-full px-4 py-3 border border-black/15 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                 >
                   <option value="">Select Role</option>
-                  <option value="student">Student</option>
                   <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
                 </select>

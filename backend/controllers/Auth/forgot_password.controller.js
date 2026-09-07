@@ -24,7 +24,7 @@ const forgotpassword = async (req, res) => {
     }
 
     // VALIDATE ROLE
-    if (!["student", "staff", "admin"].includes(role)) {
+    if (![ "staff", "admin"].includes(role)) {
       return res.status(400).json({
         message: "Invalid authorization",
       });
