@@ -3,19 +3,17 @@ const { getDB } = require("../../config/db");
 const getformdata = async (req, res) => {
   try {
     const db = getDB();
+    const user = req.user; // Get the user from the request (assuming your auth middleware adds this)
 
     // ==========================================
     // Get current academic year
     // ==========================================
 
-    const academicYearSettings = await db
-      .collection("admin_settings")
-      .findOne({
-        type: "academic_year",
-      });
+    const academicYearSettings = await db.collection("admin_settings").findOne({
+      type: "academic_year",
+    });
 
-    const current_academic_year =
-      academicYearSettings?.academicYear || null;
+    const current_academic_year = academicYearSettings?.academicYear || null;
 
     // ==========================================
     // Get required student fields
@@ -27,7 +25,6 @@ const getformdata = async (req, res) => {
       .sort({
         batch: 1,
         academicYear: 1,
-        // Removed academicYear since it's not in the student document
         department: 1,
         section: 1,
         gender: 1,
@@ -39,14 +36,9 @@ const getformdata = async (req, res) => {
 
     students
       .filter(
-        (student) =>
-          student.batch &&
-          student.department &&
-          student.section
-          // Removed student.academicYear check here
+        (student) => student.batch && student.department && student.section,
       )
       .forEach((student) => {
-        // Removed academicYear from the unique key
         const key = `${student.batch}_${student.department}_${student.section}`;
 
         if (!groupMap.has(key)) {
@@ -60,7 +52,6 @@ const getformdata = async (req, res) => {
         }
 
         if (student.username) {
-          // Push name and gender along with username
           groupMap.get(key).students.push({
             username: student.username,
             name: student.name,
@@ -69,7 +60,52 @@ const getformdata = async (req, res) => {
         }
       });
 
-    const batchDepartmentSections = [...groupMap.values()];
+    let batchDepartmentSections = [...groupMap.values()];
+
+    // ==========================================
+    // FILTER ALLOWDEPT FOR STAFF
+    // ==========================================
+
+    if (user && user.role === "staff") {
+      // Find the specific staff member using their username (or email)
+      const staffMember = await db.collection("staff").findOne({
+        username: user.username,
+        role: "staff",
+      });
+
+      if (staffMember && Array.isArray(staffMember.allowdept)) {
+        // Filter the batchDepartmentSections to only include what is in allowdept
+        batchDepartmentSections = batchDepartmentSections.filter((group) => {
+          return staffMember.allowdept.some(
+            (allowed) =>
+              String(allowed.dept).toLowerCase() ===
+                String(group.department).toLowerCase() &&
+              String(allowed.sec).toLowerCase() ===
+                String(group.section).toLowerCase(),
+          );
+        });
+      } else {
+        // If staff member has no assigned departments, return an empty array
+        batchDepartmentSections = [];
+      }
+
+      const data = {
+        batchDepartmentSections
+      };
+
+      // ==========================================
+      // Response
+      // ==========================================
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    }
+
+    // ==========================================
+    // Get Tests / Questions
+    // ==========================================
 
     const questions = await db
       .collection("questions")
@@ -80,7 +116,7 @@ const getformdata = async (req, res) => {
             _id: 1,
             questionCode: 1,
           },
-        }
+        },
       )
       .toArray();
 
@@ -137,14 +173,14 @@ const getScheduledExams = async (req, res) => {
             projection: {
               testcode: 1,
             },
-          }
+          },
         );
 
         return {
           examId: exam._id,
           category: exam.category,
           questionSetId: exam.questionSetId,
-          testcode:exam?.testcode !== undefined ? exam.testcode : null,
+          testcode: exam?.testcode !== undefined ? exam.testcode : null,
           department: exam.eligibility.department,
           batch: exam.eligibility.batch,
           section: exam.eligibility.section,
@@ -154,7 +190,7 @@ const getScheduledExams = async (req, res) => {
           endTime: exam.endTime,
           status: exam.status,
         };
-      })
+      }),
     );
 
     return res.status(200).json({
@@ -220,10 +256,7 @@ const getStudentsByDepartmentAndBatch = async (req, res) => {
       data: students,
     });
   } catch (error) {
-    console.error(
-      "Get Students By Department And Batch Error:",
-      error
-    );
+    console.error("Get Students By Department And Batch Error:", error);
 
     return res.status(500).json({
       success: false,

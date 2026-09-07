@@ -49,7 +49,7 @@ app.use(secureNoSQLMiddleware);
 app.use((req, res, next) => {
 
   res.on("finish", () => {
-    console.log("Hits :", req.originalUrl);
+    console.log("Hits :",req.method, req.originalUrl);
   });
 
 
