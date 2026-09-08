@@ -1049,18 +1049,25 @@ export default function Schedule() {
       `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
     );
   }
+setErrorMessage(
+  failures
+    .map((f) => {
+      // 1. Prioritize the backend error message if it exists
+      const backendMessage = f.reason?.response?.data?.message;
+      if (backendMessage) {
+        return backendMessage;
+      }
 
-  setErrorMessage(
-    failures
-      .map((f) => {
-        if (f.reason?.response?.status === 409) {
-          return "Invalid schedule details. Please check and try again.";
-        }
+      // 2. Fallback to status-based messages
+      if (f.reason?.response?.status === 409) {
+        return "Invalid schedule details. Please check and try again.";
+      }
 
-        return "Unable to create the schedule. Please try again.";
-      })
-      .join(" • ")
-  );
+      // 3. Ultimate fallback
+      return "Unable to create the schedule. Please try again.";
+    })
+    .join(" • ")
+);
 }
 
   };

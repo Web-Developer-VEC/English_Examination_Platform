@@ -1,9 +1,8 @@
 const { getDB } = require("../../config/db");
 
-const getformdata = async (req, res) => {
-  try {
+const getformdata = async (req, res) => {try {
     const db = getDB();
-    const user = req.user; // Get the user from the request (assuming your auth middleware adds this)
+    const user = req.user; // Get the user from the request
 
     // ==========================================
     // Get current academic year
@@ -67,40 +66,32 @@ const getformdata = async (req, res) => {
     // ==========================================
 
     if (user && user.role === "staff") {
-      // Find the specific staff member using their username (or email)
       const staffMember = await db.collection("staff").findOne({
         username: user.username,
         role: "staff",
       });
 
       if (staffMember && Array.isArray(staffMember.allowdept)) {
-        // Filter the batchDepartmentSections to only include what is in allowdept
+        // NEW LOGIC: Filter using the nested batch -> classes structure
         batchDepartmentSections = batchDepartmentSections.filter((group) => {
-          return staffMember.allowdept.some(
-            (allowed) =>
-              String(allowed.dept).toLowerCase() ===
-                String(group.department).toLowerCase() &&
-              String(allowed.sec).toLowerCase() ===
-                String(group.section).toLowerCase(),
-          );
+          return staffMember.allowdept.some((batchGroup) => {
+            
+            // 1. Check if the batch matches
+            if (String(batchGroup.batch).trim() !== String(group.batch).trim()) {
+              return false;
+            }
+
+            // 2. Check if dept and sec match within this batch
+            return batchGroup.classes.some(
+              (cls) =>
+                String(cls.dept).toLowerCase().trim() === String(group.department).toLowerCase().trim() &&
+                String(cls.sec).toLowerCase().trim() === String(group.section).toLowerCase().trim()
+            );
+          });
         });
       } else {
-        // If staff member has no assigned departments, return an empty array
         batchDepartmentSections = [];
       }
-
-      const data = {
-        batchDepartmentSections
-      };
-
-      // ==========================================
-      // Response
-      // ==========================================
-
-      return res.status(200).json({
-        success: true,
-        data,
-      });
     }
 
     // ==========================================
@@ -150,16 +141,42 @@ const getformdata = async (req, res) => {
       success: false,
       message: error.message || "Internal Server Error",
     });
-  }
-};
+  }};
 
-const getScheduledExams = async (req, res) => {
-  try {
+const getScheduledExams = async (req, res) => {try {
     const db = getDB();
+    let query = {};
+
+    // Build query to only fetch schedules matching the staff's allowed departments
+    if (req.user?.role === "staff") {
+      const staffDoc = await db.collection("staff").findOne({ username: req.user.username });
+
+      if (!staffDoc || !staffDoc.allowdept || staffDoc.allowdept.length === 0) {
+        return res.status(200).json({ success: true, data: [] });
+      }
+
+      const allowedConditions = [];
+      
+      staffDoc.allowdept.forEach((batchGroup) => {
+        batchGroup.classes.forEach((cls) => {
+          allowedConditions.push({
+            "eligibility.batch": batchGroup.batch,
+            "eligibility.department": cls.dept,
+            "eligibility.section": cls.sec,
+          });
+        });
+      });
+
+      if (allowedConditions.length > 0) {
+        query = { $or: allowedConditions };
+      } else {
+        return res.status(200).json({ success: true, data: [] });
+      }
+    }
 
     const exams = await db
       .collection("schedule")
-      .find({})
+      .find(query)
       .sort({ startTime: 1 })
       .toArray();
 
@@ -173,7 +190,7 @@ const getScheduledExams = async (req, res) => {
             projection: {
               testcode: 1,
             },
-          },
+          }
         );
 
         return {
@@ -190,7 +207,7 @@ const getScheduledExams = async (req, res) => {
           endTime: exam.endTime,
           status: exam.status,
         };
-      }),
+      })
     );
 
     return res.status(200).json({
@@ -204,8 +221,7 @@ const getScheduledExams = async (req, res) => {
       success: false,
       message: error.message || "Internal Server Error",
     });
-  }
-};
+  }};
 
 const getStudentsByDepartmentAndBatch = async (req, res) => {
   try {

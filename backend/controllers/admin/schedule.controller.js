@@ -297,6 +297,28 @@ const end = new Date(`${endTime}+05:30`);
 
         const db = getDB();
 
+        const assignedFaculty = await db.collection("staff").findOne({
+            role: "staff",
+            allowdept: {
+                $elemMatch: {
+                    batch: String(batch).trim(),
+                    classes: {
+                        $elemMatch: {
+                            dept: String(department).trim(),
+                            sec: normalizedSection
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!assignedFaculty) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot schedule exam: No staff member is currently assigned to this batch, department, and section."
+            });
+        }
+
         // =====================================================
         // QUESTION SET VALIDATION
         // =====================================================
@@ -405,6 +427,9 @@ const end = new Date(`${endTime}+05:30`);
 
             questionSetId:
                 questionObjectId,
+
+            inchargeStaff:
+                assignedFaculty.username,
 
             // -------------------------------------------------
             // ELIGIBILITY

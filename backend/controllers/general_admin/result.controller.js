@@ -11,8 +11,7 @@ const { getFromS3, uploadToS3 } = require("../../service/s3.service");
 // GENERATE EXAM REPORT PDF
 // ============================================================
 
-const generateExamReport = async (req, res) => {
-  let browser = null;
+const generateExamReport = async (req, res) => {let browser = null;
 
   try {
     // ====================================================
@@ -26,7 +25,6 @@ const generateExamReport = async (req, res) => {
         message: "Request body is required.",
       });
     }
-
 
     // ====================================================
     // CLEAN FILTERS
@@ -107,7 +105,6 @@ const generateExamReport = async (req, res) => {
       })
       .toArray();
 
-
     if (studentRoster.length === 0) {
       return res.status(404).json({
         success: false,
@@ -139,7 +136,6 @@ const generateExamReport = async (req, res) => {
       scheduleFilter.cie = cieValue;
     }
 
-
     // ====================================================
     // FETCH TEST COLUMNS FROM "schedule"
     // ====================================================
@@ -151,9 +147,9 @@ const generateExamReport = async (req, res) => {
         testcode: 1,
         title: 1,
         questionSetId: 1,
+        inchargeStaff: 1,
       })
       .toArray();
-
 
     if (scheduleTests.length === 0) {
       return res.status(404).json({
@@ -218,7 +214,6 @@ const generateExamReport = async (req, res) => {
 //   examFilter.category = cleanCategory;
 // }
 
-
     // ====================================================
     // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
     // ====================================================
@@ -264,7 +259,6 @@ const generateExamReport = async (req, res) => {
         entry.normal = record.obtainedMarks ?? 0;
       }
     });
-
 
     // ====================================================
     // GENERATE TABLE HEADER
@@ -316,25 +310,9 @@ let total = 0;
     // FETCH STAFF (MENTOR) NAME FOR THIS CLASS
     // ====================================================
     let staffValue = "-";
-    const staffFilter = {};
-
-    if (cleanDept) staffFilter.department = cleanDept;
-    if (cleanSec) staffFilter.section = cleanSec;
-    if (cleanAcademicYear) staffFilter.academicYear = cleanAcademicYear;
-    if (cleanSem) staffFilter.semester = cleanSem;
-
-    const hasEnoughDetailsForStaff =
-      staffFilter.department && staffFilter.section;
-
-    if (hasEnoughDetailsForStaff) {
-
-      const staffMember = await db.collection("staff").findOne(staffFilter, {
-        projection: { _id: 0, name: 1 },
-      });
-
-      if (staffMember && staffMember.name) {
-        staffValue = staffMember.name;
-      }
+    
+    if (scheduleTests.length > 0 && scheduleTests[0].inchargeStaff) {
+      staffValue = scheduleTests[0].inchargeStaff;
     }
 
     // ====================================================
@@ -496,8 +474,7 @@ let total = 0;
       message: "Failed to generate examination report.",
       error: error.message,
     });
-  }
-};
+  }};
 
 module.exports = {
   generateExamReport,

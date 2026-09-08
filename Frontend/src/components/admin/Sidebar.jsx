@@ -65,9 +65,9 @@ const NAV_ITEMS = [
 
       {
         key: "student-profile-access",
-        label: "Student Profile Access",
+        label: "Admin Controls",
         icon: ShieldCheck,
-        location: "/admin/StudentProfileAccess",
+        location: "/admin/Admin_Controls",
            adminOnly: true,
       },
     

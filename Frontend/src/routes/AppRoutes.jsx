@@ -82,7 +82,7 @@ export default function AppRoutes() {
           <Route path="students" element={<Students />} />
           <Route path="facultyIncharge" element={<FacultyList />} />
           <Route path="studentData" element={<StudentDataUpload />} />
-          <Route path="StudentProfileAccess" element={<ProfileEdit />} />
+          <Route path="Admin_Controls" element={<ProfileEdit />} />
           <Route path="student-result" element={<StudentResult />} />
         </Route>
       </Route>

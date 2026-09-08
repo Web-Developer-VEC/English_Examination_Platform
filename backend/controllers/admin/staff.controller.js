@@ -26,8 +26,7 @@ const updateStaff = async (req, res) => {
             id,
             _id,
             name,
-            allowdept, // Array of { dept, sec }
-            academicYear,
+            allowdept, // Expected format: [{ batch: "...", classes: [{ dept: "...", sec: "..." }] }]
             semester,
             email,
             phoneNo,
@@ -35,10 +34,10 @@ const updateStaff = async (req, res) => {
         } = data;
 
         // 2. Required fields validation
-        if (!name || !academicYear || !semester || !email || !phoneNo) {
+        if (!name  || !semester || !email || !phoneNo) {
             return res.status(400).json({
                 success: false,
-                message: "name, academicYear, semester, email, and phoneNo are required."
+                message: "name, semester, email, and phoneNo are required."
             });
         }
 
@@ -84,14 +83,34 @@ const updateStaff = async (req, res) => {
             });
         }
 
-        // 6. Format allowdept array to strictly contain { dept, sec }
+        // 6. Format allowdept array for nested batch groups
         const cleanAllowdept = Array.isArray(allowdept)
             ? allowdept
-                .filter(item => item && item.dept && item.sec)
-                .map(item => ({
-                    dept: String(item.dept).trim(),
-                    sec: String(item.sec).trim()
-                }))
+                .map(batchGroup => {
+                    // Check if it's a valid batch group object
+                    if (!batchGroup || !batchGroup.batch || !Array.isArray(batchGroup.classes)) {
+                        return null;
+                    }
+
+                    // Clean the classes inside the batch
+                    const cleanClasses = batchGroup.classes
+                        .filter(cls => cls && cls.dept && cls.sec)
+                        .map(cls => ({
+                            dept: String(cls.dept).trim(),
+                            sec: String(cls.sec).trim()
+                        }));
+
+                    // If the batch has no valid classes, drop the entire batch
+                    if (cleanClasses.length === 0) {
+                        return null;
+                    }
+
+                    return {
+                        batch: String(batchGroup.batch).trim(),
+                        classes: cleanClasses
+                    };
+                })
+                .filter(Boolean) // Filter out the nulls
             : [];
 
         const now = new Date();
@@ -99,11 +118,10 @@ const updateStaff = async (req, res) => {
         const staffData = {
             name: String(name).trim(),
             allowdept: cleanAllowdept,
-            academicYear: String(academicYear).trim(),
             semester: String(semester).trim(),
             email: normalizedEmail,
             phoneNo: normalizedPhone,
-            username: normalizedEmail,
+            username: normalizedEmail, // Store email as username
             photo: photo || "",
             role: "staff",
             updatedAt: now
@@ -156,9 +174,8 @@ const updateStaff = async (req, res) => {
 // =====================================================
 const deleteStaff = async (req, res) => {
     try {
-        const { username } = req.body.data;
-        console.log(JSON.stringify(req.body,null,1));
-        
+        // Support finding username whether it's wrapped in { data: {} } or flat in req.body
+        const username = req.body?.data?.username || req.body?.username;
 
         if (!username) {
             return res.status(400).json({ 
