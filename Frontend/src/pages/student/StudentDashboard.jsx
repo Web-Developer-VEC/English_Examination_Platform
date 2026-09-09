@@ -30,6 +30,7 @@ const StudentDashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [firstLogin, setFirstLogin] = useState(false);
 
   // ============================================================
   // TEST RESULTS
@@ -109,6 +110,12 @@ const StudentDashboard = () => {
       if (data.data) {
         setStudent(data.data);
         setEditForm(data.data);
+        setFirstLogin(
+          data.data.firstlogin === true ||
+            data.data.firstLogin === true ||
+            data.data.student?.firstlogin === true ||
+            data.data.student?.firstLogin === true,
+        );
 
         // The session's username was captured at login. If registerNo
         // (which drives the username) changed, the session goes stale —
@@ -149,6 +156,7 @@ const StudentDashboard = () => {
   };
   // This is for making the fields uneditable . if you want to make it editable again change the true to false
   const registerNoOnlyEdit = true;
+  const canEditAdditionalFields = firstLogin;
   // ============================================================
   // SEND RESULT
   // POSTs { testId, admissionNo } to /api/student/studentresult.
@@ -257,6 +265,12 @@ const StudentDashboard = () => {
 
         setStudent(result.student);
         setEditForm(result.student);
+        setFirstLogin(
+          result.firstlogin === true ||
+            result.firstLogin === true ||
+            result.student?.firstlogin === true ||
+            result.student?.firstLogin === true,
+        );
 
         // Exams: `id` must come from the backend's unique `examId`,
         // not `questionCode` — multiple attempts (normal + retest)
@@ -447,7 +461,12 @@ const StudentDashboard = () => {
       ? editForm.registerNo
       : editForm?.admissionNo || "";
   const hasChanges =
-    editForm?.registerNo?.trim() !== student?.registerNo?.trim();
+    editForm?.registerNo?.trim() !== student?.registerNo?.trim() ||
+    (canEditAdditionalFields &&
+      (editForm?.email !== student?.email ||
+        editForm?.phone !== student?.phone ||
+        editForm?.gender !== student?.gender ||
+        editForm?.section !== student?.section));
 
   // ============================================================
   // MAIN DASHBOARD
@@ -484,7 +503,7 @@ const StudentDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-800">Student Dashboard</h1>
 
         <div className="flex items-center gap-4">
-          {student?.studentEditEnabled && (
+          {(firstLogin || student?.studentEditEnabled) && (
             <button
               onClick={() => setIsEditing(true)}
               className="
@@ -1054,7 +1073,7 @@ const StudentDashboard = () => {
                   name="registerNo"
                   value={editForm?.registerNo || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving}
+                  disabled={isSaving || registerNoOnlyEdit}
                   className="
                     w-full
                     p-2
@@ -1081,7 +1100,7 @@ const StudentDashboard = () => {
                   name="email"
                   value={editForm?.email || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="
                     w-full
                     p-2
@@ -1108,7 +1127,7 @@ const StudentDashboard = () => {
                   name="phone"
                   value={editForm?.phone || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="
                     w-full
                     p-2
@@ -1152,25 +1171,32 @@ const StudentDashboard = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Section (Cannot be changed)
+                  Section
                 </label>
 
-                <input
-                  type="text"
+                <select
                   name="section"
                   value={editForm?.section || ""}
-                  disabled
+                  onChange={handleInputChange}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="
                     w-full
                     p-2
                     border
                     border-gray-300
                     rounded-lg
-                    bg-gray-100
-                    text-gray-500
-                    cursor-not-allowed
+                    focus:ring-2
+                    focus:ring-yellow-400
+                    outline-none
+                    disabled:bg-gray-100
                   "
-                />
+                >
+                  <option value="">Select Section</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                </select>
               </div>
 
               {/* Gender */}
@@ -1184,7 +1210,7 @@ const StudentDashboard = () => {
                   name="gender"
                   value={editForm?.gender || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="
                     w-full
                     p-2

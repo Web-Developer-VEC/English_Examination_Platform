@@ -11,7 +11,8 @@ const studentsUpload = async (req, res) => {
     const students = await Promise.all(
       parsedStudents.map(async (student) => ({
         ...student,
-        studentEditEnabled: true,
+        studentEditEnabled: false,
+        firstlogin:true,
         username: student.admissionNo,
         password: student.dob,
         createdAt: new Date(),

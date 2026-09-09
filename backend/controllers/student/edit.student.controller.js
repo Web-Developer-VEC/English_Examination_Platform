@@ -3,8 +3,17 @@ const { getDB } = require("../../config/db");
 const updateStudent = async (req, res) => {
   try {
     const db = await getDB();
-    const { admissionNo, name, email, registerNo, phone, gender, dob } =
-      req.body;
+
+    const {
+      admissionNo,
+      name,
+      email,
+      registerNo,
+      phone,
+      gender,
+      dob,
+      section,
+    } = req.body;
 
     // =====================================================
     // VALIDATION
@@ -31,12 +40,14 @@ const updateStudent = async (req, res) => {
         message: "Student not found.",
       });
     }
-    if (!student.studentEditEnabled) {
+
+    if (!student.studentEditEnabled && !student.firstlogin) {
       return res.status(403).json({
         success: false,
         message: "Student editing is currently disabled by admin.",
       });
     }
+
     // =====================================================
     // BUILD UPDATE DATA
     // =====================================================
@@ -64,14 +75,19 @@ const updateStudent = async (req, res) => {
     }
 
     // =====================================================
-    // REGISTER NUMBER
+    // SECTION
     // =====================================================
+
+    if (section !== undefined) {
+      updateData.section = String(section).trim();
+    }
 
     // =====================================================
     // REGISTER NUMBER
     // =====================================================
 
     const registerNoProvided = registerNo !== undefined;
+
     const registerNoTrimmed =
       registerNo !== null && registerNo !== undefined
         ? String(registerNo).trim()
@@ -111,17 +127,24 @@ const updateStudent = async (req, res) => {
       // Username follows register number
       updateData.username = newRegisterNo;
     } else if (registerNoProvided) {
-      // registerNo was explicitly sent but empty/null/"null" —
-      // clear it back to a real null, username falls back to admissionNo.
+      // registerNo was explicitly sent but empty/null/"null"
+      // clear it back to a real null, username falls back
+      // to admissionNo.
 
       updateData.registerNo = null;
       updateData.username = admissionNo.trim();
     }
+
     // =====================================================
     // UPDATED TIME
     // =====================================================
 
     updateData.updatedAt = new Date();
+
+    // After successful first login profile completion,
+    // disable first login editing.
+    updateData.studentEditEnabled = false;
+    updateData.firstlogin = false;
 
     // =====================================================
     // UPDATE
