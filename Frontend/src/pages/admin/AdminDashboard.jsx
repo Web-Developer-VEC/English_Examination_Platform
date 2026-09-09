@@ -78,6 +78,8 @@ export default function AdminDashboard() {
 
           questionSetId: exam.questionSetId,
 
+          questionCode:exam.questionCode,
+
           startTime: exam.startTime,
 
           endTime: exam.endTime,
@@ -411,7 +413,7 @@ export default function AdminDashboard() {
             className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
             style={{
               gridTemplateColumns:
-                "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr",
+                "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.8fr",
             }}
           >
             <TableHeading>Branch</TableHeading>
@@ -425,6 +427,8 @@ export default function AdminDashboard() {
             <TableHeading>Start Time</TableHeading>
 
             <TableHeading>End Time</TableHeading>
+
+            <TableHeading>Question Code</TableHeading>
 
             <TableHeading>Test Code</TableHeading>
 
@@ -462,12 +466,12 @@ export default function AdminDashboard() {
         "
                 style={{
                   gridTemplateColumns:
-                    "1.2fr 0.9fr 1.2fr 1fr 1fr 1fr 1fr 1fr 0.8fr",
+                    "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr",
                 }}
               >
                 {/* DEPARTMENT */}
 
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-left">
                   <span className="font-semibold text-gray-900">
                     {test.department}
                   </span>
@@ -517,7 +521,23 @@ export default function AdminDashboard() {
                     : "N/A"}
                 </div>
 
-                {/* TEST CODE */}
+                {/* Question CODE */}
+
+                <div className="flex items-center justify-center">
+                  <span
+                    className="
+                        px-3
+                        py-1
+                        rounded-full
+                        bg-gray-100
+                        text-sm
+                        font-semibold
+                    "
+                  >
+                    {test.questionCode}
+                  </span>
+                </div>
+                 {/* TEST CODE */}
 
                 <div className="flex items-center justify-center">
                   <span
@@ -726,11 +746,11 @@ export default function AdminDashboard() {
 
                       <div className="rounded-2xl bg-[#7a1f2b] p-6 text-white">
                         <p className="text-xs font-semibold uppercase tracking-wider text-[#FDCC03]">
-                          Test Code
+                          Question Code
                         </p>
 
                         <p className="mt-3 text-3xl font-extrabold tracking-widest">
-                          {selectedTest.testCode || "N/A"}
+                          {selectedTest.questionCode || "N/A"}
                         </p>
 
                         <div className="mt-5 border-t border-white/10 pt-4">

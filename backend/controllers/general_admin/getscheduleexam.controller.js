@@ -189,6 +189,7 @@ const getScheduledExams = async (req, res) => {try {
           {
             projection: {
               testcode: 1,
+              questionCode:1
             },
           }
         );
@@ -201,6 +202,7 @@ const getScheduledExams = async (req, res) => {try {
           department: exam.eligibility.department,
           batch: exam.eligibility.batch,
           section: exam.eligibility.section,
+          questionCode:questionSet.questionCode,
           admissionNo: exam.eligibility.admissionNo || [],
           duration: exam.duration,
           startTime: exam.startTime,
