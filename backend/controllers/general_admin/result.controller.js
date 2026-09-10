@@ -406,7 +406,7 @@ const generateExamReport = async (req, res) => {
     // ====================================================
     // LAUNCH PUPPETEER
     // ====================================================
-    let browser = await puppeteer.launch({
+     browser = await puppeteer.launch({
       headless: "new",
       args: [
         "--no-sandbox",
