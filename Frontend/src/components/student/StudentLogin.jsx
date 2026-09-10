@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Mail, User, Lock, Eye, EyeOff, LogIn, UserCog } from "lucide-react";
-import Register from "../auth/Register"
+import Register from "../auth/Register";
 import "../auth/LoginForm.css";
-import Footer from "../common/footer.jsx"
+import Footer from "../common/footer.jsx";
 import { loginUser } from "../../services/authService.js";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { saveStudentSession, clearStudentSession, clearAdminSession } from "../../utils/helpers";
+import {
+  saveStudentSession,
+  clearStudentSession,
+  clearAdminSession,
+} from "../../utils/helpers";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 const StudentLogin = () => {
-
   const enterFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
@@ -25,7 +29,7 @@ const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     identifier: "",
-    password: ""
+    password: "",
   });
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
@@ -34,7 +38,7 @@ const StudentLogin = () => {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     setLoginError("");
@@ -47,106 +51,97 @@ const StudentLogin = () => {
       const response = await loginUser(
         formData.identifier,
         formData.password,
-        "student"
+        "student",
       );
 
       if (response.success) {
-
-        sessionStorage.removeItem(
-          "adminSession"
-        );
+        sessionStorage.removeItem("adminSession");
 
         toast.success("Login successfull");
         saveStudentSession({
           token: response.token,
-          user: response.user
+          user: response.user,
         });
         setTimeout(() => {
           navigate("/student/dashboard");
         }, 2000);
-
       }
-
     } catch (error) {
-
       console.error("Login error:", error);
 
-      if (error.response) {
-        const backendError = error.response.data?.message || error.response.data?.error || error.response.data?.detail;
-        setLoginError(backendError || "Wrong username or password");
-      } else {
-        setLoginError("Unable to connect to server");
-      }
+      setLoginError(getApiErrorMessage(error, "Wrong username or password"));
     }
   };
 
-  return (<>
-    <ToastContainer position="bottom-right" autoClose="2000" />
-    <div className="flex pt-10 justify-center"><div className="login-card">
-      {/* Heading */}
-      <div className="login-heading">
-        <User className="login-heading__icon" size={22} />
+  return (
+    <>
+      <ToastContainer position="bottom-right" autoClose="2000" />
+      <div className="flex pt-10 justify-center">
+        <div className="login-card">
+          {/* Heading */}
+          <div className="login-heading">
+            <User className="login-heading__icon" size={22} />
 
-        <h2>Student Login</h2>
-      </div>
-
-      {/* Form */}
-      <form className="login-form" onSubmit={handleSubmit}>
-        <div className="login-field">
-          <label htmlFor="identifier">User Name</label>
-          <div className="login-input">
-            <User size={18} />
-            <input
-              id="identifier"
-              name="identifier"
-              type="text"
-              placeholder="Enter your User Name"
-              value={formData.identifier}
-              onChange={handleChange}
-              onFocus={enterFullscreen}
-              autoComplete="username"
-              required
-            />
+            <h2>Student Login</h2>
           </div>
-        </div>
 
-        <div className="login-field">
-          <label htmlFor="password">Password</label>
-          <div className="login-input">
-            <Lock size={18} />
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="DD-MM-YYYY"
-              value={formData.password}
-              onChange={handleChange}
-              autoComplete="current-password"
-              required
-            />
-            <button
-              type="button"
-              className="login-input__eye"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+          {/* Form */}
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="login-field">
+              <label htmlFor="identifier">User Name</label>
+              <div className="login-input">
+                <User size={18} />
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  placeholder="Enter your User Name"
+                  value={formData.identifier}
+                  onChange={handleChange}
+                  onFocus={enterFullscreen}
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="login-field">
+              <label htmlFor="password">Password</label>
+              <div className="login-input">
+                <Lock size={18} />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="DD-MM-YYYY"
+                  value={formData.password}
+                  onChange={handleChange}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-input__eye"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {loginError && (
+              <p className="mt-3 text-center text-red-600 text-sm font-medium">
+                {loginError}
+              </p>
+            )}
+            <button type="submit" className="login-submit">
+              <LogIn size={18} />
+              Login
             </button>
-          </div>
-        </div>
 
-        {loginError && (
-          <p className="mt-3 text-center text-red-600 text-sm font-medium">
-            {loginError}
-          </p>
-        )}
-        <button type="submit" className="login-submit">
-          <LogIn size={18} />
-          Login
-        </button>
-
-        <div className="login-footer">
-          {/* <>
+            <div className="login-footer">
+              {/* <>
 <button
   type="button"
   className="login-footer__link"
@@ -159,12 +154,12 @@ const StudentLogin = () => {
               New Student? Sign Up
             </button> 
           </> */}
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
-    </div>
-    <Footer />
-  </>
+      </div>
+      <Footer />
+    </>
   );
 };
 

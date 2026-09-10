@@ -20,6 +20,7 @@ import {
 } from "../../services/studentService";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getApiErrorMessage } from "../../utils/apiError";
 import {
   getStudentSession,
   saveStudentSession,
@@ -158,7 +159,7 @@ const StudentDashboard = () => {
       console.error("Error updating student:", error);
 
       // axios puts the backend's JSON error body on error.response.data
-      toast.error("Failed to update profile");
+      toast.error(getApiErrorMessage(error, "Failed to update profile"));
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +209,7 @@ const StudentDashboard = () => {
     } catch (error) {
       console.error("Error sending result:", error);
 
-      toast.error("Failed to send result");
+      toast.error(getApiErrorMessage(error, "Failed to send result"));
     } finally {
       setSendingId(null);
     }
@@ -331,7 +332,7 @@ const StudentDashboard = () => {
       } catch (error) {
         console.error("Error fetching student:", error);
 
-        setFetchError("Failed to load student data");
+        setFetchError(getApiErrorMessage(error, "Failed to load student data"));
       } finally {
         setIsLoading(false);
       }

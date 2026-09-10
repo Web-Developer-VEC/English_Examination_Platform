@@ -16,6 +16,7 @@ import {
 } from "../../services/adminService";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
 import { getAdminSession } from "../../utils/helpers";
+import { getApiErrorMessage } from "../../utils/apiError";
 export default function AdminDashboard() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +55,6 @@ export default function AdminDashboard() {
         setError("");
 
         const result = await getScheduleExams();
-        console.log("RAW API DATA:", JSON.stringify(result.data, null, 2));
         if (!result.success) {
           throw new Error(result.message || "Failed to fetch exam data");
         }
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
 
           questionSetId: exam.questionSetId,
 
-          questionCode:exam.questionCode,
+          questionCode: exam.questionCode,
 
           startTime: exam.startTime,
 
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
         console.error("Error fetching scheduled exams:", err);
 
         if (isMounted) {
-          setError("Unable to load tests.");
+          setError(getApiErrorMessage(err, "Unable to load tests."));
         }
       } finally {
         if (isMounted) {
@@ -223,12 +223,10 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error cancelling the test:", error);
 
-      toast.error("Unable to cancel the test.");
+      toast.error(getApiErrorMessage(error, "Unable to cancel the test."));
     }
   };
   const handleTestClick = async (test) => {
-    console.log("TEST CLICKED:", test);
-
     setSelectedTest(test);
     setStudentLoading(true);
 
@@ -238,8 +236,6 @@ export default function AdminDashboard() {
         department: test.department,
         section: test.section,
       });
-
-      console.log("STUDENT API RESPONSE:", result);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to fetch students");
@@ -267,6 +263,7 @@ export default function AdminDashboard() {
         ...test,
         students: [],
       });
+      setError(getApiErrorMessage(error, "Unable to load students."));
     } finally {
       setStudentLoading(false);
     }
@@ -537,7 +534,7 @@ export default function AdminDashboard() {
                     {test.questionCode}
                   </span>
                 </div>
-                 {/* TEST CODE */}
+                {/* TEST CODE */}
 
                 <div className="flex items-center justify-center">
                   <span

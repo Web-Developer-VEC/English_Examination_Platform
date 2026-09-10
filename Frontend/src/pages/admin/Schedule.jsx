@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  getScheduleFormData,
-  scheduleExam,
-} from "../../services/adminService";
+import { getScheduleFormData, scheduleExam } from "../../services/adminService";
+import { getApiErrorMessage } from "../../utils/apiError";
 import {
   ClipboardClock,
   GraduationCap,
@@ -27,7 +25,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
-import ThemeDropdown from "../../components/common/ThemeDropDown"
+import ThemeDropdown from "../../components/common/ThemeDropDown";
 
 // PROJECT COLOR TOKENS
 export const colors = {
@@ -68,17 +66,20 @@ const cardClasses =
 // Shared "ThemeDropdown" look for the custom multi-select triggers/panels below,
 // so they read as the same family of control as ThemeDropdown itself.
 const dropdownTriggerClasses = (isOpen, disabled) =>
-  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${isOpen
-    ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
-    : "border-black/15 hover:border-black/30"
+  `group flex w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all duration-200 focus:outline-none ${
+    isOpen
+      ? "border-[#fdcc03] shadow-[0_0_0_3px_rgba(253,204,3,0.15)]"
+      : "border-black/15 hover:border-black/30"
   } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`;
 
 const dropdownIconClasses = (isOpen) =>
-  `shrink-0 transition-colors duration-200 ${isOpen ? "text-black" : "text-black/60 group-hover:text-black"
+  `shrink-0 transition-colors duration-200 ${
+    isOpen ? "text-black" : "text-black/60 group-hover:text-black"
   }`;
 
 const dropdownArrowClasses = (isOpen) =>
-  `flex shrink-0 items-center justify-center transition-all duration-200 ${isOpen ? "text-black" : "text-black/50 group-hover:text-black"
+  `flex shrink-0 items-center justify-center transition-all duration-200 ${
+    isOpen ? "text-black" : "text-black/50 group-hover:text-black"
   }`;
 
 // Same visual family as dropdownTriggerClasses (rounded-xl, px-4 py-3, gap-3),
@@ -94,13 +95,20 @@ const dropdownAllRowClasses =
   "mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg border-b border-black/5 px-4 py-3 text-[15px] font-semibold text-[#800000] transition-all duration-150 hover:bg-[#fff8d6]";
 
 const dropdownOptionRowClasses = (isSelected) =>
-  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${isSelected
-    ? "bg-[#fdcc03]/15 font-semibold text-black"
-    : "font-medium text-black hover:bg-[#fff8d6]"
+  `mb-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-[15px] transition-all duration-150 last:mb-0 ${
+    isSelected
+      ? "bg-[#fdcc03]/15 font-semibold text-black"
+      : "font-medium text-black hover:bg-[#fff8d6]"
   }`;
 
 // SEARCHABLE SELECT FOR RANGE PICKER
-function SearchableSelect({ value, options, detailsMap, onChange, placeholder }) {
+function SearchableSelect({
+  value,
+  options,
+  detailsMap,
+  onChange,
+  placeholder,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const wrapperRef = useRef(null);
@@ -120,13 +128,19 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
     const lowerSearch = search.toLowerCase();
     return options.filter((no) => {
       const details = detailsMap.get(no);
-      const searchString = details ? `${no} ${details.name}`.toLowerCase() : no.toLowerCase();
+      const searchString = details
+        ? `${no} ${details.name}`.toLowerCase()
+        : no.toLowerCase();
       return searchString.includes(lowerSearch);
     });
   }, [options, detailsMap, search]);
 
   const details = value ? detailsMap.get(value) : null;
-  const displayValue = value ? (details ? `${value} - ${details.name}` : value) : "";
+  const displayValue = value
+    ? details
+      ? `${value} - ${details.name}`
+      : value
+    : "";
 
   return (
     <div ref={wrapperRef} className="relative w-full">
@@ -136,7 +150,9 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
         className="flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-left shadow-sm focus:border-[#800000] focus:outline-none hover:border-gray-400 transition"
         title={displayValue}
       >
-        <span className={`truncate mr-2 ${value ? "text-black" : "text-gray-400"}`}>
+        <span
+          className={`truncate mr-2 ${value ? "text-black" : "text-gray-400"}`}
+        >
           {displayValue || placeholder}
         </span>
         <ChevronDown size={14} className="text-gray-500 shrink-0" />
@@ -146,7 +162,10 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
         <div className="absolute z-[60] left-0 mt-1 w-full min-w-[220px] rounded-md border border-gray-200 bg-white shadow-xl">
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
-              <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search
+                size={12}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+              />
               <input
                 type="text"
                 autoFocus
@@ -159,7 +178,9 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
           </div>
           <div className="max-h-48 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
-              <div className="px-2 py-3 text-xs text-gray-500 text-center">No results</div>
+              <div className="px-2 py-3 text-xs text-gray-500 text-center">
+                No results
+              </div>
             ) : (
               filteredOptions.map((no) => {
                 const d = detailsMap.get(no);
@@ -177,7 +198,7 @@ function SearchableSelect({ value, options, detailsMap, onChange, placeholder })
                   >
                     {label}
                   </button>
-                )
+                );
               })
             )}
           </div>
@@ -244,8 +265,7 @@ function AnalogClockPicker({
     if (!selectedDate) return false;
 
     const today = new Date();
-    const todayString =
-      `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+    const todayString = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
 
     return selectedDate === todayString;
   })();
@@ -285,11 +305,16 @@ function AnalogClockPicker({
           className={dropdownTriggerClasses(isOpen, false)}
         >
           {IconComponent && (
-            <IconComponent size={18} strokeWidth={2} className={dropdownIconClasses(isOpen)} />
+            <IconComponent
+              size={18}
+              strokeWidth={2}
+              className={dropdownIconClasses(isOpen)}
+            />
           )}
           <span
-            className={`flex-1 min-w-0 truncate text-[14px] font-medium ${displayValue ? "text-black" : "text-black/45"
-              }`}
+            className={`flex-1 min-w-0 truncate text-[14px] font-medium ${
+              displayValue ? "text-black" : "text-black/45"
+            }`}
           >
             {displayValue || "Select time"}
           </span>
@@ -365,80 +390,80 @@ function AnalogClockPicker({
 
               {mode === "hour"
                 ? HOUR_VALUES.map((h) => {
-                  const { x, y } = polarPoint(h, outerRadius, cx, cy);
+                    const { x, y } = polarPoint(h, outerRadius, cx, cy);
 
-                  const isSelected = hour === pad2(h);
+                    const isSelected = hour === pad2(h);
 
-                  // Check if this entire hour is already in the past
-                  const hourIsPast =
-                    isToday &&
-                    PERIOD_OPTIONS.every((p) =>
-                      MINUTE_VALUES.every((m) => isTimePast(h, m, p))
-                    );
+                    // Check if this entire hour is already in the past
+                    const hourIsPast =
+                      isToday &&
+                      PERIOD_OPTIONS.every((p) =>
+                        MINUTE_VALUES.every((m) => isTimePast(h, m, p)),
+                      );
 
-                  return (
-                    <g
-                      key={h}
-                      onClick={() => {
-                        if (!hourIsPast) {
-                          handlePickHour(h);
+                    return (
+                      <g
+                        key={h}
+                        onClick={() => {
+                          if (!hourIsPast) {
+                            handlePickHour(h);
+                          }
+                        }}
+                        className={
+                          hourIsPast
+                            ? "cursor-not-allowed opacity-30"
+                            : "cursor-pointer"
                         }
-                      }}
-                      className={
-                        hourIsPast
-                          ? "cursor-not-allowed opacity-30"
-                          : "cursor-pointer"
-                      }
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
                       >
-                        {h}
-                      </text>
-                    </g>
-                  );
-                })
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {h}
+                        </text>
+                      </g>
+                    );
+                  })
                 : MINUTE_VALUES.map((m, idx) => {
-                  const { x, y } = polarPoint(idx, outerRadius, cx, cy);
-                  const isSelected = minute === pad2(m);
-                  return (
-                    <g
-                      key={m}
-                      onClick={() => handlePickMinute(m)}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r="13"
-                        fill={isSelected ? "#800000" : "transparent"}
-                      />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight="600"
-                        fill={isSelected ? "#FFFFFF" : "#000000"}
+                    const { x, y } = polarPoint(idx, outerRadius, cx, cy);
+                    const isSelected = minute === pad2(m);
+                    return (
+                      <g
+                        key={m}
+                        onClick={() => handlePickMinute(m)}
+                        className="cursor-pointer"
                       >
-                        {pad2(m)}
-                      </text>
-                    </g>
-                  );
-                })}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="13"
+                          fill={isSelected ? "#800000" : "transparent"}
+                        />
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="600"
+                          fill={isSelected ? "#FFFFFF" : "#000000"}
+                        >
+                          {pad2(m)}
+                        </text>
+                      </g>
+                    );
+                  })}
             </svg>
 
             <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
@@ -517,8 +542,7 @@ export default function Schedule() {
 
         if (body?.success === false) {
           throw new Error(
-            body?.message ||
-            "Failed to load batches/departments/test codes."
+            body?.message || "Failed to load batches/departments/test codes.",
           );
         }
 
@@ -528,28 +552,25 @@ export default function Schedule() {
           setAcademicYear(currentAcademicYear || "");
 
           setScheduleData({
-            batchDepartmentSections:
-              body?.data?.batchDepartmentSections || [],
+            batchDepartmentSections: body?.data?.batchDepartmentSections || [],
 
-            tests:
-              body?.data?.tests || [],
+            tests: body?.data?.tests || [],
 
-            academicYear: currentAcademicYear || ""
+            academicYear: currentAcademicYear || "",
           });
         }
-
       } catch (error) {
-
         if (!cancelled) {
           console.error("Schedule data fetch error:", error);
 
           setScheduleDataError(
-            "Failed to load batches/departments/test codes."
+            getApiErrorMessage(
+              error,
+              "Failed to load batches/departments/test codes.",
+            ),
           );
         }
-
       } finally {
-
         if (!cancelled) {
           setIsLoadingScheduleData(false);
         }
@@ -574,7 +595,7 @@ export default function Schedule() {
       ...new Set(
         scheduleData.batchDepartmentSections
           .map((c) => c.batch)
-          .filter((batch) => batch === expectedBatch)
+          .filter((batch) => batch === expectedBatch),
       ),
     ];
   }, [scheduleData.batchDepartmentSections, academicYear]);
@@ -607,7 +628,9 @@ export default function Schedule() {
     );
 
     const admissionNumbers = selectedOptions.flatMap((item) =>
-      (item.students || []).map((s) => (typeof s === "object" ? s.username : s)),
+      (item.students || []).map((s) =>
+        typeof s === "object" ? s.username : s,
+      ),
     );
 
     return [...new Set(admissionNumbers)];
@@ -643,13 +666,13 @@ export default function Schedule() {
   const TEST_CODE_OPTIONS = useMemo(
     () =>
       [...scheduleData.tests].sort((a, b) =>
-        b.questionSetId.localeCompare(a.questionSetId)
+        b.questionSetId.localeCompare(a.questionSetId),
       ),
-    [scheduleData.tests]
+    [scheduleData.tests],
   );
   const TEST_CODE_LABELS = useMemo(
     () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
-    [TEST_CODE_OPTIONS]
+    [TEST_CODE_OPTIONS],
   );
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
 
@@ -757,10 +780,7 @@ export default function Schedule() {
     document.addEventListener("mousedown", handleQuestionCodeClick);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleQuestionCodeClick
-      );
+      document.removeEventListener("mousedown", handleQuestionCodeClick);
     };
   }, []);
 
@@ -880,8 +900,7 @@ export default function Schedule() {
     if (date) {
       const today = new Date();
 
-      const todayString =
-        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
       if (date < todayString) {
         problems.push("Date cannot be in the past");
@@ -904,23 +923,19 @@ export default function Schedule() {
     if (date && hasStartTime) {
       const now = new Date();
 
-      const todayString =
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const todayString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
       if (date === todayString) {
-        const currentMinutes =
-          now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
         const startMinutes = toMinutesSinceMidnight(
           startHour,
           startMinute,
-          startPeriod
+          startPeriod,
         );
 
         if (startMinutes <= currentMinutes) {
-          problems.push(
-            "Start Time must be later than the current time"
-          );
+          problems.push("Start Time must be later than the current time");
         }
       }
     }
@@ -939,8 +954,13 @@ export default function Schedule() {
         const durationNumber = Number(duration);
         const windowMinutes = endMinutes - startMinutes;
 
-        if (Number.isInteger(durationNumber) && durationNumber > windowMinutes) {
-          problems.push("Duration cannot be greater than the Start Time to End Time window");
+        if (
+          Number.isInteger(durationNumber) &&
+          durationNumber > windowMinutes
+        ) {
+          problems.push(
+            "Duration cannot be greater than the Start Time to End Time window",
+          );
         }
       }
     }
@@ -987,7 +1007,6 @@ export default function Schedule() {
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
 
-
     setIsSubmitting(true);
     setErrorMessage("");
     setStatusMessage("");
@@ -1012,13 +1031,11 @@ export default function Schedule() {
           payload.cie = cie;
         }
         return scheduleExam(payload).then((body) => {
-
           if (body?.success === false) {
             throw new Error(
-              `${combo.label}: ${body?.message ||
-              body?.error ||
-              "Request failed"
-              }`
+              `${combo.label}: ${
+                body?.message || body?.error || "Request failed"
+              }`,
             );
           }
 
@@ -1040,44 +1057,46 @@ export default function Schedule() {
             ? "University exam scheduled"
             : "Schedule created";
       toast.success(
-        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`
+        `${verb} for ${successCount} section${successCount > 1 ? "s" : ""}.`,
       );
       resetFormFields();
     } else {
-  if (successCount > 0) {
-    toast.success(
-      `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`
-    );
-  }
-setErrorMessage(
-  failures
-    .map((f) => {
-      // 1. Prioritize the backend error message if it exists
-      const backendMessage = f.reason?.response?.data?.message;
-      if (backendMessage) {
-        return backendMessage;
+      if (successCount > 0) {
+        toast.success(
+          `${successCount} section${successCount > 1 ? "s" : ""} scheduled successfully.`,
+        );
       }
+      setErrorMessage(
+        failures
+          .map((f) => {
+            // 1. Prioritize the backend error message if it exists
+            const backendMessage = f.reason?.response?.data?.message;
+            if (backendMessage) {
+              return backendMessage;
+            }
 
-      // 2. Fallback to status-based messages
-      if (f.reason?.response?.status === 409) {
-        return "Invalid schedule details. Please check and try again.";
-      }
+            // 2. Fallback to status-based messages
+            if (f.reason?.response?.status === 409) {
+              return "Invalid schedule details. Please check and try again.";
+            }
 
-      // 3. Ultimate fallback
-      return "Unable to create the schedule. Please try again.";
-    })
-    .join(" • ")
-);
-}
-
+            // 3. Ultimate fallback
+            return "Unable to create the schedule. Please try again.";
+          })
+          .join(" • "),
+      );
+    }
   };
 
   // ---------------- RENDER ----------------
   return (
     <div
-      className={`relative min-h-screen w-full bg-white px-4 pt-10 md:px-10 ${questionCodeSpace ? "pb-96" : "pb-10"
-        }`}
-    >      <div className="relative mx-auto max-w-3xl">
+      className={`relative min-h-screen w-full bg-white px-4 pt-10 md:px-10 ${
+        questionCodeSpace ? "pb-96" : "pb-10"
+      }`}
+    >
+      {" "}
+      <div className="relative mx-auto max-w-3xl">
         {/* ---------------- HEADER (SAME FOR BOTH CATEGORIES) ---------------- */}
         <div className="mb-8 flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#FDCC03]/40 bg-[#800000] shadow-md shadow-[#800000]/20">
@@ -1138,7 +1157,7 @@ setErrorMessage(
                       style={{
                         pointerEvents: "none",
                         cursor: "default",
-                        opacity: 0.6
+                        opacity: 0.6,
                       }}
                     />
                   </div>
@@ -1165,9 +1184,7 @@ setErrorMessage(
                   options={BATCH_OPTIONS}
                   onChange={setBatch}
                   placeholder={
-                    academicYear
-                      ? "Select Batch"
-                      : "Select Academic Year first"
+                    academicYear ? "Select Batch" : "Select Academic Year first"
                   }
                   loading={isLoadingScheduleData}
                   disabled={!academicYear}
@@ -1195,12 +1212,20 @@ setErrorMessage(
                   type="button"
                   disabled={isLoadingScheduleData}
                   onClick={() => setIsPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(isPickerOpen, isLoadingScheduleData)}
+                  className={dropdownTriggerClasses(
+                    isPickerOpen,
+                    isLoadingScheduleData,
+                  )}
                 >
-                  <Building2 size={18} strokeWidth={2} className={dropdownIconClasses(isPickerOpen)} />
+                  <Building2
+                    size={18}
+                    strokeWidth={2}
+                    className={dropdownIconClasses(isPickerOpen)}
+                  />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${selectedCombos.length ? "text-black" : "text-black/45"
-                      }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedCombos.length ? "text-black" : "text-black/45"
+                    }`}
                   >
                     {selectedCombos.length
                       ? `${selectedCombos.length} Selected`
@@ -1230,7 +1255,9 @@ setErrorMessage(
                       {DEPT_SECTION_OPTIONS.map((option) => (
                         <label
                           key={option.key}
-                          className={dropdownOptionRowClasses(selectedCombos.includes(option.key))}
+                          className={dropdownOptionRowClasses(
+                            selectedCombos.includes(option.key),
+                          )}
                         >
                           <input
                             type="checkbox"
@@ -1302,10 +1329,11 @@ setErrorMessage(
                     className={dropdownIconClasses(isAdmissionPickerOpen)}
                   />
                   <span
-                    className={`flex-1 truncate text-[15px] font-medium ${selectedAdmissionNos.length
-                      ? "text-black"
-                      : "text-black/45"
-                      }`}
+                    className={`flex-1 truncate text-[15px] font-medium ${
+                      selectedAdmissionNos.length
+                        ? "text-black"
+                        : "text-black/45"
+                    }`}
                   >
                     {selectedAdmissionNos.length
                       ? `${selectedAdmissionNos.length} Selected`
@@ -1431,7 +1459,6 @@ setErrorMessage(
 
                 {selectedAdmissionNos.length > 0 && (
                   <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-
                     {/* Header */}
                     <div className="mb-2 flex items-center justify-between">
                       <span className="text-xs font-semibold text-[#000000]">
@@ -1456,9 +1483,7 @@ setErrorMessage(
                       ).map((no) => {
                         const details = ADMISSION_DETAILS.get(no);
 
-                        const label = details
-                          ? `${no} - ${details.name}`
-                          : no;
+                        const label = details ? `${no} - ${details.name}` : no;
 
                         return (
                           <div
@@ -1468,9 +1493,7 @@ setErrorMessage(
                             <span className="flex min-w-0 items-center gap-2">
                               <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
 
-                              <span className="truncate">
-                                {label}
-                              </span>
+                              <span className="truncate">{label}</span>
                             </span>
 
                             <button
@@ -1498,7 +1521,6 @@ setErrorMessage(
                           : `View More (${selectedAdmissionNos.length - 4} more)`}
                       </button>
                     )}
-
                   </div>
                 )}
               </div>
@@ -1535,7 +1557,10 @@ setErrorMessage(
 
               {/* Question Code (2 boxes wide) + Date (1 box wide, matches the row below) */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div ref={questionCodeRef} className="relative sm:col-span-2 min-w-0">
+                <div
+                  ref={questionCodeRef}
+                  className="relative sm:col-span-2 min-w-0"
+                >
                   <label className={labelClasses}>Question Code</label>
                   <ThemeDropdown
                     icon={BookOpenCheck}
@@ -1550,7 +1575,11 @@ setErrorMessage(
                 <div className="min-w-0">
                   <label className={labelClasses}>Date</label>
                   <div className={staticFieldClasses}>
-                    <CalendarDays size={18} strokeWidth={2} className="shrink-0 text-black/60" />
+                    <CalendarDays
+                      size={18}
+                      strokeWidth={2}
+                      className="shrink-0 text-black/60"
+                    />
                     <input
                       type="date"
                       value={date}
@@ -1558,8 +1587,11 @@ setErrorMessage(
                         const today = new Date();
 
                         return `${today.getFullYear()}-${String(
-                          today.getMonth() + 1
-                        ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                          today.getMonth() + 1,
+                        ).padStart(
+                          2,
+                          "0",
+                        )}-${String(today.getDate()).padStart(2, "0")}`;
                       })()}
                       onChange={(e) => setDate(e.target.value)}
                       className="date-input-dark w-full flex-1 bg-transparent text-[14px] font-medium text-black outline-none"
@@ -1578,12 +1610,10 @@ setErrorMessage(
                     minute={startMinute}
                     period={startPeriod}
                     selectedDate={date}
-                    minDateTime={
-                      (() => {
-                        const now = new Date();
-                        return now.getHours() * 60 + now.getMinutes();
-                      })()
-                    }
+                    minDateTime={(() => {
+                      const now = new Date();
+                      return now.getHours() * 60 + now.getMinutes();
+                    })()}
                     onChange={({ hour, minute, period }) => {
                       setStartHour(hour);
                       setStartMinute(minute);
@@ -1610,7 +1640,11 @@ setErrorMessage(
                 <div className="min-w-0">
                   <label className={labelClasses}>Duration</label>
                   <div className={staticFieldClasses}>
-                    <Clock3 size={18} strokeWidth={2} className="shrink-0 text-black/60" />
+                    <Clock3
+                      size={18}
+                      strokeWidth={2}
+                      className="shrink-0 text-black/60"
+                    />
                     <input
                       type="number"
                       min="1"
@@ -1682,7 +1716,6 @@ setErrorMessage(
         pauseOnHover
         draggable
       />
-
     </div>
   );
 }

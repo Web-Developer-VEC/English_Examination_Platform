@@ -87,7 +87,6 @@ export default function AdminSidebar() {
 
   const session = getAdminSession();
 const role = session?.user?.role;
-console.log("ROLE:", role);
   const navigate = useNavigate();
   const location = useLocation();
 

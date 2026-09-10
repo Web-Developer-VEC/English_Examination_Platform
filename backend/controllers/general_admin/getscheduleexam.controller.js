@@ -1,6 +1,7 @@
 const { getDB } = require("../../config/db");
 
-const getformdata = async (req, res) => {try {
+const getformdata = async (req, res) => {
+  try {
     const db = getDB();
     const user = req.user; // Get the user from the request
 
@@ -75,17 +76,20 @@ const getformdata = async (req, res) => {try {
         // NEW LOGIC: Filter using the nested batch -> classes structure
         batchDepartmentSections = batchDepartmentSections.filter((group) => {
           return staffMember.allowdept.some((batchGroup) => {
-            
             // 1. Check if the batch matches
-            if (String(batchGroup.batch).trim() !== String(group.batch).trim()) {
+            if (
+              String(batchGroup.batch).trim() !== String(group.batch).trim()
+            ) {
               return false;
             }
 
             // 2. Check if dept and sec match within this batch
             return batchGroup.classes.some(
               (cls) =>
-                String(cls.dept).toLowerCase().trim() === String(group.department).toLowerCase().trim() &&
-                String(cls.sec).toLowerCase().trim() === String(group.section).toLowerCase().trim()
+                String(cls.dept).toLowerCase().trim() ===
+                  String(group.department).toLowerCase().trim() &&
+                String(cls.sec).toLowerCase().trim() ===
+                  String(group.section).toLowerCase().trim(),
             );
           });
         });
@@ -135,28 +139,33 @@ const getformdata = async (req, res) => {try {
       data,
     });
   } catch (error) {
-    console.error("Get Schedule Data Error:", error);
+    console.error("Get Schedule Data Error:", { error, requestData: req.body });
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Failed to load schedule data.",
+      error: error.message || "Unexpected server error.",
     });
-  }};
+  }
+};
 
-const getScheduledExams = async (req, res) => {try {
+const getScheduledExams = async (req, res) => {
+  try {
     const db = getDB();
     let query = {};
 
     // Build query to only fetch schedules matching the staff's allowed departments
     if (req.user?.role === "staff") {
-      const staffDoc = await db.collection("staff").findOne({ username: req.user.username });
+      const staffDoc = await db
+        .collection("staff")
+        .findOne({ username: req.user.username });
 
       if (!staffDoc || !staffDoc.allowdept || staffDoc.allowdept.length === 0) {
         return res.status(200).json({ success: true, data: [] });
       }
 
       const allowedConditions = [];
-      
+
       staffDoc.allowdept.forEach((batchGroup) => {
         batchGroup.classes.forEach((cls) => {
           allowedConditions.push({
@@ -189,9 +198,9 @@ const getScheduledExams = async (req, res) => {try {
           {
             projection: {
               testcode: 1,
-              questionCode:1
+              questionCode: 1,
             },
-          }
+          },
         );
 
         return {
@@ -202,14 +211,14 @@ const getScheduledExams = async (req, res) => {try {
           department: exam.eligibility.department,
           batch: exam.eligibility.batch,
           section: exam.eligibility.section,
-          questionCode:questionSet.questionCode,
+          questionCode: questionSet?.questionCode || "-",
           admissionNo: exam.eligibility.admissionNo || [],
           duration: exam.duration,
           startTime: exam.startTime,
           endTime: exam.endTime,
           status: exam.status,
         };
-      })
+      }),
     );
 
     return res.status(200).json({
@@ -217,13 +226,18 @@ const getScheduledExams = async (req, res) => {try {
       data: scheduledExams,
     });
   } catch (error) {
-    console.error("Get Scheduled Exams Error:", error);
+    console.error("Get Scheduled Exams Error:", {
+      error,
+      requestData: req.body,
+    });
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Failed to load scheduled exams.",
+      error: error.message || "Unexpected server error.",
     });
-  }};
+  }
+};
 
 const getStudentsByDepartmentAndBatch = async (req, res) => {
   try {
@@ -278,7 +292,8 @@ const getStudentsByDepartmentAndBatch = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Failed to load students.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };

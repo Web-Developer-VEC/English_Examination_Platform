@@ -18,6 +18,7 @@ import {
   getQuestionFormData,
   deleteQuestionSet,
 } from "../../services/adminService";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 // 👇 Update this import path to point to where you saved your ThemeDropdown component
 import ThemeDropdown from "../../components/common/ThemeDropDown";
@@ -153,9 +154,10 @@ function QuestionUploadCard() {
     } catch (error) {
       console.error("Upload Question Error:", error);
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
+        getApiErrorMessage(
+          error,
           "Something went wrong while creating the question.",
+        ),
       );
     } finally {
       setIsSubmitting(false);
@@ -403,7 +405,9 @@ function DeleteQuestionCard() {
         }
       } catch (error) {
         console.error("Fetch Questions Error:", error);
-        toast.error("Could not fetch available questions.");
+        toast.error(
+          getApiErrorMessage(error, "Could not fetch available questions."),
+        );
       } finally {
         setIsLoading(false);
       }
@@ -449,9 +453,10 @@ function DeleteQuestionCard() {
     } catch (error) {
       console.error("Delete Question Error:", error);
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
+        getApiErrorMessage(
+          error,
           "Something went wrong while deleting the question.",
+        ),
       );
     } finally {
       setIsDeleting(false);

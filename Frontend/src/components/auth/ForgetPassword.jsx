@@ -5,6 +5,7 @@ import {
   validateForgotPasswordOtp,
   resetForgotPassword,
 } from "../../services/authService";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 const ForgetPassword = () => {
   // =========================
@@ -62,17 +63,12 @@ const ForgetPassword = () => {
         role,
       });
 
-      console.log("Forgot Password Response:", data);
-
       setMessage(data.message || "OTP sent successfully");
 
       setStep(2);
     } catch (error) {
-      console.error("Forgot Password Error:", error);
-
       setError(
-        error.response?.data?.message ||
-        "Unable to send OTP. Please try again."
+        getApiErrorMessage(error, "Unable to send OTP. Please try again."),
       );
     } finally {
       setLoading(false);
@@ -108,8 +104,6 @@ const ForgetPassword = () => {
         otp: otp.trim(),
       });
 
-      console.log("OTP Validation Response:", data);
-
       if (data.success) {
         setResetToken(data.resetToken);
 
@@ -121,8 +115,7 @@ const ForgetPassword = () => {
       console.error("OTP Validation Error:", error);
 
       setError(
-        error.response?.data?.message ||
-        "Invalid or expired OTP. Please try again."
+        getApiErrorMessage(error, "Invalid or expired OTP. Please try again."),
       );
     } finally {
       setLoading(false);
@@ -165,8 +158,6 @@ const ForgetPassword = () => {
         confirmPassword,
       });
 
-      console.log("Reset Password Response:", data);
-
       if (data.success) {
         setMessage(data.message || "Password reset successful");
 
@@ -181,8 +172,10 @@ const ForgetPassword = () => {
       console.error("Reset Password Error:", error);
 
       setError(
-        error.response?.data?.message ||
-        "Unable to reset password. Please try again."
+        getApiErrorMessage(
+          error,
+          "Unable to reset password. Please try again.",
+        ),
       );
     } finally {
       setLoading(false);
@@ -212,59 +205,53 @@ const ForgetPassword = () => {
   return (
     <div className="fixed top-[150px] left-0 right-0 bottom-0 overflow-hidden bg-gray-100 flex items-center justify-center px-4 py-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-
         {/* ================================
     STEP INDICATOR
 ================================= */}
 
         <div className="flex items-center justify-center gap-3 mb-8">
-
           {/* STEP 1 */}
           <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 1
-              ? "bg-[#FDCC03] text-white"
-              : "bg-gray-200 text-gray-500"
-              }`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step >= 1
+                ? "bg-[#FDCC03] text-white"
+                : "bg-gray-200 text-gray-500"
+            }`}
           >
             1
           </div>
 
           {/* LINE 1 */}
           <div
-            className={`h-1 w-10 ${step >= 2
-              ? "bg-[#FDCC03]"
-              : "bg-gray-200"
-              }`}
+            className={`h-1 w-10 ${step >= 2 ? "bg-[#FDCC03]" : "bg-gray-200"}`}
           />
 
           {/* STEP 2 */}
           <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 2
-              ? "bg-[#FDCC03] text-white"
-              : "bg-gray-200 text-gray-500"
-              }`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step >= 2
+                ? "bg-[#FDCC03] text-white"
+                : "bg-gray-200 text-gray-500"
+            }`}
           >
             2
           </div>
 
           {/* LINE 2 */}
           <div
-            className={`h-1 w-10 ${step >= 3
-              ? "bg-[#FDCC03]"
-              : "bg-gray-200"
-              }`}
+            className={`h-1 w-10 ${step >= 3 ? "bg-[#FDCC03]" : "bg-gray-200"}`}
           />
 
           {/* STEP 3 */}
           <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${step >= 3
-              ? "bg-[#FDCC03] text-white"
-              : "bg-gray-200 text-gray-500"
-              }`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step >= 3
+                ? "bg-[#FDCC03] text-white"
+                : "bg-gray-200 text-gray-500"
+            }`}
           >
             3
           </div>
-
         </div>
 
         {/* =================================================
@@ -284,12 +271,9 @@ const ForgetPassword = () => {
             </div>
 
             <form onSubmit={handleSendOtp} className="space-y-5">
-
               {/* ROLE */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
 
@@ -308,9 +292,7 @@ const ForgetPassword = () => {
 
               {/* USERNAME */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Username
                 </label>
 
@@ -367,9 +349,7 @@ const ForgetPassword = () => {
         {step === 2 && (
           <>
             <div className="text-center mb-7">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Verify OTP
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">Verify OTP</h2>
 
               <p className="text-sm text-gray-500 mt-2">
                 Enter the 4-digit OTP sent to your registered email.
@@ -377,12 +357,9 @@ const ForgetPassword = () => {
             </div>
 
             <form onSubmit={handleVerifyOtp} className="space-y-5">
-
               {/* OTP */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   OTP
                 </label>
 
@@ -393,9 +370,7 @@ const ForgetPassword = () => {
                   maxLength="4"
                   placeholder="Enter 4-digit OTP"
                   value={otp}
-                  onChange={(e) =>
-                    setOtp(e.target.value.replace(/\D/g, ""))
-                  }
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                   disabled={loading}
                   className="w-full px-4 py-3 text-center text-base tracking-[0.1em] font-semibold border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                 />
@@ -453,7 +428,6 @@ const ForgetPassword = () => {
             </div>
 
             <form onSubmit={handleResetPassword} className="space-y-5">
-
               {/* NEW PASSWORD */}
               <div>
                 <label
@@ -469,9 +443,7 @@ const ForgetPassword = () => {
                     type={showNewPassword ? "text" : "password"}
                     placeholder="Enter new password"
                     value={newPassword}
-                    onChange={(e) =>
-                      setNewPassword(e.target.value)
-                    }
+                    onChange={(e) => setNewPassword(e.target.value)}
                     disabled={loading}
                     className="w-full px-4 py-3 pr-12 border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                   />
@@ -482,11 +454,7 @@ const ForgetPassword = () => {
                     disabled={loading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#7a1f2b] transition-colors"
                   >
-                    {showNewPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
+                    {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
               </div>
@@ -506,18 +474,14 @@ const ForgetPassword = () => {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm new password"
                     value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                     className="w-full px-4 py-3 pr-12 border border-black/15 rounded-lg outline-none focus:ring-2 focus:ring-[#fdcc03]/15 focus:border-[#fdcc03] disabled:bg-gray-100"
                   />
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     disabled={loading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-600"
                   >

@@ -15,6 +15,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { getFormData, getExamResults } from "../../services/adminService";
+import { getApiErrorMessage } from "../../utils/apiError";
 // -----------------------------------------------------
 // PROJECT COLORS
 // -----------------------------------------------------
@@ -31,7 +32,7 @@ const colors = {
 // -----------------------------------------------------
 const CIE_OPTIONS = ["I", "II", "III"];
 const SEM_OPTIONS = ["Odd", "Even"];
-const CATEGORY_OPTIONS=["Normal","Retest","University"]
+const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
 // -----------------------------------------------------
 // FAIL GRADES
 // -----------------------------------------------------
@@ -164,8 +165,6 @@ const normalizeScheduleRecord = (item) => {
       "deptName",
     ]),
 
-
-
     section: getValue(item, [
       "section",
       "Section",
@@ -226,7 +225,7 @@ function SelectField({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleOutsideClick);
 
@@ -507,12 +506,8 @@ export default function StudentResult() {
 
       try {
         const data = await getFormData();
-        console.log("YRYUi🐦‍🔥🐦‍🔥🐦‍🔥", JSON.stringify(data, null, 2));
-
         if (!data.success) {
-          throw new Error(
-            data.message || "Failed to fetch form data."
-          );
+          throw new Error(data.message || "Failed to fetch form data.");
         }
 
         const rawArray = findArrayInResponse(data);
@@ -530,7 +525,12 @@ export default function StudentResult() {
         }
       } catch (err) {
         console.error("Schedule API error:", err);
-        setError("Unable to load schedule data from the server.");
+        setError(
+          getApiErrorMessage(
+            err,
+            "Unable to load schedule data from the server.",
+          ),
+        );
         setScheduleData([]);
       } finally {
         setLoadingSchedule(false);
@@ -595,8 +595,10 @@ export default function StudentResult() {
   // VALIDATE
   // ---------------------------------------------------
   const validate = () => {
-    if (!batch || !dept || !section || !cie || !sem  || !category) {
-      setError("Please select Batch, Branch, Section, CIE and Semester and Category.");
+    if (!batch || !dept || !section || !cie || !sem || !category) {
+      setError(
+        "Please select Batch, Branch, Section, CIE and Semester and Category.",
+      );
       return false;
     }
 
@@ -607,20 +609,15 @@ export default function StudentResult() {
   // FETCH / PREPARE RESULTS
   // ---------------------------------------------------
   const fetchStudentResults = async (filters) => {
-
     const cieMapping = {
       I: 1,
       II: 2,
       III: 3,
     };
 
-    const cieNumber = filters.cie
-      ? cieMapping[filters.cie]
-      : null;
+    const cieNumber = filters.cie ? cieMapping[filters.cie] : null;
 
-    const semesterValue = filters.sem
-      ? filters.sem.toLowerCase()
-      : "";
+    const semesterValue = filters.sem ? filters.sem.toLowerCase() : "";
 
     const requestBody = {
       batch: filters.batch,
@@ -630,29 +627,17 @@ export default function StudentResult() {
       semester: semesterValue,
       category: filters.category,
     };
-console.log("Backend Request Body:", requestBody);
-    const responseData =
-      await getExamResults(requestBody);
+    const responseData = await getExamResults(requestBody);
 
-    if (
-      !responseData.success ||
-      !responseData.data ||
-      !responseData.data.url
-    ) {
+    if (!responseData.success || !responseData.data || !responseData.data.url) {
       throw new Error(
-        responseData.message ||
-        "PDF URL was not returned by the server."
+        responseData.message || "PDF URL was not returned by the server.",
       );
     }
 
-    const pdfUrl =
-      responseData.data.url;
+    const pdfUrl = responseData.data.url;
 
-    window.open(
-      pdfUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
 
     return responseData;
   };
@@ -684,18 +669,17 @@ console.log("Backend Request Body:", requestBody);
         sem,
         category,
       };
-      console.log("Selected Filters:", filters);
-
       await fetchStudentResults(filters);
 
       setSubmittedFilters(filters);
       setShowResults(false);
-
     } catch (err) {
       console.error("PDF download error:", err);
       setError(
-        err.message ||
-        "Something went wrong while generating or downloading the PDF.",
+        getApiErrorMessage(
+          err,
+          "Something went wrong while generating or downloading the PDF.",
+        ),
       );
 
       setShowResults(false);
@@ -731,9 +715,9 @@ console.log("Backend Request Body:", requestBody);
 
     const average = numericMarks.length
       ? (
-        numericMarks.reduce((sum, mark) => sum + mark, 0) /
-        numericMarks.length
-      ).toFixed(1)
+          numericMarks.reduce((sum, mark) => sum + mark, 0) /
+          numericMarks.length
+        ).toFixed(1)
       : "0.0";
 
     return {
@@ -838,9 +822,7 @@ console.log("Backend Request Body:", requestBody);
                   setError("");
                 }}
                 options={sectionOptions}
-                placeholder={
-                  dept ? "Select Section" : "Select Branch First"
-                }
+                placeholder={dept ? "Select Section" : "Select Branch First"}
                 disabled={!dept || sectionOptions.length === 0}
               />
 
@@ -874,15 +856,12 @@ console.log("Backend Request Body:", requestBody);
                 disabled={false}
               />
 
-
               {/*CATEGORY*/}
               <SelectField
                 label="Category"
                 IconComponent={CalendarRange}
                 value={category}
                 onChange={(value) => {
-                  console.log("Selected Category:", value);
-
                   setCategory(value);
                   setShowResults(false);
                   setError("");

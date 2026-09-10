@@ -1,4 +1,6 @@
-const { generateStudentExamPDF } = require("../../service/student_result.service"); 
+const {
+  generateStudentExamPDF,
+} = require("../../service/student_result.service");
 
 const generateStudentResult = async (req, res) => {
   try {
@@ -17,7 +19,8 @@ const generateStudentResult = async (req, res) => {
 
     return res.status(status).json({
       success: false,
-      message: error.message,
+      message: "Failed to load student result.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };

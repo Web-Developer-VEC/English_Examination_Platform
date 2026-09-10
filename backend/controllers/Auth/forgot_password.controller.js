@@ -24,7 +24,7 @@ const forgotpassword = async (req, res) => {
     }
 
     // VALIDATE ROLE
-    if (![ "staff", "admin"].includes(role)) {
+    if (!["staff", "admin"].includes(role)) {
       return res.status(400).json({
         message: "Invalid authorization",
       });
@@ -38,7 +38,7 @@ const forgotpassword = async (req, res) => {
     // FIND USER
     const user = await db.collection(collection).findOne({
       username: normalizedUsername,
-      role: role
+      role: role,
     });
 
     if (!user) {
@@ -88,7 +88,8 @@ const forgotpassword = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Failed to send password reset OTP.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -178,7 +179,8 @@ const otpValidation = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Failed to validate password reset OTP.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -274,7 +276,8 @@ const resetPassword = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Failed to reset password.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };

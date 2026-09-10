@@ -308,7 +308,8 @@ const startExam = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to start exam.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -502,7 +503,8 @@ const submitExam = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to load exam.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -816,7 +818,8 @@ const syncExam = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to sync exam.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
