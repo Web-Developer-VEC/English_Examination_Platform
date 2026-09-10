@@ -416,10 +416,10 @@ const StudentDataUpload = () => {
         });
       }
     } catch (error) {
-      console.error("Student upload error:", error);
+      console.error("Student upload error:", error.response);
 
       showMessage(
-        "Something went wrong while uploading.",
+        error.response.data.error || error.response.data.message || "Something went wrong while uploading.",
         "error"
       );
     } finally {

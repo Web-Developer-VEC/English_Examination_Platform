@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   FileText,
@@ -13,7 +13,14 @@ import {
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { uploadQuestions, getQuestionFormData, deleteQuestionSet } from "../../services/adminService";
+import {
+  uploadQuestions,
+  getQuestionFormData,
+  deleteQuestionSet,
+} from "../../services/adminService";
+
+// 👇 Update this import path to point to where you saved your ThemeDropdown component
+import ThemeDropdown from "../../components/common/ThemeDropDown";
 
 /* ============================================================
    Question Upload card
@@ -105,7 +112,6 @@ function QuestionUploadCard() {
   };
 
   const handleSubmit = async () => {
-
     if (!questionCode.trim()) {
       toast.error("Please enter a Question Code.");
       return;
@@ -126,7 +132,6 @@ function QuestionUploadCard() {
     setIsSubmitting(true);
 
     try {
-
       const data = await uploadQuestions({
         questionCode,
         audioFile,
@@ -134,10 +139,7 @@ function QuestionUploadCard() {
       });
 
       if (!data.success) {
-        throw new Error(
-          data.message ||
-          "Failed to upload question."
-        );
+        throw new Error(data.message || "Failed to upload question.");
       }
 
       toast.success("Question uploaded successfully.");
@@ -146,29 +148,16 @@ function QuestionUploadCard() {
       setAudioFile(null);
       setQuestionFile(null);
 
-      document.getElementById(
-        "audio-upload"
-      ).value = "";
-
-      document.getElementById(
-        "excel-upload"
-      ).value = "";
-
+      document.getElementById("audio-upload").value = "";
+      document.getElementById("excel-upload").value = "";
     } catch (error) {
-
-      console.error(
-        "Upload Question Error:",
-        error
-      );
-
+      console.error("Upload Question Error:", error);
       toast.error(
         error.response?.data?.message ||
-        error.message ||
-        "Something went wrong while creating the question."
+          error.message ||
+          "Something went wrong while creating the question.",
       );
-
     } finally {
-
       setIsSubmitting(false);
     }
   };
@@ -207,7 +196,7 @@ function QuestionUploadCard() {
         </div>
       </div>
 
-      {/* Content - no overflow/scroll here, the page scrolls instead */}
+      {/* Content */}
       <div className="p-6 sm:p-8 space-y-6">
         {/* Question Code */}
         <div>
@@ -288,10 +277,11 @@ function QuestionUploadCard() {
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${isSubmitting
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-[#FDCC03] hover:bg-[#800000] hover:text-white text-gray-900 cursor-pointer"
-            }`}
+          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${
+            isSubmitting
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#FDCC03] hover:bg-[#800000] hover:text-white text-gray-900 cursor-pointer"
+          }`}
         >
           {isSubmitting ? (
             <>
@@ -307,8 +297,7 @@ function QuestionUploadCard() {
         </button>
       </div>
 
-      {/* MP3 Popup - portaled + very high z-index so it always sits above any
-          fixed/sticky site header, and can never be clipped by an ancestor. */}
+      {/* MP3 Popup */}
       {showMp3Popup &&
         createPortal(
           <div
@@ -392,24 +381,40 @@ function QuestionUploadCard() {
 }
 
 /* ============================================================
-   Delete Question card
-
-   Lets staff enter a Question Code and delete that question - for
-   cases where the wrong question/audio/excel was uploaded by mistake.
-
-   NOTE: adjust the delete URL below to match your backend's real
-   delete route - this follows the same base URL / auth pattern as the
-   upload request above, but confirm the exact path and HTTP method
-   your API expects.
+   Delete Question card (Using ThemeDropdown)
    ============================================================ */
 function DeleteQuestionCard() {
   const [questionCode, setQuestionCode] = useState("");
+  const [questionsList, setQuestionsList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Fetch available questions when the component mounts
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      setIsLoading(true);
+      try {
+        const formData = await getQuestionFormData();
+        if (formData.success) {
+          setQuestionsList(formData?.data?.tests || []);
+        } else {
+          toast.error("Failed to load questions list.");
+        }
+      } catch (error) {
+        console.error("Fetch Questions Error:", error);
+        toast.error("Could not fetch available questions.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
+
   const handleDeleteClick = () => {
     if (!questionCode.trim()) {
-      toast.error("Please enter a Question Code.");
+      toast.error("Please select a Question Code.");
       return;
     }
     setShowConfirm(true);
@@ -417,111 +422,44 @@ function DeleteQuestionCard() {
 
   const handleConfirmDelete = async () => {
     if (isDeleting) return;
-
     setIsDeleting(true);
 
     try {
+      const questionSet = questionsList.find(
+        (item) => item.questionCode === questionCode,
+      );
 
-      // =====================================================
-      // 1. GET FORM DATA
-      // =====================================================
-
-      const formData = await getQuestionFormData();
-
-      if (!formData.success) {
-        throw new Error(
-          formData.message ||
-          "Failed to fetch question data."
-        );
+      if (!questionSet || !questionSet.questionSetId) {
+        throw new Error("Question ID was not found for this code.");
       }
 
-      // =====================================================
-      // 2. GET TESTS ARRAY
-      // =====================================================
-
-      const questionList =
-        formData?.data?.tests || [];
-
-      // =====================================================
-      // 3. FIND QUESTION USING QUESTION CODE
-      // =====================================================
-
-      const enteredQuestionCode = questionCode.trim().toLowerCase();
-
-      const questionSet =
-        questionList.find(
-          (item) =>
-            item.questionCode
-              ?.trim()
-              .toLowerCase() ===
-            enteredQuestionCode
-        );
-
-      if (!questionSet) {
-
-        setShowConfirm(false);
-
-        toast.error(
-          `Question code "${questionCode.trim()}" was not found.`
-        );
-
-        return;
-      }
-
-      // =====================================================
-      // 4. GET QUESTION SET ID
-      // =====================================================
-
-      const questionSetId = questionSet.questionSetId;
-
-      if (!questionSetId) {
-        throw new Error(
-          "Question ID was not found for this question code."
-        );
-      }
-
-      // =====================================================
-      // 5. DELETE QUESTION SET
-      // =====================================================
-
-      const deleteData = await deleteQuestionSet(questionSetId);
+      const deleteData = await deleteQuestionSet(questionSet.questionSetId);
 
       if (!deleteData.success) {
-        throw new Error(
-          deleteData.message ||
-          "Failed to delete question."
-        );
+        throw new Error(deleteData.message || "Failed to delete question.");
       }
 
-      // =====================================================
-      // 6. SUCCESS
-      // =====================================================
-
-      toast.success(
-        "Question deleted successfully."
-      );
+      toast.success("Question deleted successfully.");
 
       setQuestionCode("");
       setShowConfirm(false);
-
-    } catch (error) {
-
-      console.error(
-        "Delete Question Error:",
-        error
+      setQuestionsList((prev) =>
+        prev.filter((item) => item.questionCode !== questionCode),
       );
-
+    } catch (error) {
+      console.error("Delete Question Error:", error);
       toast.error(
         error.response?.data?.message ||
-        error.message ||
-        "Something went wrong while deleting the question."
+          error.message ||
+          "Something went wrong while deleting the question.",
       );
-
     } finally {
-
       setIsDeleting(false);
     }
   };
+
+  // Extract array of strings for the custom ThemeDropdown component
+  const questionOptions = questionsList.map((q) => q.questionCode);
 
   return (
     <div className="w-full max-w-[650px] mx-auto bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex flex-col">
@@ -540,14 +478,18 @@ function DeleteQuestionCard() {
         <div>
           <label className="flex items-center gap-2 text-sm font-bold text-[#800000] mb-2">
             <FileText size={16} />
-            Question Code
+            Select Question Code
           </label>
-          <input
-            type="text"
-            placeholder="Enter question code to delete"
+
+          {/* Using custom ThemeDropdown */}
+          <ThemeDropdown
+            icon={FileText}
             value={questionCode}
-            onChange={(e) => setQuestionCode(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 transition-all placeholder:text-gray-400"
+            options={questionOptions}
+            onChange={(val) => setQuestionCode(val)}
+            placeholder="-- Select a Question Code --"
+            loading={isLoading}
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -562,11 +504,12 @@ function DeleteQuestionCard() {
         <button
           type="button"
           onClick={handleDeleteClick}
-          disabled={isDeleting}
-          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${isDeleting
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-[#800000] hover:bg-[#5e0000] text-white cursor-pointer"
-            }`}
+          disabled={isDeleting || !questionCode}
+          className={`w-full sm:w-auto min-w-[180px] h-[46px] flex items-center justify-center gap-2 rounded-xl font-semibold shadow-md transition-all ${
+            isDeleting || !questionCode
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#800000] hover:bg-[#5e0000] text-white cursor-pointer"
+          }`}
         >
           {isDeleting ? (
             <>
@@ -582,8 +525,7 @@ function DeleteQuestionCard() {
         </button>
       </div>
 
-      {/* Confirm Delete Popup - portaled + very high z-index so it always
-          sits above any fixed/sticky site header. */}
+      {/* Confirm Delete Popup */}
       {showConfirm &&
         createPortal(
           <div
@@ -638,14 +580,6 @@ function DeleteQuestionCard() {
 
 /* ============================================================
    Question Upload Management landing page (default export)
-
-   Mirrors the Student Data Management layout: an icon + title +
-   subtitle outside any card, a segmented pill control to switch
-   between the two actions, and the relevant card rendered below.
-
-   No fixed-height / overflow-hidden wrapper here on purpose - this
-   section sits in the normal page flow so the browser page scrolls
-   if content is tall, rather than any card scrolling internally.
    ============================================================ */
 export default function QuestionUploadManagement() {
   const [activeTab, setActiveTab] = useState("upload");
@@ -681,10 +615,11 @@ export default function QuestionUploadManagement() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-colors ${isActive
-                  ? "bg-[#800000] text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-                  }`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-colors ${
+                  isActive
+                    ? "bg-[#800000] text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
               >
                 <Icon size={16} className={isActive ? "text-[#FDCC03]" : ""} />
                 {tab.label}
