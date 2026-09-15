@@ -354,7 +354,7 @@ const scheduleExam = async (req, res) => {
 
       questionSetId: questionObjectId,
 
-      inchargeStaff: assignedFaculty.username,
+      inchargeStaff: assignedFaculty.name,
 
       // -------------------------------------------------
       // ELIGIBILITY
