@@ -65,7 +65,7 @@ const AdminLogin = () => {
             {/* Heading */}
             <div className="login-heading">
               <UserCog className="login-heading__icon" size={22} />
-              <h2>Admin Login</h2>
+              <h2>Admin/Staff Login</h2>
             </div>
 
             {/* Form */}
