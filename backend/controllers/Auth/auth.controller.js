@@ -83,7 +83,8 @@ const register = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to register user.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -273,7 +274,8 @@ const login = async (req, res) => {
     return res.status(500).json({
       success: false,
 
-      message: error.message,
+      message: "Failed to login.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };

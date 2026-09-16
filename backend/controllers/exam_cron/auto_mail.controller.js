@@ -40,7 +40,7 @@ const checkCompletedExams = async () => {
 
       for (const admissionNo of admissionNos) {
         try {
-          // await generateStudentExamPDF(test._id, admissionNo);
+          await generateStudentExamPDF(test._id, admissionNo);
 
         } catch (error) {
           // Student didn't attend / exam attempt doesn't exist

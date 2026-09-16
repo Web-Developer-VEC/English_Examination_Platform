@@ -6,7 +6,7 @@
   font-family: "Poppins", sans-serif;
 
   /* CHANGE THIS IF YOUR HEADER HEIGHT IS DIFFERENT */
-  --header-height: 160px;
+  --header-height: 130px;
 
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 100px;
@@ -335,7 +335,7 @@
 
   font-family: inherit;
 
-  font-size: 17.5px;
+  font-size: 16px;
 
   font-weight: 500;
 

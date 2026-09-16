@@ -31,7 +31,7 @@ function App() {
 
                     <Header />
 
-                    <main className="flex-1 pt-[160px]">
+                    <main className="flex-1 pt-[130px]">
                         <AppRoutes />
                     </main>
 

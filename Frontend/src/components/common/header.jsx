@@ -154,9 +154,14 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                         {(user.role === "staff" ||
                             user.role === "admin") &&
                             (user.name || user.username) && (
-                                <div className="vec-header__user-name">
+                               <> <div className="vec-header__user-name">
                                     {(user.name || user.username).toUpperCase()}
                                 </div>
+                                 <div className="vec-header__user-details">
+                                       {user.role.toUpperCase()}
+                                    </div>
+                                </>
+                                
                             )}
 
                     </div>

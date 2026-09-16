@@ -1,4 +1,3 @@
-
 const { SendEmailCommand } = require("@aws-sdk/client-ses");
 const { ses } = require("../../config/ses");
 
@@ -45,13 +44,13 @@ const sendTestEmail = async (req, res) => {
       message: "Email sent successfully",
       messageId: response.MessageId,
     });
-
   } catch (error) {
     console.error("SES ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to send email.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };

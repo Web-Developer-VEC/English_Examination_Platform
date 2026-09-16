@@ -11,7 +11,8 @@ const studentsUpload = async (req, res) => {
     const students = await Promise.all(
       parsedStudents.map(async (student) => ({
         ...student,
-        studentEditEnabled: true,
+        studentEditEnabled: false,
+        firstlogin: true,
         username: student.admissionNo,
         password: student.dob,
         createdAt: new Date(),
@@ -75,7 +76,8 @@ const studentsUpload = async (req, res) => {
 
     return res.status(error.status || 500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Failed to upload students.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -121,7 +123,8 @@ const updateStudent = async (req, res) => {
 
     return res.status(error.status || 500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Failed to update students.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
@@ -243,7 +246,8 @@ const getStudentByUsername = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to load student.",
+      error: error.message || "Unexpected server error.",
     });
   }
 };
