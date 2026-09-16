@@ -137,6 +137,16 @@ export const getExistingStudents = async ({
     return response.data;
 };
 
+// Delete existing student data
+export const deleteStudent = async (admissionNo) => {
+  const response = await api.delete("/staff/delete-student", {
+    data: {
+      admissionNo: admissionNo,
+    },
+  });
+  return response.data;
+};
+
 
 // =====================================================
 // GET BATCH / DEPARTMENT / SECTION

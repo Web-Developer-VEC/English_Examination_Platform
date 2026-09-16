@@ -13,7 +13,7 @@ const {
 
 const student_upload_Middleware = require("../../middleware/student_upload_middleware");
 const {
-  studentsUpload,
+  studentsUpload,deleteStudent
 } = require("../../controllers/admin/student.controller");
 const { updateStudent } = require("../../controllers/admin/student.controller");
 const scheduleRoutes = require("./schedule.routes");
@@ -56,6 +56,7 @@ router.get(
 // Upload Student Excel
 router.post("/studentsupload",roleByAccess(["admin"]),student_upload_Middleware, studentsUpload);
 router.put("/studentsupdate", roleByAccess(["admin"]),student_upload_Middleware, updateStudent);
+router.delete("/delete-student", roleByAccess(["admin"]), deleteStudent);
 // Upload Audio + Excel
 router.post(
   "/questionsupload",

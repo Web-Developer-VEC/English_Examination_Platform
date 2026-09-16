@@ -4,6 +4,7 @@ import {
   CloudUpload,
   Info,
   CheckCircle2,
+  Trash2,
   X,
   ShieldCheck,
   FileSpreadsheet,
@@ -28,6 +29,7 @@ import {
   uploadStudentData,
   getExistingStudents,
   getScheduleFormData,
+  deleteStudent
 } from "../../services/adminService";
 import "./StudentDataUpload.css";
 import { getApiErrorMessage } from "../../utils/apiError";
@@ -471,6 +473,53 @@ const StudentDataUpload = () => {
       setLoadingStudents(false);
     }
   };
+  const handleDeleteStudent = async (student) => {
+    console.log("Student selected for deletion:", student);
+    console.log("Admission No:", student?.admissionNo);
+
+    if (!student?.admissionNo) {
+      showExistingError("Admission number is missing.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${student.name || "this student"} (${student.admissionNo})?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const data = await deleteStudent(student.admissionNo);
+
+      console.log("Delete response:", data);
+
+      if (data?.success === false) {
+        throw new Error(
+          getErrorMessage(data, "Unable to delete student.")
+        );
+      }
+
+      setStudents((prevStudents) =>
+        prevStudents.filter(
+          (item) => item.admissionNo !== student.admissionNo
+        )
+      );
+
+      setExistingMessage(
+        data?.message || "Student deleted successfully."
+      );
+      setExistingMessageType("success");
+
+    } catch (error) {
+      console.error("Delete student error:", error);
+
+      showExistingError(
+        getApiErrorMessage(error, "Unable to delete student.")
+      );
+    }
+  };
 
   const filteredStudents = useMemo(() => {
     const search = studentSearch.trim().toLowerCase();
@@ -591,9 +640,8 @@ const StudentDataUpload = () => {
 
           <button
             type="button"
-            className={`mode-button ${
-              activeMode === "existing" ? "active" : ""
-            }`}
+            className={`mode-button ${activeMode === "existing" ? "active" : ""
+              }`}
             onClick={() => handleModeChange("existing")}
           >
             <Database size={17} />
@@ -624,9 +672,8 @@ const StudentDataUpload = () => {
             </div>
 
             <div
-              className={`student-drop-zone ${
-                isDragging ? "dragging" : ""
-              } ${selectedFile ? "has-file" : ""}`}
+              className={`student-drop-zone ${isDragging ? "dragging" : ""
+                } ${selectedFile ? "has-file" : ""}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -917,6 +964,7 @@ const StudentDataUpload = () => {
                         <th>Section</th>
                         <th>Batch</th>
                         <th>DOB</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
 
@@ -979,12 +1027,27 @@ const StudentDataUpload = () => {
 
                             <td>{student.batch || selectedBatch || "-"}</td>
 
-                            <td>{student.dob || "-"}</td>
+                            <td>
+
+                              <span>{student.dob || "-"}</span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="delete-student-button"
+                                onClick={() => handleDeleteStudent(student)}
+                                title={`Delete ${student.name || "student"}`}
+                                aria-label={`Delete ${student.name || "student"}`}
+                              >
+                                <Trash2 size={17} strokeWidth={2} />
+                              </button>
+
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="11" className="empty-search">
+                          <td colSpan="12" className="empty-search">
                             <Search size={30} />
                             <strong>No students found</strong>
                             <span>Try another student name.</span>
@@ -1082,11 +1145,10 @@ const StudentDataUpload = () => {
           }}
         >
           <div
-            className={`student-message-popup ${
-              (message ? messageType : existingMessageType) === "success"
-                ? "success"
-                : "error"
-            }`}
+            className={`student-message-popup ${(message ? messageType : existingMessageType) === "success"
+              ? "success"
+              : "error"
+              }`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="student-message-icon-wrap">
