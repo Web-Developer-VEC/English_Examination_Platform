@@ -277,6 +277,9 @@ const StudentDashboard = () => {
             result.student?.firstlogin === true ||
             result.student?.firstLogin === true,
         );
+        setregEdit( result.student?.studentEditEnabled === true)
+        console.log(result,regEdit,result.student.studentEditEnabled)
+
 
         // Exams: `id` must come from the backend's unique `examId`,
         // not `questionCode` — multiple attempts (normal + retest)
