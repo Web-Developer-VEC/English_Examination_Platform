@@ -61,7 +61,7 @@ const normalizeStudent = (student = {}) => ({
   admissionNo: getValue(student, ["admissionNo"]),
   email: getValue(student, ["email"]),
   phone: getValue(student, ["phone"]),
-  department: getValue(student, ["branch"]),
+  department: getValue(student, ["department","branch"]),
   year: getValue(student, ["year"]),
   section: getValue(student, ["section"]),
   batch: getValue(student, ["batch"]),
