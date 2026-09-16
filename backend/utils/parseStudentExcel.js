@@ -217,14 +217,14 @@ const parseStudentExcel = (buffer) => {
     if (!year || year < 1 || year > 4) {
       throwValidationError(`Row ${excelRow}: Year must be between 1 and 4.`);
     }
-
+    if (!batch) {
+      throwValidationError(`Row ${excelRow}: Batch cannot be empty.`);
+    }
+/*
     if (!section) {
       throwValidationError(`Row ${excelRow}: Section cannot be empty.`);
     }
 
-    if (!batch) {
-      throwValidationError(`Row ${excelRow}: Batch cannot be empty.`);
-    }
 
     if (!gender) {
       throwValidationError(`Row ${excelRow}: Gender cannot be empty.`);
@@ -242,7 +242,8 @@ const parseStudentExcel = (buffer) => {
         throwValidationError(`Row ${excelRow}: Invalid email address.`);
       }
     }
-        // if(academicYear){
+  */
+    // if(academicYear){
 
         //     const academicYearRegex = /^\d{4}-\d{4}$/;
 

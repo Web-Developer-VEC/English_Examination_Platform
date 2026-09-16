@@ -9,7 +9,7 @@
     right: 0;
 
     width: 100%;
-    height: 160px;
+    height: 130px;
 
     display: flex;
     align-items: center;
@@ -46,25 +46,20 @@
 /* =========================================================
    LEFT - COLLEGE BRAND
    ========================================================= */
-
 .vec-header__brand {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-
     text-align: center;
-
     width: 240px;
     flex-shrink: 0;
-
     z-index: 2;
 }
 
 .vec-header__logo {
-    width: 55px;
-    height: 55px;
-
+    width: 50px;
+    height: 50px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -79,49 +74,42 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-
-    gap: 2px;
+    /* Applied the serif font to the whole text block to match the image */
+    font-family: "Playfair Display", "Times New Roman", serif;
 }
 
 .vec-header__college {
     margin: 0;
-
-    font-family: "Playfair Display", serif;
     font-size: 20px;
     font-weight: 600;
-
-    color: #4b1e1e;
-
+    color: #5C1515; /* Matched Maroon */
     line-height: 1.1;
+    letter-spacing: 1px;
 }
 
 .vec-header__department {
     margin: 0;
-
     font-size: 13px;
-    color: #222;
-
+    font-weight: 500;
+    color: #1A1A24; /* Matched Dark Navy */
     letter-spacing: 0.5px;
 }
 
 .vec-header__tagline {
     margin: 0;
-
     font-size: 11px;
     font-style: italic;
-
-    color: #666;
+    font-weight: 500;
+    color: #64748B; /* Matched Slate Gray */
 }
 
 .vec-header__autonomy {
     margin: 0;
-
     font-size: 10px;
     font-style: italic;
-
-    color: #777;
+    font-weight: 500;
+    color: #64748B; /* Matched Slate Gray */
 }
-
 
 /* =========================================================
    CENTER - PORTAL TITLE

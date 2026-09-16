@@ -5,377 +5,295 @@ const { getDB } = require("../../config/db");
 // =====================================================
 
 const updateAcademicYear = async (req, res) => {
-    try {
+  try {
+    const db = getDB();
 
-        const db = getDB();
+    const { academicYear } = req.body;
 
-        const { academicYear } = req.body;
+    // =================================================
+    // VALIDATION
+    // =================================================
 
-        // =================================================
-        // VALIDATION
-        // =================================================
-
-        if (!academicYear || !academicYear.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Academic year is required."
-            });
-        }
-
-        const cleanAcademicYear = academicYear.trim();
-
-        // =================================================
-        // UPDATE ADMIN SETTINGS
-        // =================================================
-
-        await db.collection("admin_settings").updateOne(
-            {
-                type: "academic_year"
-            },
-            {
-                $set: {
-                    academicYear: cleanAcademicYear,
-                    updatedAt: new Date()
-                }
-            },
-            {
-                upsert: true
-            }
-        );
-
-        // =================================================
-        // RESPONSE
-        // =================================================
-
-        return res.status(200).json({
-            success: true,
-            message: "Academic year updated successfully.",
-            data: {
-                current_academic_year: cleanAcademicYear
-            }
-        });
-
-    } catch (error) {
-
-        console.error(
-            "UPDATE ACADEMIC YEAR ERROR:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            message: error.message || "Internal Server Error"
-        });
+    if (!academicYear || !academicYear.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Academic year is required.",
+      });
     }
+
+    const cleanAcademicYear = academicYear.trim();
+
+    // =================================================
+    // UPDATE ADMIN SETTINGS
+    // =================================================
+
+    await db.collection("admin_settings").updateOne(
+      {
+        type: "academic_year",
+      },
+      {
+        $set: {
+          academicYear: cleanAcademicYear,
+          updatedAt: new Date(),
+        },
+      },
+      {
+        upsert: true,
+      },
+    );
+
+    // =================================================
+    // RESPONSE
+    // =================================================
+
+    return res.status(200).json({
+      success: true,
+      message: "Academic year updated successfully.",
+      data: {
+        current_academic_year: cleanAcademicYear,
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE ACADEMIC YEAR ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update academic year.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
 };
-
-
 
 // =====================================================
 // ENABLE / DISABLE STUDENT EDIT
 // =====================================================
-
-
-
 
 // =====================================================
 // GET ADMIN SETTINGS
 // =====================================================
 
 const getAdminSettings = async (req, res) => {
-    try {
+  try {
+    const db = getDB();
 
-        const db = getDB();
+    // =================================================
+    // GET ACADEMIC YEAR
+    // =================================================
 
-        // =================================================
-        // GET ACADEMIC YEAR
-        // =================================================
+    const academic = await db.collection("admin_settings").findOne({
+      type: "academic_year",
+    });
 
-        const academic = await db.collection("admin_settings").findOne({
-            type: "academic_year"
-        });
+    // =================================================
+    // GET STUDENT EDIT SETTING
+    // =================================================
 
-        // =================================================
-        // GET STUDENT EDIT SETTING
-        // =================================================
+    const studentEdit = await db.collection("admin_settings").findOne({
+      type: "student_edit",
+    });
 
-        const studentEdit = await db.collection("admin_settings").findOne({
-            type: "student_edit"
-        });
+    // =================================================
+    // RESPONSE
+    // =================================================
 
-        // =================================================
-        // RESPONSE
-        // =================================================
+    return res.status(200).json({
+      success: true,
 
-        return res.status(200).json({
+      data: {
+        academicYear: academic?.academicYear || null,
 
-            success: true,
+        studentEditEnabled: studentEdit?.enabled || false,
+      },
+    });
+  } catch (error) {
+    console.error("GET ADMIN SETTINGS ERROR:", error);
 
-            data: {
+    return res.status(500).json({
+      success: false,
 
-                academicYear:
-                    academic?.academicYear || null,
-
-                studentEditEnabled:
-                    studentEdit?.enabled || false
-
-            }
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "GET ADMIN SETTINGS ERROR:",
-            error
-        );
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                error.message ||
-                "Internal Server Error"
-
-        });
-    }
+      message: "Failed to load admin settings.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
 };
-
-
-
-
 
 // =====================================================
 // ENABLE / DISABLE EDIT FOR SPECIFIC STUDENT
 // =====================================================
 
 const updateStudentEditPermission = async (req, res) => {
-    try {
+  try {
+    const db = getDB();
 
-        const db = getDB();
+    const { students } = req.body;
 
-        const { students } = req.body;
+    // =================================================
+    // VALIDATION
+    // =================================================
 
-        // =================================================
-        // VALIDATION
-        // =================================================
-
-        if (!Array.isArray(students) || students.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "students must be a non-empty array."
-            });
-        }
-
-        // =================================================
-        // VALIDATE EACH STUDENT
-        // =================================================
-
-        for (const student of students) {
-
-            if (
-                !student.admissionNo ||
-                !String(student.admissionNo).trim()
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Every student must have an admissionNo."
-                });
-            }
-
-            if (typeof student.studentEditEnabled !== "boolean") {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        `studentEditEnabled must be true or false for admissionNo ${student.admissionNo}.`
-                });
-            }
-        }
-
-        // =================================================
-        // UPDATE EACH STUDENT
-        // =================================================
-
-        const updatedStudents = [];
-        const notFoundStudents = [];
-
-        for (const student of students) {
-
-            const admissionNo =
-                String(student.admissionNo).trim();
-
-            const studentEditEnabled =
-                student.studentEditEnabled;
-
-            // ---------------------------------------------
-            // UPDATE STUDENT DOCUMENT
-            // ---------------------------------------------
-
-            const result = await db.collection("students").updateOne(
-
-                {
-                    admissionNo
-                },
-
-                {
-                    $set: {
-                        studentEditEnabled,
-                        updatedAt: new Date()
-                    }
-                }
-
-            );
-
-            // ---------------------------------------------
-            // STUDENT NOT FOUND
-            // ---------------------------------------------
-
-            if (result.matchedCount === 0) {
-
-                notFoundStudents.push(admissionNo);
-
-                continue;
-            }
-
-            // ---------------------------------------------
-            // STORE UPDATED STUDENT
-            // ---------------------------------------------
-
-            updatedStudents.push({
-                admissionNo,
-                studentEditEnabled
-            });
-        }
-
-        // =================================================
-        // RESPONSE
-        // =================================================
-
-        return res.status(200).json({
-
-            success: true,
-
-            message:
-                "Student edit permissions updated successfully.",
-
-            data: {
-
-                updated: updatedStudents,
-
-                notFound: notFoundStudents,
-
-                updatedCount: updatedStudents.length,
-
-                notFoundCount: notFoundStudents.length
-
-            }
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "UPDATE STUDENT EDIT PERMISSION ERROR:",
-            error
-        );
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                error.message ||
-                "Internal Server Error"
-
-        });
+    if (!Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "students must be a non-empty array.",
+      });
     }
+
+    // =================================================
+    // VALIDATE EACH STUDENT
+    // =================================================
+
+    for (const student of students) {
+      if (!student.admissionNo || !String(student.admissionNo).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Every student must have an admissionNo.",
+        });
+      }
+
+      if (typeof student.studentEditEnabled !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          message: `studentEditEnabled must be true or false for admissionNo ${student.admissionNo}.`,
+        });
+      }
+    }
+
+    // =================================================
+    // UPDATE EACH STUDENT
+    // =================================================
+
+    const updatedStudents = [];
+    const notFoundStudents = [];
+
+    for (const student of students) {
+      const admissionNo = String(student.admissionNo).trim();
+
+      const studentEditEnabled = student.studentEditEnabled;
+
+      // ---------------------------------------------
+      // UPDATE STUDENT DOCUMENT
+      // ---------------------------------------------
+
+      const result = await db.collection("students").updateOne(
+        {
+          admissionNo,
+        },
+
+        {
+          $set: {
+            studentEditEnabled,
+            updatedAt: new Date(),
+          },
+        },
+      );
+
+      // ---------------------------------------------
+      // STUDENT NOT FOUND
+      // ---------------------------------------------
+
+      if (result.matchedCount === 0) {
+        notFoundStudents.push(admissionNo);
+
+        continue;
+      }
+
+      // ---------------------------------------------
+      // STORE UPDATED STUDENT
+      // ---------------------------------------------
+
+      updatedStudents.push({
+        admissionNo,
+        studentEditEnabled,
+      });
+    }
+
+    // =================================================
+    // RESPONSE
+    // =================================================
+
+    return res.status(200).json({
+      success: true,
+
+      message: "Student edit permissions updated successfully.",
+
+      data: {
+        updated: updatedStudents,
+
+        notFound: notFoundStudents,
+
+        updatedCount: updatedStudents.length,
+
+        notFoundCount: notFoundStudents.length,
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE STUDENT EDIT PERMISSION ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Failed to update student edit permissions.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
 };
-
-
-
-
-
 
 // =====================================================
 // CHECK EDIT PERMISSION
 // =====================================================
 
 const getStudentEditPermission = async (req, res) => {
+  try {
+    const db = getDB();
 
-    try {
+    const { admissionNo } = req.params;
 
-        const db = getDB();
-
-        const {
-            admissionNo
-        } = req.params;
-
-        if (!admissionNo || !admissionNo.trim()) {
-
-            return res.status(400).json({
-                success: false,
-                message: "Admission Number is required."
-            });
-
-        }
-
-        const settings =
-            await db.collection("admin_settings").findOne({
-                type: "student_edit_permission"
-            });
-
-        if (!settings) {
-
-            return res.status(200).json({
-                success: true,
-                admissionNo: admissionNo.trim(),
-                studentEditEnabled: false
-            });
-
-        }
-
-        const studentPermission =
-            settings.students?.find(
-                student =>
-                    student.admissionNo === admissionNo.trim()
-            );
-
-        return res.status(200).json({
-
-            success: true,
-
-            admissionNo: admissionNo.trim(),
-
-            studentEditEnabled:
-                studentPermission
-                    ? studentPermission.studentEditEnabled
-                    : false
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "GET STUDENT EDIT PERMISSION ERROR:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
+    if (!admissionNo || !admissionNo.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Admission Number is required.",
+      });
     }
+
+    const settings = await db.collection("admin_settings").findOne({
+      type: "student_edit_permission",
+    });
+
+    if (!settings) {
+      return res.status(200).json({
+        success: true,
+        admissionNo: admissionNo.trim(),
+        studentEditEnabled: false,
+      });
+    }
+
+    const studentPermission = settings.students?.find(
+      (student) => student.admissionNo === admissionNo.trim(),
+    );
+
+    return res.status(200).json({
+      success: true,
+
+      admissionNo: admissionNo.trim(),
+
+      studentEditEnabled: studentPermission
+        ? studentPermission.studentEditEnabled
+        : false,
+    });
+  } catch (error) {
+    console.error("GET STUDENT EDIT PERMISSION ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load admin data.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
 };
 
-
-
-
-
 module.exports = {
-    updateAcademicYear,
-    updateStudentEditPermission,
-    getStudentEditPermission,
-    getAdminSettings
+  updateAcademicYear,
+  updateStudentEditPermission,
+  getStudentEditPermission,
+  getAdminSettings,
 };

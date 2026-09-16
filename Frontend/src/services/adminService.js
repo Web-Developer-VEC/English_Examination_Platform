@@ -238,3 +238,13 @@ export const updateAcademicYear = async (
 
     return response.data;
 };
+export const deleteStaff = async (data) => {
+  const response = await api.post(
+    "/staff/deletestaff",
+    {
+      data,
+    }
+  );
+
+  return response.data;
+};  

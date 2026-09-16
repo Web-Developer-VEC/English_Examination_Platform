@@ -2,327 +2,227 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { startExam } from "../../services/studentService";
 import { getStudentSession } from "../../utils/helpers";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 export default function InstructionsPage() {
-    const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
-    const [statusPopup, setStatusPopup] = useState({
-        show: false,
-        type: "error",
-        message: ""
+  const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
+  const [statusPopup, setStatusPopup] = useState({
+    show: false,
+    type: "error",
+    message: "",
+  });
+  const [accepted, setAccepted] = useState(false);
+  const [testCode, setTestCode] = useState("");
+
+  const navigate = useNavigate();
+  const isValidTestCode = /^[A-Z0-9]+$/.test(testCode);
+  const testCodeRef = useRef(null);
+
+  const enterFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        return true;
+      }
+
+      await document.documentElement.requestFullscreen();
+
+      return true;
+    } catch (error) {
+      console.error("Fullscreen request failed:", error);
+      return false;
+    }
+  };
+
+  const showStatusPopup = (message, type = "error") => {
+    setStatusPopup({
+      show: true,
+      type,
+      message,
     });
-    const [accepted, setAccepted] = useState(false);
-    const [testCode, setTestCode] = useState("");
+  };
 
-    const navigate = useNavigate();
-    const isValidTestCode = /^[A-Z0-9]+$/.test(testCode);
-    const testCodeRef = useRef(null);
+  // TEST CODE HANDLER
+  const handleTestCodeChange = (event) => {
+    let value = event.target.value.toUpperCase();
+    value = value.replace(/[^A-Z0-9]/g, "");
+    setTestCode(value);
+  };
 
-    const enterFullscreen = async () => {
-        try {
-            if (document.fullscreenElement) {
-                return true;
-            }
+  // START TEST
+  const handleStartTest = async () => {
+    try {
+      // ==========================================
+      // GET STUDENT SESSION
+      // ==========================================
 
-            await document.documentElement.requestFullscreen();
+      const session = getStudentSession();
 
-            return true;
+      if (!session?.user?.admissionNo) {
+        navigate("/studentlogin");
 
-        } catch (error) {
-            console.error("Fullscreen request failed:", error);
-            return false;
-        }
-    };
+        return;
+      }
 
-    const showStatusPopup = (message, type = "error") => {
-        setStatusPopup({
-            show: true,
-            type,
-            message
+      const admissionNo = session.user.admissionNo;
+
+      // ==========================================
+      // START EXAM
+      // ==========================================
+
+      const response = await startExam(testCode, admissionNo);
+
+      // ==========================================
+      // SUCCESS
+      // ==========================================
+
+      if (response?.success) {
+        navigate("/exam/audiotest", {
+          state: {
+            ...response,
+            admissionNo,
+          },
         });
+      }
+    } catch (error) {
+      console.error("START EXAM FAILED:", error);
+
+      const status = error.response?.status;
+
+      const message = getApiErrorMessage(error);
+
+      // ==========================================
+      // 400 BAD REQUEST
+      // ==========================================
+
+      if (status === 400) {
+        showStatusPopup(
+          message || "Invalid request. Please check the test code.",
+        );
+      }
+
+      // ==========================================
+      // 403 FORBIDDEN
+      // ==========================================
+      else if (status === 403) {
+        showStatusPopup(message || "You have already taken this test.");
+      }
+
+      // ==========================================
+      // 404 NOT FOUND
+      // ==========================================
+      else if (status === 404) {
+        showStatusPopup(message || "Student not found.");
+      }
+
+      // ==========================================
+      // 500 SERVER ERROR
+      // ==========================================
+      else if (status === 500) {
+        showStatusPopup(message || "Server error. Please try again later.");
+      }
+
+      // ==========================================
+      // NETWORK ERROR
+      // ==========================================
+      else if (!error.response) {
+        showStatusPopup(message || "Poor internet connection..");
+      }
+
+      // ==========================================
+      // OTHER ERROR
+      // ==========================================
+      else {
+        showStatusPopup(message || "Something went wrong. Please try again.");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!accepted) return;
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setShowFullscreenPopup(true);
+      }
     };
 
-    // TEST CODE HANDLER
-    const handleTestCodeChange = (event) => {
-        let value = event.target.value.toUpperCase();
-        value = value.replace(/[^A-Z0-9]/g, "");
-        setTestCode(value);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [accepted]);
+
+  useEffect(() => {
+    if (!accepted) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "F11") {
+        setShowFullscreenPopup(true);
+      }
     };
 
-    // START TEST
-    const handleStartTest = async () => {
+    window.addEventListener("keydown", handleKeyDown, true);
 
-        try {
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [accepted]);
 
-            // ==========================================
-            // GET STUDENT SESSION
-            // ==========================================
-
-            const session = getStudentSession();
-
-            if (!session?.user?.admissionNo) {
-                navigate("/studentlogin");
-
-                return;
-            }
-
-            const admissionNo =
-                session.user.admissionNo;
-
-            // ==========================================
-            // START EXAM
-            // ==========================================
-
-            const response = await startExam(
-                testCode,
-                admissionNo
-            );
-
-            // ==========================================
-            // SUCCESS
-            // ==========================================
-
-            if (response?.success) {
-
-                navigate("/exam/audiotest", {
-                    state: {
-                        ...response,
-                        admissionNo
-                    }
-                });
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "START EXAM FAILED:",
-                error
-            );
-
-            const status =
-                error.response?.status;
-
-            const message =
-                error.response?.data?.message;
-
-
-            // ==========================================
-            // 400 BAD REQUEST
-            // ==========================================
-
-            if (status === 400) {
-
-                showStatusPopup(
-                    message || "Invalid request. Please check the test code."
-                );
-
-            }
-
-
-            // ==========================================
-            // 403 FORBIDDEN
-            // ==========================================
-
-            else if (status === 403) {
-
-                showStatusPopup(
-                    message || "You have already taken this test."
-                );
-
-            }
-
-
-            // ==========================================
-            // 404 NOT FOUND
-            // ==========================================
-
-            else if (status === 404) {
-
-                showStatusPopup(
-                    message || "Student not found."
-                );
-
-            }
-
-
-            // ==========================================
-            // 500 SERVER ERROR
-            // ==========================================
-
-            else if (status === 500) {
-
-                showStatusPopup(
-                    message || "Server error. Please try again later."
-                );
-
-            }
-
-
-            // ==========================================
-            // NETWORK ERROR
-            // ==========================================
-
-            else if (!error.response) {
-
-                showStatusPopup(
-                    message || "Poor internet connection.."
-                );
-
-            }
-
-
-            // ==========================================
-            // OTHER ERROR
-            // ==========================================
-
-            else {
-
-                showStatusPopup(
-                    message || "Something went wrong. Please try again."
-                );
-
-            }
-
-        }
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F12") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
     };
 
-    useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown, true);
 
-        if (!accepted) return;
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, []);
 
-        const handleFullscreenChange = () => {
+  return (
+    <>
+      {showFullscreenPopup && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+          <div className="bg-white rounded-xl p-8 text-center shadow-2xl">
+            <h2 className="text-xl font-bold text-red-600">
+              Fullscreen Required
+            </h2>
 
-            if (!document.fullscreenElement) {
+            <p className="mt-3 text-gray-600">
+              You must return to fullscreen mode to continue.
+            </p>
 
-                setShowFullscreenPopup(true);
-            }
+            <button
+              type="button"
+              onClick={async () => {
+                const success = await enterFullscreen();
 
-        };
+                if (success) {
+                  setShowFullscreenPopup(false);
 
-        document.addEventListener(
-            "fullscreenchange",
-            handleFullscreenChange
-        );
-
-        return () => {
-            document.removeEventListener(
-                "fullscreenchange",
-                handleFullscreenChange
-            );
-        };
-
-    }, [accepted]);
-
-    useEffect(() => {
-
-        if (!accepted) return;
-
-        const handleKeyDown = (e) => {
-
-            if (e.key === "F11") {
-
-                setShowFullscreenPopup(true);
-
-            }
-
-        };
-
-        window.addEventListener(
-            "keydown",
-            handleKeyDown,
-            true
-        );
-
-        return () => {
-
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown,
-                true
-            );
-
-        };
-
-    }, [accepted]);
-
-    useEffect(() => {
-
-        const handleKeyDown = (e) => {
-
-            if (e.key === "F12") {
-
-                e.preventDefault();
-                e.stopPropagation();
-
-            }
-
-        };
-
-        window.addEventListener(
-            "keydown",
-            handleKeyDown,
-            true
-        );
-
-        return () => {
-
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown,
-                true
-            );
-
-        };
-
-    }, []);
-
-    return (
-        <>
-            {showFullscreenPopup && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
-
-                    <div className="bg-white rounded-xl p-8 text-center shadow-2xl">
-
-                        <h2 className="text-xl font-bold text-red-600">
-                            Fullscreen Required
-                        </h2>
-
-                        <p className="mt-3 text-gray-600">
-                            You must return to fullscreen mode to continue.
-                        </p>
-
-                        <button
-                            type="button"
-                            onClick={async () => {
-
-                                const success = await enterFullscreen();
-
-                                if (success) {
-                                    setShowFullscreenPopup(false);
-
-                                    setTimeout(() => {
-                                        testCodeRef.current?.focus();
-                                    }, 100);
-                                }
-
-                            }}
-                            className="mt-6 px-6 py-3 rounded-lg bg-[#800000] text-white font-semibold"
-                        >
-                            Return to Fullscreen
-                        </button>
-
-                    </div>
-
-                </div>
-            )}
-            {statusPopup.show && (
-                <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60">
-
-                    <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-8 text-center">
-
-                        {/* Icon */}
-                        <div
-                            className={`
+                  setTimeout(() => {
+                    testCodeRef.current?.focus();
+                  }, 100);
+                }
+              }}
+              className="mt-6 px-6 py-3 rounded-lg bg-[#800000] text-white font-semibold"
+            >
+              Return to Fullscreen
+            </button>
+          </div>
+        </div>
+      )}
+      {statusPopup.show && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-8 text-center">
+            {/* Icon */}
+            <div
+              className={`
                     mx-auto
                     w-14
                     h-14
@@ -332,61 +232,58 @@ export default function InstructionsPage() {
                     justify-center
                     text-2xl
                     font-bold
-                    ${statusPopup.type === "success"
-                                    ? "bg-green-100 text-green-600"
-                                    : "bg-red-100 text-red-600"
-                                }
+                    ${
+                      statusPopup.type === "success"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-red-100 text-red-600"
+                    }
                 `}
-                        >
-                            {statusPopup.type === "success" ? "✓" : "!"}
-                        </div>
+            >
+              {statusPopup.type === "success" ? "✓" : "!"}
+            </div>
 
-                        {/* Title */}
-                        <h2
-                            className={`
+            {/* Title */}
+            <h2
+              className={`
                     mt-4
                     text-xl
                     font-bold
-                    ${statusPopup.type === "success"
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }
+                    ${
+                      statusPopup.type === "success"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }
                 `}
-                        >
-                            {statusPopup.type === "success"
-                                ? "Success"
-                                : "Unable to Start Test"
-                            }
-                        </h2>
+            >
+              {statusPopup.type === "success"
+                ? "Success"
+                : "Unable to Start Test"}
+            </h2>
 
-                        {/* Message */}
-                        <p className="mt-3 text-gray-600">
-                            {statusPopup.message}
-                        </p>
+            {/* Message */}
+            <p className="mt-3 text-gray-600">{statusPopup.message}</p>
 
-                        {/* Close */}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setStatusPopup({
-                                    show: false,
-                                    type: "error",
-                                    message: ""
-                                });
-                            }}
-                            className="mt-6 px-7 py-2.5 rounded-lg bg-[#800000] text-white font-semibold hover:bg-[#600000]"
-                        >
-                            OK
-                        </button>
-
-                    </div>
-
-                </div>
-            )}
-            <div className="min-h-screen bg-gray-100 px-4 py-10">
-                {/* MAIN CONTAINER */}
-                <div
-                    className="
+            {/* Close */}
+            <button
+              type="button"
+              onClick={() => {
+                setStatusPopup({
+                  show: false,
+                  type: "error",
+                  message: "",
+                });
+              }}
+              className="mt-6 px-7 py-2.5 rounded-lg bg-[#800000] text-white font-semibold hover:bg-[#600000]"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="min-h-screen bg-gray-100 px-4 py-10">
+        {/* MAIN CONTAINER */}
+        <div
+          className="
                     max-w-5xl
                     mx-auto
                     bg-white
@@ -394,62 +291,62 @@ export default function InstructionsPage() {
                     shadow-md
                     overflow-hidden
                 "
-                >
-                    {/* Yellow Top Border */}
-                    <div className="h-2 bg-[#FDCC03]"></div>
-                    <div className="px-6 md:px-10 py-8">
-                        {/* TITLE */}
-                        <div className="mb-8">
-                            <h1
-                                className="
+        >
+          {/* Yellow Top Border */}
+          <div className="h-2 bg-[#FDCC03]"></div>
+          <div className="px-6 md:px-10 py-8">
+            {/* TITLE */}
+            <div className="mb-8">
+              <h1
+                className="
                                 text-3xl
                                 font-bold
                                 text-black
                             "
-                            >
-                                General Instructions
-                            </h1>
-                            <p className="text-gray-500 mt-2">
-                                Please read the following instructions carefully
-                                before proceeding to the assessment.
-                            </p>
-                        </div>
-                        {/* INSTRUCTION LIST */}
-                        <div className="space-y-5">
-                            <Instruction
-                                number="01"
-                                text="Use headphones or earphones throughout the assessment."
-                            />
-                            <Instruction
-                                number="02"
-                                text="Remain in a quiet and distraction-free environment."
-                            />
-                            <Instruction
-                                number="03"
-                                text="Listen carefully to each audio question before answering."
-                            />
-                            <Instruction
-                                number="04"
-                                text="Refreshing, switching tabs, or leaving the assessment will be considered malpractice."
-                            />
-                            <Instruction
-                                number="05"
-                                text="Maintain a stable internet connection throughout the assessment."
-                            />
-                            <Instruction
-                                number="06"
-                                text="The timer starts immediately when the assessment begins."
-                            />
-                            <Instruction
-                                number="07"
-                                text="Complete and submit all questions within the allotted time."
-                            />
-                        </div>
-                        {/* DIVIDER */}
-                        <div className="border-t border-gray-200 my-8"></div>
-                        {/* CONFIRMATION CHECKBOX */}
-                        <label
-                            className={`
+              >
+                General Instructions
+              </h1>
+              <p className="text-gray-500 mt-2">
+                Please read the following instructions carefully before
+                proceeding to the assessment.
+              </p>
+            </div>
+            {/* INSTRUCTION LIST */}
+            <div className="space-y-5">
+              <Instruction
+                number="01"
+                text="Use headphones or earphones throughout the assessment."
+              />
+              <Instruction
+                number="02"
+                text="Remain in a quiet and distraction-free environment."
+              />
+              <Instruction
+                number="03"
+                text="Listen carefully to each audio question before answering."
+              />
+              <Instruction
+                number="04"
+                text="Refreshing, switching tabs, or leaving the assessment will be considered malpractice."
+              />
+              <Instruction
+                number="05"
+                text="Maintain a stable internet connection throughout the assessment."
+              />
+              <Instruction
+                number="06"
+                text="The timer starts immediately when the assessment begins."
+              />
+              <Instruction
+                number="07"
+                text="Complete and submit all questions within the allotted time."
+              />
+            </div>
+            {/* DIVIDER */}
+            <div className="border-t border-gray-200 my-8"></div>
+            {/* CONFIRMATION CHECKBOX */}
+            <label
+              className={`
                             flex
                             items-center
                             gap-4
@@ -460,83 +357,80 @@ export default function InstructionsPage() {
                             cursor-pointer
                             transition-all
                             duration-300
-                            ${accepted
-                                    ? "border-[#FDCC03] bg-yellow-50"
-                                    : "border-gray-200 bg-gray-50 hover:border-[#FDCC03]"
-                                }
+                            ${
+                              accepted
+                                ? "border-[#FDCC03] bg-yellow-50"
+                                : "border-gray-200 bg-gray-50 hover:border-[#FDCC03]"
+                            }
                         `}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={accepted}
-                                onChange={async (e) => {
-                                    const checked = e.target.checked;
-                                    setAccepted(checked);
+            >
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={async (e) => {
+                  const checked = e.target.checked;
+                  setAccepted(checked);
 
-                                    if (checked) {
-                                        await enterFullscreen();
+                  if (checked) {
+                    await enterFullscreen();
 
-                                        setTimeout(() => {
-                                            testCodeRef.current?.focus();
-                                        }, 100);
-                                    }
-                                }}
-
-                                className="
+                    setTimeout(() => {
+                      testCodeRef.current?.focus();
+                    }, 100);
+                  }
+                }}
+                className="
                                 w-5
                                 h-5
                                 accent-[#FDCC03]
                                 cursor-pointer
                             "
-                            />
-                            <span className="font-medium text-gray-800">
-
-                                I have read and understood all the above
-                                instructions.
-
-                            </span>
-                        </label>
-                        {/* TEST CODE SECTION */}
-                        <div
-                            className={`
+              />
+              <span className="font-medium text-gray-800">
+                I have read and understood all the above instructions.
+              </span>
+            </label>
+            {/* TEST CODE SECTION */}
+            <div
+              className={`
                             overflow-hidden
                             transition-all
                             duration-500
                             ease-in-out
-                            ${accepted
-                                    ? "max-h-60 opacity-100 mt-8"
-                                    : "max-h-0 opacity-0 mt-0"
-                                }
+                            ${
+                              accepted
+                                ? "max-h-60 opacity-100 mt-8"
+                                : "max-h-0 opacity-0 mt-0"
+                            }
                         `}
-                        >
-                            {/* Test Code Label */}
-                            <label
-                                htmlFor="testCode"
-
-                                className="
+            >
+              {/* Test Code Label */}
+              <label
+                htmlFor="testCode"
+                className="
                                 block
                                 text-sm
                                 font-bold
                                 text-black
                                 mb-2
                             "
-                            >
-                                Enter Test Code
-                            </label>
-                            {/* Description */}
-                            <p className="text-sm text-gray-500 mb-3">
-                                Enter the test code provided by your faculty.
-                            </p>
-                            {/* Test Code Input */}
-                            <input
-                                id="testCode"
-                                ref={testCodeRef}
-                                type="text"
-                                value={testCode}
-                                onChange={handleTestCodeChange}
-                                maxLength={10}
-                                autoComplete="off"
-                                className={`
+              >
+                Enter Test Code
+              </label>
+              {/* Description */}
+              <p className="text-sm text-gray-500 mb-3">
+                Enter the test code provided by your faculty.
+              </p>
+              {/* Test Code Input */}
+              <input
+                id="testCode"
+                ref={testCodeRef}
+                type="text"
+                value={testCode}
+                onChange={handleTestCodeChange}
+                maxLength={10}
+                autoComplete="off"
+                className={`
                                 w-full
                                 md:w-[420px]
                                 px-4
@@ -551,24 +445,22 @@ export default function InstructionsPage() {
                                 outline-none
                                 transition-all
                                 duration-300
-                                ${testCode === ""
-                                        ? "border-gray-200 focus:border-[#FDCC03] focus:ring-4 focus:ring-yellow-100"
-                                        : isValidTestCode
-                                            ? "border-green-500 focus:ring-4 focus:ring-green-100"
-                                            : "border-red-400 focus:ring-4 focus:ring-red-100"
-                                    }
-                            `}
-                            />
-                        </div>
-                        {/* START TEST BUTTON */}
-                        <div className="flex justify-end mt-10">
-                            <button
-                                onClick={handleStartTest}
-                                disabled={
-                                    !accepted ||
-                                    !isValidTestCode
+                                ${
+                                  testCode === ""
+                                    ? "border-gray-200 focus:border-[#FDCC03] focus:ring-4 focus:ring-yellow-100"
+                                    : isValidTestCode
+                                      ? "border-green-500 focus:ring-4 focus:ring-green-100"
+                                      : "border-red-400 focus:ring-4 focus:ring-red-100"
                                 }
-                                className="
+                            `}
+              />
+            </div>
+            {/* START TEST BUTTON */}
+            <div className="flex justify-end mt-10">
+              <button
+                onClick={handleStartTest}
+                disabled={!accepted || !isValidTestCode}
+                className="
                                 px-8
                                 py-3
                                 rounded-lg
@@ -585,43 +477,35 @@ export default function InstructionsPage() {
                                 disabled:text-gray-500
                                 disabled:cursor-not-allowed
                             "
-                            >
-                                Start Test →
-                            </button>
-                        </div>
-                    </div>
-                </div>
+              >
+                Start Test →
+              </button>
             </div>
-        </>
-    );
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
-
-
-
-
 
 // =============================================
 // REUSABLE INSTRUCTION COMPONENT
 // =============================================
 
 function Instruction({ number, text }) {
-
-    return (
-
-        <div
-            className="
+  return (
+    <div
+      className="
                 flex
                 items-start
                 gap-4
                 group
             "
-        >
+    >
+      {/* Number */}
 
-
-            {/* Number */}
-
-            <div
-                className="
+      <div
+        className="
                     flex-shrink-0
                     w-10
                     h-10
@@ -633,18 +517,14 @@ function Instruction({ number, text }) {
                     text-black
                     font-bold
                 "
-            >
+      >
+        {number}
+      </div>
 
-                {number}
+      {/* Instruction Text */}
 
-            </div>
-
-
-
-            {/* Instruction Text */}
-
-            <div
-                className="
+      <div
+        className="
                     flex-1
                     min-h-10
                     flex
@@ -661,15 +541,9 @@ function Instruction({ number, text }) {
 
                     group-hover:border-[#FDCC03]
                 "
-            >
-
-                {text}
-
-            </div>
-
-
-        </div>
-
-    );
-
+      >
+        {text}
+      </div>
+    </div>
+  );
 }

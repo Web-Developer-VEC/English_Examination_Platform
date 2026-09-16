@@ -27,11 +27,18 @@ const generateExamReport = async (req, res) => {
       });
     }
 
-
     // ====================================================
     // CLEAN FILTERS
     // ====================================================
-    const { batch, department, section, cie, semester, academicYear, category } = data;
+    const {
+      batch,
+      department,
+      section,
+      cie,
+      semester,
+      academicYear,
+      category,
+    } = data;
 
     const cleanBatch =
       batch && typeof batch === "string" && batch.trim() !== ""
@@ -69,8 +76,6 @@ const generateExamReport = async (req, res) => {
 
     const cieValue = isCieReport ? cie.trim() : null;
 
-    console.log("isCieReport:", isCieReport);
-
     // ====================================================
     // GET DATABASE
     // ====================================================
@@ -107,7 +112,6 @@ const generateExamReport = async (req, res) => {
       })
       .toArray();
 
-
     if (studentRoster.length === 0) {
       return res.status(404).json({
         success: false,
@@ -139,7 +143,6 @@ const generateExamReport = async (req, res) => {
       scheduleFilter.cie = cieValue;
     }
 
-
     // ====================================================
     // FETCH TEST COLUMNS FROM "schedule"
     // ====================================================
@@ -151,9 +154,9 @@ const generateExamReport = async (req, res) => {
         testcode: 1,
         title: 1,
         questionSetId: 1,
+        inchargeStaff: 1,
       })
       .toArray();
-
 
     if (scheduleTests.length === 0) {
       return res.status(404).json({
@@ -214,10 +217,9 @@ const generateExamReport = async (req, res) => {
     if (cleanSec) {
       examFilter.section = cleanSec;
     }
-//     if (cleanCategory) {
-//   examFilter.category = cleanCategory;
-// }
-
+    //     if (cleanCategory) {
+    //   examFilter.category = cleanCategory;
+    // }
 
     // ====================================================
     // FETCH ALL EXAM ATTEMPTS FOR THESE TESTS
@@ -256,7 +258,10 @@ const generateExamReport = async (req, res) => {
       }
 
       const entry = studentTests.get(testKey);
-      const recordCategory = (record.category || "").toString().trim().toLowerCase();
+      const recordCategory = (record.category || "")
+        .toString()
+        .trim()
+        .toLowerCase();
 
       if (recordCategory === "retest") {
         entry.retest = record.obtainedMarks ?? 0;
@@ -265,13 +270,12 @@ const generateExamReport = async (req, res) => {
       }
     });
 
-
     // ====================================================
     // GENERATE TABLE HEADER
     // ====================================================
-    const extraHeaderCells = testColumns
-      .map((col) => `<th>${col.label}</th>`)
-      .join("")+'<th>Marks</th>';
+    const extraHeaderCells =
+      testColumns.map((col) => `<th>${col.label}</th>`).join("") +
+      "<th>Marks</th>";
 
     // ====================================================
     // GENERATE TABLE ROWS
@@ -279,7 +283,7 @@ const generateExamReport = async (req, res) => {
     const rows = studentRoster
       .map((student, index) => {
         const studentTests = examMap.get(student.admissionNo);
-let total = 0;
+        let total = 0;
         const marksCells = testColumns
           .map((col) => {
             const entry = studentTests
@@ -294,7 +298,7 @@ let total = 0;
                 markDisplay = entry.normal;
               }
             }
-            if(markDisplay!="AB") total+=markDisplay;
+            if (markDisplay != "AB") total += markDisplay;
 
             return `<td>${markDisplay}</td>`;
           })
@@ -306,7 +310,7 @@ let total = 0;
                         <td>${student.admissionNo || "-"}</td>
                         <td class="name">${student.name || "-"}</td>
                         ${marksCells}
-                        <td>${total=='AB' ? total: total+'/10' }</td>
+                        <td>${total == "AB" ? total : total + "/10"}</td>
                     </tr>
                 `;
       })
@@ -316,25 +320,9 @@ let total = 0;
     // FETCH STAFF (MENTOR) NAME FOR THIS CLASS
     // ====================================================
     let staffValue = "-";
-    const staffFilter = {};
 
-    if (cleanDept) staffFilter.department = cleanDept;
-    if (cleanSec) staffFilter.section = cleanSec;
-    if (cleanAcademicYear) staffFilter.academicYear = cleanAcademicYear;
-    if (cleanSem) staffFilter.semester = cleanSem;
-
-    const hasEnoughDetailsForStaff =
-      staffFilter.department && staffFilter.section;
-
-    if (hasEnoughDetailsForStaff) {
-
-      const staffMember = await db.collection("staff").findOne(staffFilter, {
-        projection: { _id: 0, name: 1 },
-      });
-
-      if (staffMember && staffMember.name) {
-        staffValue = staffMember.name;
-      }
+    if (scheduleTests.length > 0 && scheduleTests[0].inchargeStaff) {
+      staffValue = scheduleTests[0].inchargeStaff;
     }
 
     // ====================================================
@@ -388,7 +376,7 @@ let total = 0;
         ? category.trim().toLowerCase()
         : null;
 
-  const isUniversityReport = cleanCategory === "university";
+    const isUniversityReport = cleanCategory === "university";
 
     const signLeftLabel = isUniversityReport
       ? "Internal Examiner's Signature"
@@ -397,7 +385,7 @@ let total = 0;
     const signRightLabel = isUniversityReport
       ? "External Examiner's Signature"
       : "HOD's Signature";
-          // ====================================================
+    // ====================================================
     // REPLACE HTML PLACEHOLDERS
     // ====================================================
     html = html
@@ -418,7 +406,15 @@ let total = 0;
     // ====================================================
     // LAUNCH PUPPETEER
     // ====================================================
-    browser = await puppeteer.launch({ headless: true });
+     browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
     const page = await browser.newPage();
 
     await page.setContent(html, { waitUntil: "networkidle0" });
@@ -485,7 +481,10 @@ let total = 0;
       },
     });
   } catch (error) {
-    console.error("PDF generation error:", error);
+    console.error("PDF generation error:", {
+      error,
+      requestData: req.body,
+    });
 
     if (browser) {
       await browser.close();
@@ -494,7 +493,7 @@ let total = 0;
     return res.status(500).json({
       success: false,
       message: "Failed to generate examination report.",
-      error: error.message,
+      error: error.message || "Unexpected server error.",
     });
   }
 };

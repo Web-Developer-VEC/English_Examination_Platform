@@ -26,6 +26,7 @@ const {
 const {
   updateStaff,
   getStaff,
+  deleteStaff,
 } = require("../../controllers/admin/staff.controller");
 const {
   updateAcademicYear,
@@ -80,6 +81,7 @@ router.post(
 );
 router.get("/getstaff", roleByAccess(["admin"]), getStaff);
 router.post("/updatestaff", roleByAccess(["admin"]), updateStaff);
+router.post("/deletestaff", roleByAccess(["admin"]), deleteStaff);
 router.use("/schedule", scheduleRoutes);
 
 module.exports = router;
