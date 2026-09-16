@@ -267,6 +267,7 @@ export default function AudioTest() {
     setIsSubmitting(true);
     const payload = {
       admissionNo: session.user.admissionNo,
+      testId: examData.testId,
     };
     try {
       const response = await submitExam(payload);
