@@ -54,14 +54,14 @@ const generateExamReport = async (req, res) => {
         : null;
     const cleanAcademicYear =
       academicYear &&
-      typeof academicYear === "string" &&
-      academicYear.trim() !== ""
+        typeof academicYear === "string" &&
+        academicYear.trim() !== ""
         ? academicYear.trim()
         : null;
     const cleanSem =
       semester &&
-      typeof semester === "string" &&
-      ["odd", "even"].includes(semester.trim().toLowerCase())
+        typeof semester === "string" &&
+        ["odd", "even"].includes(semester.trim().toLowerCase())
         ? semester.trim().toLowerCase()
         : null;
 
@@ -406,7 +406,7 @@ const generateExamReport = async (req, res) => {
     // ====================================================
     // LAUNCH PUPPETEER
     // ====================================================
-     browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: "new",
       args: [
         "--no-sandbox",
@@ -422,16 +422,34 @@ const generateExamReport = async (req, res) => {
     // ====================================================
     // GENERATE PDF
     // ====================================================
-    const pdf = await page.pdf({
+    await page.pdf({
       format: "A4",
       landscape: true,
-      printBackground: true,
+
       margin: {
         top: "15mm",
-        bottom: "15mm",
-        left: "10mm",
-        right: "10mm",
+        right: "15mm",
+        bottom: "20mm",
+        left: "15mm",
       },
+
+      displayHeaderFooter: true,
+
+      headerTemplate: `<div></div>`,
+
+      footerTemplate: `
+    <div style="
+      width: 100%;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      color: #222;
+      text-align: right;
+      padding-right: 15mm;
+    ">
+      Page <span class="pageNumber"></span>
+      of <span class="totalPages"></span>
+    </div>
+  `,
     });
 
     await browser.close();

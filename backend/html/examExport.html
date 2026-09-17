@@ -6,7 +6,7 @@
     <style>
       @page {
         size: A4 landscape;
-        margin: 15mm;
+        margin: 15mm 15mm 20mm 15mm;
       }
 
       * {
@@ -129,14 +129,6 @@
         font-size: 12px;
         font-weight: bold;
       }
-
-      .page-number {
-        position: fixed;
-        bottom: 5mm;
-        right: 15mm;
-        font-size: 10px;
-        color: #222;
-      }
     </style>
   </head>
 
@@ -211,10 +203,6 @@
       <div class="signature-box">
         <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
       </div>
-    </div>
-    <div class="page-number">
-      Page <span class="pageNumber"></span> of
-      <span class="totalPages"></span>
     </div>
   </body>
 </html>
