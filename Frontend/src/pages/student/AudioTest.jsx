@@ -69,7 +69,15 @@ export default function AudioTest() {
       return false;
     }
   };
+useEffect(() => {
+    if (showWarning) {
+        const timer = setTimeout(() => {
+            setShowWarning(false);
+        }, 3000);
 
+        return () => clearTimeout(timer);
+    }
+}, [showWarning]);
   const handleViolation = async (reason) => {
     // Prevent multiple requests from the same/rapid events
     if (malpracticeReportingRef.current) {
@@ -461,18 +469,6 @@ export default function AudioTest() {
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && !examClosedRef.current) {
-        alert("Exam window was moved to the background.");
-      }
-    };
-
-    const handleWindowBlur = () => {
-      if (!examClosedRef.current) {
-        alert("Exam window lost focus.");
-      }
-    };
-
     // ==========================================
     // RIGHT CLICK
     // ==========================================
@@ -480,7 +476,8 @@ export default function AudioTest() {
     const contextMenuHandler = (e) => {
       e.preventDefault();
 
-      alert("Right click detected.");
+      setWarningMessage("Right click detected.");
+      setShowWarning(true)
     };
 
     // ==========================================
@@ -506,7 +503,9 @@ export default function AudioTest() {
       if (mediaKeys.includes(e.key) || mediaKeys.includes(code)) {
         e.preventDefault();
         e.stopPropagation();
-        alert("Media key pressed.");
+        setWarningMessage("Media key pressed.");
+      setShowWarning(true)
+
         return;
       }
 
@@ -519,7 +518,8 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        alert("Print Screen key pressed.");
+        setWarningMessage("Print Screen key pressed.");
+      setShowWarning(true)
 
         return;
       }
@@ -528,7 +528,8 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        alert("Windows key pressed.");
+        setWarningMessage("Windows key pressed.");
+      setShowWarning(true)
 
         return;
       }
@@ -542,7 +543,8 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        alert("Shift key pressed.");
+        setWarningMessage("Shift key pressed.");
+      setShowWarning(true)
 
         return;
       }
@@ -567,7 +569,7 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        alert(`${e.key} key pressed.`);
+        showWarning(`${e.key} key pressed.`);
 
         return;
       }
@@ -591,12 +593,13 @@ export default function AudioTest() {
       }
     };
 
+    // =
     // ==========================================
     // PRINT
     // ==========================================
 
     const beforePrintHandler = () => {
-      alert("Print action detected.");
+      showWarning("Print action detected.");
     };
 
     // ==========================================
@@ -605,17 +608,11 @@ export default function AudioTest() {
 
     document.addEventListener("visibilitychange", visibilityHandler);
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
     document.addEventListener("contextmenu", contextMenuHandler);
 
     window.addEventListener("keydown", keyHandler, true);
 
-    window.addEventListener("keyup", keyUpHandler, true);
-
     window.addEventListener("beforeprint", beforePrintHandler);
-
-    window.addEventListener("blur", handleWindowBlur);
 
     // ==========================================
     // CLEANUP
@@ -624,15 +621,9 @@ export default function AudioTest() {
     return () => {
       document.removeEventListener("visibilitychange", visibilityHandler);
 
-      window.removeEventListener("blur", handleWindowBlur);
-
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-
       document.removeEventListener("contextmenu", contextMenuHandler);
 
       window.removeEventListener("keydown", keyHandler, true);
-
-      window.removeEventListener("keyup", keyUpHandler, true);
 
       window.removeEventListener("beforeprint", beforePrintHandler);
     };
