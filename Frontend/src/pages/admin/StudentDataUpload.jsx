@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import vecLogo from "../../assets/images/vec-logo.png";
+import collegeLogo from "../../assets/logo/college-logo.png";
 import {
   UserRound,
   CloudUpload,
@@ -61,7 +65,7 @@ const normalizeStudent = (student = {}) => ({
   admissionNo: getValue(student, ["admissionNo"]),
   email: getValue(student, ["email"]),
   phone: getValue(student, ["phone"]),
-  department: getValue(student, ["department","branch"]),
+  department: getValue(student, ["department", "branch"]),
   year: getValue(student, ["year"]),
   section: getValue(student, ["section"]),
   batch: getValue(student, ["batch"]),
@@ -150,6 +154,22 @@ const getErrorMessage = (data, fallback) =>
   data?.detail ||
   data?.errors?.[0]?.message ||
   fallback;
+
+const imageToDataUrl = (imageSrc) => {
+  return fetch(imageSrc)
+    .then((response) => response.blob())
+    .then(
+      (blob) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+
+          reader.readAsDataURL(blob);
+        }),
+    );
+};
 
 const StudentDataUpload = () => {
   const fileInputRef = useRef(null);
@@ -612,6 +632,319 @@ const StudentDataUpload = () => {
     setExistingMessageType("");
   };
 
+  const handleDownloadStudentPDF = async () => {
+    if (!selectedBatch || !selectedDepartment || !selectedSection) {
+      showExistingError(
+        "Please select batch, branch and section before downloading."
+      );
+      return;
+    }
+
+    if (!filteredStudents.length) {
+      showExistingError("There are no students to generate the PDF.");
+      return;
+    }
+
+    try {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // ==========================================
+      // Convert logo to data URL
+      // ==========================================
+
+      const vecLogoData = await imageToDataUrl(vecLogo);
+      const collegeLogoData = await imageToDataUrl(collegeLogo);
+
+      // ==========================================
+      // Page dimensions
+      // ==========================================
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // ==========================================
+      // Header logos
+      // ==========================================
+
+      // Left logo - VEC
+      doc.addImage(
+        vecLogoData,
+        "PNG",
+        18,
+        10,
+        30,
+        30
+      );
+
+      // Right logo - College
+      doc.addImage(
+        collegeLogoData,
+        "PNG",
+        pageWidth - 48,
+        10,
+        30,
+        30
+      );
+
+      // ==========================================
+      // Header text
+      // ==========================================
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+
+      doc.text(
+        "Velammal Engineering College",
+        pageWidth / 2,
+        18,
+        { align: "center" }
+      );
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+
+      doc.text(
+        "(An Autonomous Institution, Affiliated to Anna University, Chennai)",
+        pageWidth / 2,
+        25,
+        { align: "center" }
+      );
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      doc.text(
+        "Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066",
+        pageWidth / 2,
+        32,
+        { align: "center" }
+      );
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+
+      doc.text(
+        "English Department - Student Data Report",
+        pageWidth / 2,
+        41,
+        { align: "center" }
+      );
+
+      // ==========================================
+      // Filters
+      // ==========================================
+
+      const filterY = 51;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+
+      doc.text("Batch:", 15, filterY);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(String(selectedBatch), 28, filterY);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Branch:", 75, filterY);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(String(selectedDepartment), 91, filterY);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Section:", 190, filterY);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(String(selectedSection), 207, filterY);
+
+      // ==========================================
+      // Table data
+      // ==========================================
+
+      const tableRows = filteredStudents.map((student, index) => [
+        index + 1,
+        student.name || "-",
+        student.registerNo || "-",
+        student.admissionNo || "-",
+        student.email || "-",
+        student.phone || "-",
+        student.department || selectedDepartment || "-",
+        student.year || "-",
+        student.section || selectedSection || "-",
+        student.batch || selectedBatch || "-",
+        student.dob || "-",
+      ]);
+
+      // ==========================================
+      // Student table
+      // ==========================================
+
+      autoTable(doc, {
+        startY: 57,
+
+        head: [[
+          "S.No",
+          "Name",
+          "Register No",
+          "Admission No",
+          "Email",
+          "Phone",
+          "Branch",
+          "Year",
+          "Section",
+          "Batch",
+          "DOB",
+        ]],
+
+        body: tableRows,
+
+        theme: "grid",
+
+        styles: {
+          font: "helvetica",
+          fontSize: 7,
+          textColor: [34, 34, 34],
+          lineColor: [80, 80, 80],
+          lineWidth: 0.2,
+          cellPadding: 2.5,
+          valign: "middle",
+          halign: "center",
+        },
+
+        headStyles: {
+          fillColor: [238, 238, 238],
+          textColor: [34, 34, 34],
+          fontStyle: "bold",
+          fontSize: 7,
+          halign: "center",
+        },
+
+        columnStyles: {
+          0: {
+            cellWidth: 10,
+          },
+
+          1: {
+            cellWidth: 28,
+            halign: "left",
+          },
+
+          2: {
+            cellWidth: 25,
+          },
+
+          3: {
+            cellWidth: 27,
+          },
+
+          4: {
+            cellWidth: 40,
+            halign: "left",
+          },
+
+          5: {
+            cellWidth: 22,
+          },
+
+          6: {
+            cellWidth: 48,
+            halign: "left",
+          },
+
+          7: {
+            cellWidth: 12,
+          },
+
+          8: {
+            cellWidth: 15,
+          },
+
+          9: {
+            cellWidth: 24,
+          },
+
+          10: {
+            cellWidth: 24,
+          },
+        },
+
+        margin: {
+          left: 10,
+          right: 10,
+        },
+      });
+
+      // ==========================================
+      // Summary
+      // ==========================================
+
+      const finalY = doc.lastAutoTable.finalY + 10;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+
+      doc.text(
+        `Total Students: ${filteredStudents.length}`,
+        10,
+        finalY
+      );
+
+      // ==========================================
+      // Footer + Page Number
+      // ==========================================
+
+      const totalPages = doc.getNumberOfPages();
+
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+        doc.setPage(pageNumber);
+
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+
+        // Footer text
+        doc.text(
+          "English Examination Portal",
+          pageWidth / 2,
+          pageHeight - 8,
+          { align: "center" }
+        );
+
+        // Page number
+        doc.text(
+          `Page ${pageNumber} of ${totalPages}`,
+          pageWidth - 15,
+          pageHeight - 8,
+          { align: "right" }
+        );
+      }
+
+      // ==========================================
+      // Open PDF in new browser tab
+      // ==========================================
+
+      const pdfBlob = doc.output("blob");
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      window.open(pdfUrl, "_blank");
+
+      // Release object URL later
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+      }, 60000);
+
+    } catch (error) {
+      console.error("Student PDF generation error:", error);
+
+      showExistingError(
+        "Unable to generate student PDF."
+      );
+    }
+  };
+
   return (
     <div className="student-upload-page">
       <div className="student-upload-container">
@@ -918,6 +1251,21 @@ const StudentDataUpload = () => {
                         size={17}
                         className={loadingStudents ? "refresh-spin" : ""}
                       />
+                    </button>
+                    <button
+                      type="button"
+                      className="download-students-button"
+                      onClick={handleDownloadStudentPDF}
+                      disabled={
+                        loadingStudents ||
+                        !selectedBatch ||
+                        !selectedDepartment ||
+                        !selectedSection ||
+                        filteredStudents.length === 0
+                      }
+                      title="Download Student PDF"
+                    >
+                      <Download size={17} />
                     </button>
                   </div>
                 </div>

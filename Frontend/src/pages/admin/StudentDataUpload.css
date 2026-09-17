@@ -2395,3 +2395,41 @@
   outline: 2px solid #800000;
   outline-offset: 2px;
 }
+.download-students-button {
+  width: 40px;
+  height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #800000;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.download-students-button:hover:not(:disabled) {
+  background: #fff8dc;
+  border-color: #f5b301;
+  color: #800000;
+  transform: translateY(-1px);
+}
+
+.download-students-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.download-students-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

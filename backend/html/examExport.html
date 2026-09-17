@@ -1,229 +1,220 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
     <style>
-        @page {
-            size: A4 landscape;
-            margin: 15mm;
-        }
+      @page {
+        size: A4 landscape;
+        margin: 15mm;
+      }
 
-        * {
-            box-sizing: border-box;
-        }
+      * {
+        box-sizing: border-box;
+      }
 
-        html, body {
-            height: 100%;
-        }
+      html,
+      body {
+        height: 100%;
+      }
 
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            color: #222;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        color: #222;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
 
-        .header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            text-align: left;
-            margin-bottom: 20px;
-        }
+      .header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        text-align: left;
+        margin-bottom: 20px;
+      }
 
-        .logo {
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-            flex-shrink: 0;
-        }
+      .logo {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
 
-        .header-text {
-            text-align: center;
-        }
+      .header-text {
+        text-align: center;
+      }
 
-        .header-text h1 {
-            margin: 0;
-            font-size: 24px;
-        }
+      .header-text h1 {
+        margin: 0;
+        font-size: 24px;
+      }
 
-        .header-text h4 {
-            margin: 4px 0;
-            font-weight: normal;
-        }
+      .header-text h4 {
+        margin: 4px 0;
+        font-weight: normal;
+      }
 
-        .header-text h2 {
-            margin: 6px 0;
-            font-size: 18px;
-        }
+      .header-text h2 {
+        margin: 6px 0;
+        font-size: 18px;
+      }
 
-        .filters {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
+      .filters {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 20px;
+        font-size: 13px;
+      }
 
-        .filter-item {
-            font-weight: bold;
-        }
+      .filter-item {
+        font-weight: bold;
+      }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
 
-        th {
-            background: #eeeeee;
-            font-weight: bold;
-        }
+      th {
+        background: #eeeeee;
+        font-weight: bold;
+      }
 
-        th,
-        td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: center;
-            font-size: 12px;
-        }
+      th,
+      td {
+        border: 1px solid #333;
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+      }
 
-        td.name {
-            text-align: left;
-        }
+      td.name {
+        text-align: left;
+      }
 
-        .summary {
-            margin-top: 20px;
-            font-size: 13px;
-        }
+      .summary {
+        margin-top: 20px;
+        font-size: 13px;
+      }
 
-        /* ==========================
+      /* ==========================
            SIGNATURE BLOCK
            ========================== */
-        .signature-block {
-            display: flex;
-            justify-content: space-between;
-            margin-top: auto;
-            padding-top: 60px;
-        }
+      .signature-block {
+        display: flex;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 60px;
+      }
 
-        .signature-box {
-            width: 220px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-        }
+      .signature-box {
+        width: 220px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+      }
 
-        .signature-box .sign-line {
-            border-top: 1px solid #333;
-            height: 40px;
-        }
+      .signature-box .sign-line {
+        border-top: 1px solid #333;
+        height: 40px;
+      }
 
-        .signature-box .sign-label {
-            padding: 10px;
-            border-top: 1px solid black;
-            font-size: 12px;
-            font-weight: bold;
-        }
+      .signature-box .sign-label {
+        padding: 10px;
+        border-top: 1px solid black;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .page-number {
+        position: fixed;
+        bottom: 5mm;
+        right: 15mm;
+        font-size: 10px;
+        color: #222;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <div class="header">
+      <img class="logo" src="{{LOGO}}" alt="College Logo" />
 
-        <img
-            class="logo"
-            src="{{LOGO}}"
-            alt="College Logo"
-        >
-
-        <div class="header-text">
-            <h1>Velammal Engineering College</h1>
-            <h4><i>(An Autonomous Institution, Affiliated to Anna University, Chennai)</i></h4>
-            <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
-            <h2>English Department - Examination Report</h2>
-        </div>
-
+      <div class="header-text">
+        <h1>Velammal Engineering College</h1>
+        <h4>
+          <i
+            >(An Autonomous Institution, Affiliated to Anna University,
+            Chennai)</i
+          >
+        </h4>
+        <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
+        <h2>English Department - Examination Report</h2>
+      </div>
     </div>
-
 
     <div class="filters">
+      <div>
+        <span class="filter-item">Batch:</span>
+        {{BATCH}}
+      </div>
 
-        <div>
-            <span class="filter-item">Batch:</span>
-            {{BATCH}}
-        </div>
+      <div>
+        <span class="filter-item">Branch:</span>
+        {{DEPARTMENT}}
+      </div>
 
+      <div>
+        <span class="filter-item">Section:</span>
+        {{SECTION}}
+      </div>
 
-        <div>
-            <span class="filter-item">Branch:</span>
-            {{DEPARTMENT}}
-        </div>
-
-        <div>
-            <span class="filter-item">Section:</span>
-            {{SECTION}}
-        </div>
-
-        <div>
-            <span class="filter-item">CIE:</span>
-            {{CIE}}
-        </div>
-        <div>
-            <span class="filter-item">Faculty Incharge:</span>
-            {{STAFF}}
-        </div>
-
+      <div>
+        <span class="filter-item">CIE:</span>
+        {{CIE}}
+      </div>
+      <div>
+        <span class="filter-item">Faculty Incharge:</span>
+        {{STAFF}}
+      </div>
     </div>
-
 
     <table>
+      <thead>
+        <tr>
+          <th>S.No</th>
+          <th>Admission No</th>
+          <th>Name</th>
+          {{MARKS_HEADERS}}
+        </tr>
+      </thead>
 
-        <thead>
-
-            <tr>
-                <th>S.No</th>
-                <th>Admission No</th>
-                <th>Name</th>
-                {{MARKS_HEADERS}}
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-            {{ROWS}}
-
-        </tbody>
-
+      <tbody>
+        {{ROWS}}
+      </tbody>
     </table>
 
-
     <div class="summary">
-
-        <strong>Total Students:</strong>
-        {{TOTAL_STUDENTS}}
-
+      <strong>Total Students:</strong>
+      {{TOTAL_STUDENTS}}
     </div>
-
 
     <div class="signature-block">
+      <div class="signature-box">
+        <div class="sign-label">{{SIGN_LEFT_LABEL}}</div>
+      </div>
 
-        <div class="signature-box">
-            <div class="sign-label">{{SIGN_LEFT_LABEL}}</div>
-        </div>
-
-        <div class="signature-box">
-            <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
-        </div>
-
+      <div class="signature-box">
+        <div class="sign-label">{{SIGN_RIGHT_LABEL}}</div>
+      </div>
     </div>
-
-</body>
-
+    <div class="page-number">
+      Page <span class="pageNumber"></span> of
+      <span class="totalPages"></span>
+    </div>
+  </body>
 </html>
