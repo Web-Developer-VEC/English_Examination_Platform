@@ -43,6 +43,7 @@ const StudentDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [firstLogin, setFirstLogin] = useState(false);
+  const [regEdit, setregEdit] = useState(false);
 
   // ============================================================
   // TEST RESULTS
@@ -277,6 +278,8 @@ const StudentDashboard = () => {
             result.student?.firstlogin === true ||
             result.student?.firstLogin === true,
         );
+        setregEdit( result.student?.studentEditEnabled === true)
+
 
         // Exams: `id` must come from the backend's unique `examId`,
         // not `questionCode` — multiple attempts (normal + retest)
@@ -447,7 +450,36 @@ const StudentDashboard = () => {
   // MAIN DASHBOARD
   // ============================================================
 
-  return (
+  return (<>
+    <style>{`
+  .student-sidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .student-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .student-sidebar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 9999px;
+  }
+
+  .student-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  .student-sidebar::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .student-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+`}</style>
     <div className="w-full h-[calc(100dvh-142px)] bg-slate-50 p-6 font-sans flex flex-col overflow-hidden box-border min-h-0">
       {/* ========================================================
           HEADER
@@ -493,7 +525,7 @@ const StudentDashboard = () => {
             STUDENT PROFILE (SIDEBAR)
         ====================================================== */}
 
-        <div className="w-1/4 flex flex-col bg-white rounded-xl shadow-sm p-6 border border-gray-100 min-h-0 overflow-hidden">
+        <div className="student-sidebar w-1/4 flex flex-col bg-white rounded-xl shadow-sm p-6 border border-gray-100 min-h-0 overflow-y-auto">
           <div className="flex-none flex flex-col items-center text-center gap-3 mb-6 pb-5 border-b border-gray-100">
             <div className="w-14 h-14 shrink-0 bg-yellow-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm text-[#800000]">
               <span className="text-2xl font-bold">
@@ -755,7 +787,7 @@ const StudentDashboard = () => {
                   name="registerNo"
                   value={editForm?.registerNo || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving ||!regEdit}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                 />
               </div>
@@ -923,6 +955,7 @@ const StudentDashboard = () => {
         pauseOnHover
       />
     </div>
+    </>
   );
 };
 

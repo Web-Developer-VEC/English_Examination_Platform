@@ -32,6 +32,22 @@ const getformdata = async (req, res) => {
       })
       .toArray();
 
+    const genderOrder = {
+      Female: 1,
+      Male: 2,
+      Unknown: 3,
+    };
+
+    students.sort((a, b) => {
+      const genderA = genderOrder[a.gender] || 3;
+      const genderB = genderOrder[b.gender] || 3;
+
+      if (genderA !== genderB) {
+        return genderA - genderB;
+      }
+
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
     const groupMap = new Map();
 
     students
