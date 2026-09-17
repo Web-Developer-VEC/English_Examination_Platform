@@ -463,13 +463,13 @@ export default function AudioTest() {
 
     const handleVisibilityChange = () => {
       if (document.hidden && !examClosedRef.current) {
-        handleViolation("Exam window was moved to the background.");
+        alert("Exam window was moved to the background.");
       }
     };
 
     const handleWindowBlur = () => {
       if (!examClosedRef.current) {
-        handleViolation("Exam window lost focus.");
+        alert("Exam window lost focus.");
       }
     };
 
@@ -480,7 +480,7 @@ export default function AudioTest() {
     const contextMenuHandler = (e) => {
       e.preventDefault();
 
-      handleViolation("Right click detected.");
+      alert("Right click detected.");
     };
 
     // ==========================================
@@ -506,7 +506,7 @@ export default function AudioTest() {
       if (mediaKeys.includes(e.key) || mediaKeys.includes(code)) {
         e.preventDefault();
         e.stopPropagation();
-        handleViolation("Media key pressed.");
+        alert("Media key pressed.");
         return;
       }
 
@@ -519,7 +519,7 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        handleViolation("Print Screen key pressed.");
+        alert("Print Screen key pressed.");
 
         return;
       }
@@ -528,21 +528,7 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        handleViolation("Windows key pressed.");
-
-        return;
-      }
-
-      // ==========================================
-      // CTRL KEY
-      // VIOLATION
-      // ==========================================
-
-      if (e.key === "Control") {
-        e.preventDefault();
-        e.stopPropagation();
-
-        handleViolation("Ctrl key pressed.");
+        alert("Windows key pressed.");
 
         return;
       }
@@ -556,7 +542,7 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        handleViolation("Shift key pressed.");
+        alert("Shift key pressed.");
 
         return;
       }
@@ -581,7 +567,7 @@ export default function AudioTest() {
         e.preventDefault();
         e.stopPropagation();
 
-        handleViolation(`${e.key} key pressed.`);
+        alert(`${e.key} key pressed.`);
 
         return;
       }
@@ -604,30 +590,13 @@ export default function AudioTest() {
         return;
       }
     };
-    // ==========================================
-    // KEY UP
-    // ==========================================
 
-    const keyUpHandler = (e) => {
-      const mediaKeys = [
-        "MediaPlayPause",
-        "MediaTrackNext",
-        "MediaTrackPrevious",
-        "MediaStop",
-      ];
-
-      if (mediaKeys.includes(e.key) || mediaKeys.includes(e.code)) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleViolation("Media key pressed.");
-      }
-    };
     // ==========================================
     // PRINT
     // ==========================================
 
     const beforePrintHandler = () => {
-      handleViolation("Print action detected.");
+      alert("Print action detected.");
     };
 
     // ==========================================

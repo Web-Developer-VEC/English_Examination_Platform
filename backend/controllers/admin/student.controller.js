@@ -252,8 +252,49 @@ const getStudentByUsername = async (req, res) => {
   }
 };
 
+// deleteStudent by admin/staff
+const deleteStudent = async (req, res) => {
+  try {
+    const { admissionNo } = req.body;
+
+    if (!admissionNo || !admissionNo.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Admission number is required.",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("students").deleteOne({
+      admissionNo: admissionNo.trim(),
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Student ${admissionNo.trim()} deleted successfully.`,
+    });
+  } catch (error) {
+    console.error("DELETE STUDENT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete student.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
+};
+
 module.exports = {
   studentsUpload,
   updateStudent,
   getStudentByUsername,
+  deleteStudent
 };

@@ -257,7 +257,7 @@ const getScheduledExams = async (req, res) => {
 
 const getStudentsByDepartmentAndBatch = async (req, res) => {
   try {
-    const { department, batch } = req.body;
+    const { department, batch, section } = req.body;
 
     // ==========================================
     // Validate input
@@ -277,6 +277,13 @@ const getStudentsByDepartmentAndBatch = async (req, res) => {
       });
     }
 
+    if (!section || !section.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Section is required",
+      });
+    }
+
     const db = getDB();
 
     // ==========================================
@@ -288,9 +295,9 @@ const getStudentsByDepartmentAndBatch = async (req, res) => {
       .find({
         department: department.trim(),
         batch: batch.trim(),
+        section: section.trim(),
       })
       .sort({
-        section: 1,
         name: 1,
       })
       .toArray();

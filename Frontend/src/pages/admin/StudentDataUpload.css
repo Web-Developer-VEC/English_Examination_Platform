@@ -2350,3 +2350,48 @@
     transform: scaleX(0);
   }
 }
+.dob-action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 130px;
+}
+
+.delete-student-button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+
+  background: #fff5f5;
+  color: #dc2626;
+
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.delete-student-button:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.delete-student-button:active {
+  transform: translateY(0);
+}
+
+.delete-student-button:focus-visible {
+  outline: 2px solid #800000;
+  outline-offset: 2px;
+}
