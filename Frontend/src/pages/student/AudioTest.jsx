@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  shuffleQuestions,
   shuffleOptions,
   remainingPlays,
   isAudioLocked,
@@ -69,15 +70,15 @@ export default function AudioTest() {
       return false;
     }
   };
-useEffect(() => {
+  useEffect(() => {
     if (showWarning) {
-        const timer = setTimeout(() => {
-            setShowWarning(false);
-        }, 3000);
+      const timer = setTimeout(() => {
+        setShowWarning(false);
+      }, 3000);
 
-        return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
     }
-}, [showWarning]);
+  }, [showWarning]);
   const handleViolation = async (reason) => {
     // Prevent multiple requests from the same/rapid events
     if (malpracticeReportingRef.current) {
@@ -370,8 +371,8 @@ useEffect(() => {
 
     const saved = getTestState(currentAdmissionNo, currentTestId);
 
-    if (saved) {
-      setQuestions(saved.questions || []);
+    if (saved && Array.isArray(saved.questions) && saved.questions.length > 0) {
+      setQuestions(saved.questions);
 
       setAnswers(saved.answers || {});
 
@@ -388,27 +389,59 @@ useEffect(() => {
     // CREATE QUESTIONS FOR THIS TEST
     // ==========================================
 
-    const finalQuestions = examData.questions.map((question) => {
-      const optionArray = Object.entries(question.options).map(
-        ([key, value]) => ({
+    const rawQuestions = Array.isArray(examData.questions)
+      ? examData.questions
+      : Array.isArray(examData?.data?.questions)
+        ? examData.data.questions
+        : [];
+
+    const finalQuestions = rawQuestions.map((question, qIdx) => {
+      let optionArray = [];
+      if (Array.isArray(question.options)) {
+        optionArray = question.options.map((opt, i) => {
+          if (typeof opt === "object" && opt !== null) {
+            return {
+              key: opt.key || String.fromCharCode(65 + i),
+              value: opt.value || opt.text || String(opt),
+            };
+          }
+          return {
+            key: String.fromCharCode(65 + i),
+            value: String(opt),
+          };
+        });
+      } else if (question.options && typeof question.options === "object") {
+        optionArray = Object.entries(question.options).map(([key, value]) => ({
           key,
-          value,
-        }),
-      );
+          value: String(value),
+        }));
+      }
 
       const questionData = {
-        id: question.questionNo,
-        question: question.question,
+        id: question.id ?? question.questionNo ?? qIdx + 1,
+        question: question.question || question.questionText || "",
         options: optionArray,
       };
 
       return shuffleOptions(questionData);
     });
 
-    setQuestions(finalQuestions);
+    const shuffledQuestions = shuffleQuestions(finalQuestions);
 
-    // New student/test = no answers
-    setAnswers({});
+    setQuestions(shuffledQuestions);
+
+    // Restore server answers if available (for resumed exams)
+    const initialAnswers = {};
+    if (Array.isArray(examData?.savedAnswers) && examData.savedAnswers.length > 0) {
+      examData.savedAnswers.forEach((item) => {
+        if (item && item.questionNo != null) {
+          initialAnswers[item.questionNo] = item.studentAnswer;
+        }
+      });
+      setIsRestored(true);
+    }
+
+    setAnswers(initialAnswers);
 
     setPlayCount(0);
 
@@ -416,7 +449,7 @@ useEffect(() => {
   }, [examData, navigate]);
 
   useEffect(() => {
-    if (questions.length === 0 || !admissionNo || !testId) {
+    if (!questions || questions.length === 0 || !admissionNo || !testId) {
       return;
     }
 
@@ -431,13 +464,14 @@ useEffect(() => {
       testId,
     );
   }, [questions, answers, playCount, currentTime, admissionNo, testId]);
+
   useEffect(() => {
-    if (!admissionNo || !testId) {
+    if (!questions || questions.length === 0 || !admissionNo || !testId) {
       return;
     }
 
     const interval = setInterval(() => {
-      if (!audioRef.current) {
+      if (!audioRef.current || !questions || questions.length === 0) {
         return;
       }
 
@@ -453,9 +487,7 @@ useEffect(() => {
       );
     }, 1000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [questions, answers, playCount, admissionNo, testId]);
 
   useEffect(() => {
@@ -504,7 +536,7 @@ useEffect(() => {
         e.preventDefault();
         e.stopPropagation();
         setWarningMessage("Media key pressed.");
-      setShowWarning(true)
+        setShowWarning(true)
 
         return;
       }
@@ -519,7 +551,7 @@ useEffect(() => {
         e.stopPropagation();
 
         setWarningMessage("Print Screen key pressed.");
-      setShowWarning(true)
+        setShowWarning(true)
 
         return;
       }
@@ -529,7 +561,7 @@ useEffect(() => {
         e.stopPropagation();
 
         setWarningMessage("Windows key pressed.");
-      setShowWarning(true)
+        setShowWarning(true)
 
         return;
       }
@@ -544,7 +576,7 @@ useEffect(() => {
         e.stopPropagation();
 
         setWarningMessage("Shift key pressed.");
-      setShowWarning(true)
+        setShowWarning(true)
 
         return;
       }
@@ -569,7 +601,8 @@ useEffect(() => {
         e.preventDefault();
         e.stopPropagation();
 
-        showWarning(`${e.key} key pressed.`);
+        setWarningMessage(`${e.key} key pressed.`);
+        setShowWarning(true);
 
         return;
       }
@@ -599,7 +632,8 @@ useEffect(() => {
     // ==========================================
 
     const beforePrintHandler = () => {
-      showWarning("Print action detected.");
+      setWarningMessage("Print action detected.");
+      setShowWarning(true);
     };
 
     // ==========================================
@@ -785,9 +819,8 @@ useEffect(() => {
             </span>
 
             <span
-              className={`ml-2 text-lg font-bold ${
-                examRemainingPercentage < 10 ? "text-red-600" : "text-green-600"
-              }`}
+              className={`ml-2 text-lg font-bold ${examRemainingPercentage < 10 ? "text-red-600" : "text-green-600"
+                }`}
             >
               {formatTime(examRemaining)}
             </span>
@@ -841,13 +874,12 @@ useEffect(() => {
             <button
               onClick={handlePlay}
               disabled={isPlaying || isAudioLocked(playCount, MAX_PLAYS)}
-              className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-                isAudioLocked(playCount, MAX_PLAYS)
+              className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all ${isAudioLocked(playCount, MAX_PLAYS)
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                   : isPlaying
                     ? "bg-[#800000] text-white shadow-lg shadow-red-900/20 scale-105"
                     : "bg-[#800000] text-white shadow-md hover:bg-[#6b0000] hover:scale-105"
-              }`}
+                }`}
             >
               {isAudioLocked(playCount, MAX_PLAYS) ? (
                 <svg
@@ -1012,11 +1044,10 @@ useEffect(() => {
 
                           {/* Radio Circle */}
                           <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                              isSelected
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected
                                 ? "border-[#800000]"
                                 : "border-slate-300 group-hover:border-slate-400"
-                            }`}
+                              }`}
                           >
                             {isSelected && (
                               <div className="w-2.5 h-2.5 rounded-full bg-[#800000]" />
@@ -1025,20 +1056,18 @@ useEffect(() => {
 
                           {/* Option Letter */}
                           <span
-                            className={`w-5 text-sm font-semibold ${
-                              isSelected ? "text-[#800000]" : "text-slate-400"
-                            }`}
+                            className={`w-5 text-sm font-semibold ${isSelected ? "text-[#800000]" : "text-slate-400"
+                              }`}
                           >
                             {serialLabel}.
                           </span>
 
                           {/* Option Text */}
                           <span
-                            className={`text-[15px] leading-snug ${
-                              isSelected
+                            className={`text-[15px] leading-snug ${isSelected
                                 ? "text-slate-900 font-medium"
                                 : "text-slate-600 group-hover:text-slate-900"
-                            }`}
+                              }`}
                           >
                             {option.value}
                           </span>
@@ -1072,8 +1101,8 @@ useEffect(() => {
                 <p className="text-sm font-semibold text-green-600">
                   {questions.length > 0
                     ? Math.round(
-                        (answeredCount(answers) / questions.length) * 100,
-                      )
+                      (answeredCount(answers) / questions.length) * 100,
+                    )
                     : 0}
                   %
                 </p>
@@ -1085,11 +1114,10 @@ useEffect(() => {
               <div
                 className="h-full bg-green-500 rounded-full transition-all duration-300"
                 style={{
-                  width: `${
-                    questions.length > 0
+                  width: `${questions.length > 0
                       ? (answeredCount(answers) / questions.length) * 100
                       : 0
-                  }%`,
+                    }%`,
                 }}
               />
             </div>
@@ -1100,11 +1128,10 @@ useEffect(() => {
               disabled={
                 isSubmitting || !isAllQuestionsAnswered(answers, questions)
               }
-              className={`w-25 py-4 ml-auto rounded-xl font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                isSubmitting || !isAllQuestionsAnswered(answers, questions)
+              className={`w-25 py-4 ml-auto rounded-xl font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting || !isAllQuestionsAnswered(answers, questions)
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : "bg-[#800000] text-white hover:bg-[#6b0000] shadow-md hover:shadow-lg shadow-red-900/20 transform hover:-translate-y-0.5"
-              }`}
+                }`}
             >
               {isSubmitting ? "Processing..." : "Submit"}
 

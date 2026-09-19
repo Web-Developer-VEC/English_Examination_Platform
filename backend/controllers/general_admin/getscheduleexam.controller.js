@@ -67,9 +67,11 @@ const getformdata = async (req, res) => {
           });
         }
 
-        if (student.username) {
+        const studentId = student.username || student.admissionNo;
+        if (studentId) {
           groupMap.get(key).students.push({
-            username: student.username,
+            username: studentId,
+            admissionNo: student.admissionNo || student.username,
             name: student.name,
             gender: student.gender || "Unknown",
           });
@@ -126,15 +128,26 @@ const getformdata = async (req, res) => {
           projection: {
             _id: 1,
             questionCode: 1,
+            audioDurationMinutes: 1,
+            duration: 1,
           },
         },
       )
       .toArray();
 
-    const tests = questions.map((question) => ({
-      questionSetId: question._id,
-      questionCode: question.questionCode,
-    }));
+    const tests = questions.map((question) => {
+      const qDuration =
+        Number(question.audioDurationMinutes) ||
+        Number(question.duration) ||
+        0;
+
+      return {
+        questionSetId: question._id,
+        questionCode: question.questionCode,
+        audioDurationMinutes: question.audioDurationMinutes || 0,
+        duration: qDuration,
+      };
+    });
 
     // ==========================================
     // Prepare response
@@ -199,6 +212,20 @@ const getScheduledExams = async (req, res) => {
       }
     }
 
+    if (req.user?.role !== "admin") {
+      // University exams are restricted to administrators only
+      if (query.$or) {
+        query = {
+          $and: [
+            query,
+            { category: { $not: { $regex: /^university$/i } } },
+          ],
+        };
+      } else {
+        query.category = { $not: { $regex: /^university$/i } };
+      }
+    }
+
     const exams = await db
       .collection("schedule")
       .find(query)
@@ -229,6 +256,11 @@ const getScheduledExams = async (req, res) => {
           section: exam.eligibility.section,
           questionCode: questionSet?.questionCode || "-",
           admissionNo: exam.eligibility.admissionNo || [],
+          date:
+            exam.date ||
+            (exam.startTime
+              ? new Date(exam.startTime).toLocaleDateString("en-CA")
+              : null),
           duration: exam.duration,
           startTime: exam.startTime,
           endTime: exam.endTime,

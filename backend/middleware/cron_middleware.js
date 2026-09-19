@@ -12,11 +12,11 @@ const startExamCron = () => {
 
     Cron.schedule("* * * * *", async () => {
 
-        console.log("[CRON] Checking exams...");
+        // console.log("[CRON] Checking exams...");
 
         try {
             await checkExams();
-            await checkCompletedExams();
+            // checkCompletedExams() disabled per requirements (no automail)
         } catch (error) {
             console.error("[CRON ERROR]", error);
         }

@@ -186,6 +186,12 @@ const StudentDashboard = () => {
       return;
     }
 
+    const targetTest = testResults.find((t) => t.testId === testId);
+    if (targetTest && targetTest.category === "university") {
+      toast.info("Student reports are not available for university examinations.");
+      return;
+    }
+
     setSendingId(testId);
 
     try {
@@ -294,9 +300,17 @@ const StudentDashboard = () => {
 
         // Anything sent earlier in this login session should still show
         // as "Sent" after a refresh.
-        const sentTestIds = getSentResults(result.student.admissionNo);
+        const sentTestIds = getSentResults(result.student?.admissionNo);
 
-        const formattedTestResults = backendExams.map((exam) => {
+        // University exam marks are confidential and not shown to students
+        const nonUniversityExams = backendExams.filter((exam) => {
+          const categoryStr = String(
+            exam.category || exam.cie || "",
+          ).toLowerCase();
+          return !categoryStr.includes("university");
+        });
+
+        const formattedTestResults = nonUniversityExams.map((exam) => {
           const examId =
             typeof exam._id === "object"
               ? exam._id?.$oid || String(exam._id)
@@ -320,6 +334,9 @@ const StudentDashboard = () => {
 
             // Existing Exam column
             cie: exam.cie || exam.category || "-",
+
+            // Category for report control
+            category: String(exam.category || exam.cie || "").toLowerCase(),
 
             // Existing Mark column
             mark:
@@ -676,7 +693,14 @@ const StudentDashboard = () => {
 
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end">
-                          {test.status === "Sent" ? (
+                          {test.category === "university" ? (
+                            <span
+                              className="text-gray-400 text-xs font-semibold px-3 py-1.5 bg-gray-100 rounded-full"
+                              title="Reports are not generated for university examinations"
+                            >
+                              Not Available
+                            </span>
+                          ) : test.status === "Sent" ? (
                             <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
                               <CheckCircle size={14} />
                               Sent

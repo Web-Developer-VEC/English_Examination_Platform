@@ -1,57 +1,35 @@
 // =====================================================
-// Shuffle Functions
+// Shuffle Functions (Fisher-Yates)
 // =====================================================
 
-// DO NOT shuffle questions.
-// Question order must remain exactly as received
-// from the backend.
 export function shuffleQuestions(array) {
-    return [...array];
+    if (!Array.isArray(array)) return [];
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
 }
 
-
-// Shuffle ONLY the options.
-// Each option keeps its original key and value.
-//
-// Example:
-//
-// {
-//     A: "Slow",
-//     B: "Clumsy",
-//     C: "Quick",
-//     D: "Unsteady"
-// }
-//
-// becomes:
-//
-// [
-//     { key: "C", value: "Quick" },
-//     { key: "A", value: "Slow" },
-//     { key: "D", value: "Unsteady" },
-//     { key: "B", value: "Clumsy" }
-// ]
-//
 export function shuffleOptions(question) {
-
     const options = Array.isArray(question.options)
         ? [...question.options]
         : [];
 
     for (let i = options.length - 1; i > 0; i--) {
-
-        const j = Math.floor(
-            Math.random() * (i + 1)
-        );
-
-        [options[i], options[j]] = [
-            options[j],
-            options[i]
-        ];
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
     }
+
+    const reindexedOptions = options.map((opt, idx) => ({
+        ...opt,
+        key: String.fromCharCode(65 + idx),
+    }));
 
     return {
         ...question,
-        options
+        options: reindexedOptions,
     };
 }
 

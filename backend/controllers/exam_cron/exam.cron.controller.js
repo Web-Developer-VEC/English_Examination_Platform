@@ -1,6 +1,9 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../../config/db");
 const crypto = require("crypto");
+const {
+  generateAndSaveClassReportForSchedule,
+} = require("../../service/class_report.service");
 
 // ============================================================
 // GENERATE UNIQUE TEST CODE
@@ -195,6 +198,7 @@ const autoSubmitExam = async (db, examAttempt, test) => {
             reason: "",
           },
 
+          allowResume: false,
           status: false,
 
           submittedAt,
@@ -205,6 +209,13 @@ const autoSubmitExam = async (db, examAttempt, test) => {
         },
       },
     );
+
+    if (examAttempt.admissionNo) {
+      await db.collection("students").updateOne(
+        { admissionNo: String(examAttempt.admissionNo).trim() },
+        { $set: { allowResume: false } }
+      );
+    }
 
   } catch (error) {
     console.error(`[AUTO SUBMIT ERROR] ${examAttempt._id}`, error);
@@ -221,7 +232,7 @@ const checkExams = async () => {
 
     const now = new Date();
 
-    console.log(`[EXAM CRON] Checking at ${now.toISOString()}`);
+    // console.log(`[EXAM CRON] Checking at ${now.toISOString()}`);
 
     // ====================================================
     // 1. GENERATE TEST CODE
@@ -405,6 +416,14 @@ const checkExams = async () => {
       );
 
       console.log(`[EXAM CRON] Exam marked Completed: ${test._id}`);
+
+      // Generate and store class CIE report in result collection
+      generateAndSaveClassReportForSchedule(test._id).catch((err) => {
+        console.error(
+          `[EXAM CRON] Error generating class report for test ${test._id}:`,
+          err.message
+        );
+      });
     }
   } catch (error) {
     console.error("[EXAM CRON ERROR]", error);
@@ -417,4 +436,5 @@ const checkExams = async () => {
 
 module.exports = {
   checkExams,
+  autoSubmitExam,
 };

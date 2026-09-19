@@ -8,15 +8,21 @@ import {
   CircleCheck,
   X,
   Users,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import {
   deleteScheduledExam,
+  endScheduledExam,
+  resumeStudentExam,
   getScheduleExams,
   getExistingStudents,
 } from "../../services/adminService";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import { getAdminSession } from "../../utils/helpers";
 import { getApiErrorMessage } from "../../utils/apiError";
+import { toast } from "react-toastify";
 export default function AdminDashboard() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +35,20 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTest, setSelectedTest] = useState(null);
   const [studentLoading, setStudentLoading] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [resumeUsername, setResumeUsername] = useState("");
+  const [resuming, setResuming] = useState(false);
+  const [resumePopup, setResumePopup] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    type: "danger",
+    onConfirm: null,
+    isLoading: false,
+  });
   const navigate = useNavigate();
   const adminSession = getAdminSession();
   const isAdmin = adminSession?.user.role === "admin";
@@ -68,13 +88,20 @@ export default function AdminDashboard() {
 
           section: exam.section || "N/A",
 
-          date: exam.startTime
-            ? new Date(exam.startTime).toLocaleDateString("en-CA")
-            : "N/A",
+          date:
+            exam.date ||
+            (exam.startTime
+              ? new Date(exam.startTime).toLocaleDateString("en-CA")
+              : "N/A"),
 
           testCode: exam.testcode || "N/A",
 
-          status: getDynamicStatus(exam.startTime, exam.endTime),
+          status:
+            exam.status === "Completed"
+              ? "Completed"
+              : exam.startTime && exam.endTime
+                ? getDynamicStatus(exam.startTime, exam.endTime)
+                : exam.status || "Scheduled",
 
           questionSetId: exam.questionSetId,
 
@@ -83,6 +110,8 @@ export default function AdminDashboard() {
           startTime: exam.startTime,
 
           endTime: exam.endTime,
+
+          duration: exam.duration,
 
           admissionNo: exam.admissionNo || [],
           students: exam.admissionNo,
@@ -122,22 +151,32 @@ export default function AdminDashboard() {
   // SUMMARY
   // ==========================================================
 
-  const totalExams = tests.length;
+  // University tests are restricted to admin only
+  const visibleTests = useMemo(() => {
+    if (!isAdmin) {
+      return tests.filter(
+        (t) => String(t.category || "").toLowerCase() !== "university",
+      );
+    }
+    return tests;
+  }, [tests, isAdmin]);
 
-  const todaysTests = tests.filter(
+  const totalExams = visibleTests.length;
+
+  const todaysTests = visibleTests.filter(
     (t) => t.date === new Date().toLocaleDateString("en-CA"),
   ).length;
 
-  const activeTests = tests.filter((t) => t.status === "Ongoing").length;
+  const activeTests = visibleTests.filter((t) => t.status === "Ongoing").length;
 
-  const completedTests = tests.filter((t) => t.status === "Completed").length;
+  const completedTests = visibleTests.filter((t) => t.status === "Completed").length;
 
   // ==========================================================
   // FILTERED DATA
   // ==========================================================
 
   const filteredTests = useMemo(() => {
-    const filtered = tests.filter((test) => {
+    const filtered = visibleTests.filter((test) => {
       const matchDepartment =
         department === "All" || test.department === department;
 
@@ -204,28 +243,122 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   }, [department, category, status, selectedDate]);
 
-  const handleCancel = async (test) => {
-    const confirmed = window.confirm(`Are you sure you want to cancel test ?`);
+  const handleCancel = (test) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Cancel Scheduled Test?",
+      message: `Are you sure you want to cancel the scheduled test for ${test.department || "All Departments"} ${test.section ? `(Sec ${test.section})` : ""}? This action cannot be undone.`,
+      confirmText: "Cancel Test",
+      cancelText: "Keep Test",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+          const result = await deleteScheduledExam(test.id);
 
-    if (!confirmed) return;
+          if (!result.success) {
+            throw new Error(result.message || "Failed to cancel the test.");
+          }
 
+          // Remove from dashboard
+          setTests((prevTests) => prevTests.filter((item) => item.id !== test.id));
+
+          toast.success("Test cancelled successfully.");
+        } catch (error) {
+          console.error("Error cancelling the test:", error);
+          toast.error(getApiErrorMessage(error, "Unable to cancel the test."));
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      },
+    });
+  };
+
+  const handleEndTest = (test) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "End Test & Process Results?",
+      message: `Are you sure you want to end this test (${test.department} - Sec ${test.section})?\n\nThis will mark the exam as completed, auto-submit ongoing attempts, and email results to students.`,
+      confirmText: "End Test Now",
+      cancelText: "Go Back",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+          toast.info("Ending test and processing student results...");
+          const result = await endScheduledExam(test.id);
+
+          if (!result.success) {
+            throw new Error(result.message || "Failed to end the test.");
+          }
+
+          // Update locally
+          setTests((prevTests) =>
+            prevTests.map((item) =>
+              item.id === test.id ? { ...item, status: "Completed" } : item
+            )
+          );
+
+          if (selectedTest && selectedTest.id === test.id) {
+            setSelectedTest((prev) =>
+              prev ? { ...prev, status: "Completed" } : null
+            );
+          }
+
+          toast.success(result.message || "Test ended successfully.");
+        } catch (error) {
+          console.error("Error ending the test:", error);
+          toast.error(getApiErrorMessage(error, "Unable to end the test."));
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      },
+    });
+  };
+
+  const handleResumeStudent = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    if (!resumeUsername || !resumeUsername.trim()) {
+      setResumePopup({
+        type: "error",
+        title: "Username Required",
+        message: "Please enter the student's username, admission number, or register number to resume.",
+      });
+      return;
+    }
+
+    setResuming(true);
     try {
-      const result = await deleteScheduledExam(test.id);
-
+      const result = await resumeStudentExam(resumeUsername.trim());
       if (!result.success) {
-        throw new Error(result.message || "Failed to cancel the test.");
+        throw new Error(result.message || "Failed to resume student exam.");
       }
 
-      // Remove from dashboard
-      setTests((prevTests) => prevTests.filter((item) => item.id !== test.id));
-
-      toast.success("Test cancelled successfully.");
-    } catch (error) {
-      console.error("Error cancelling the test:", error);
-
-      toast.error(getApiErrorMessage(error, "Unable to cancel the test."));
+      setResumeUsername("");
+      setShowResumeModal(false);
+      setResumePopup({
+        type: "success",
+        title: "Exam Unlocked for Resume",
+        message: result.message || "Student exam unlocked successfully!",
+        student: result.student,
+        testCode: result.testCode,
+      });
+    } catch (err) {
+      console.error("Error resuming student exam:", err);
+      const errMsg = getApiErrorMessage(err, "Failed to resume student exam.");
+      setResumePopup({
+        type: "error",
+        title: "Unable to Resume Exam",
+        message: errMsg,
+      });
+    } finally {
+      setResuming(false);
     }
   };
+
   const handleTestClick = async (test) => {
     setSelectedTest(test);
     setStudentLoading(true);
@@ -248,13 +381,15 @@ export default function AdminDashboard() {
         (test.admissionNo || []).map(String),
       );
 
-      const examStudents = students.filter((student) =>
-        assignedAdmissionNumbers.has(String(student.username)),
+      const examStudents = students.filter(
+        (student) =>
+          assignedAdmissionNumbers.has(String(student.username)) ||
+          assignedAdmissionNumbers.has(String(student.admissionNo)),
       );
 
       setSelectedTest({
         ...test,
-        students: examStudents,
+        students: examStudents.length > 0 ? examStudents : (test.admissionNo?.length === 0 ? students : []),
       });
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -296,15 +431,30 @@ export default function AdminDashboard() {
               Manage English Audio Listening Tests
             </p>
           </div>
-          {isAdmin && (
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("/admin/schedule")}
-              className="px-6 py-3 rounded-lg bg-[#FDCC03] hover:bg-[#7a1f2b] hover:text-white font-semibold transition"
+              onClick={() => {
+                setResumeUsername("");
+                setShowResumeModal(true);
+              }}
+              className="px-5 py-3 rounded-lg bg-[#7a1f2b] hover:bg-[#5e1620] text-white font-semibold transition shadow-sm flex items-center gap-2 cursor-pointer border border-[#7a1f2b]"
+              title="Unlock an unsubmitted exam for a student using their username"
             >
-              + Schedule Test
+              <RotateCcw size={18} className="text-[#FDCC03]" />
+              <span>Resume Test</span>
             </button>
-          )}
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/admin/schedule")}
+                className="px-6 py-3 rounded-lg bg-[#FDCC03] hover:bg-[#7a1f2b] hover:text-white font-semibold transition"
+              >
+                + Schedule Test
+              </button>
+            )}
+          </div>
         </div>
 
         {/* SUMMARY CARDS */}
@@ -327,11 +477,37 @@ export default function AdminDashboard() {
             FILTER BAR
         ========================================================== */}
 
-        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-            {/* DEPARTMENT */}
+        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+              Filters
+            </span>
+            {(department !== "All" ||
+              category !== "All" ||
+              selectedDate !== "" ||
+              status !== "All") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDepartment("All");
+                  setCategory("All");
+                  setSelectedDate("");
+                  setStatus("All");
+                }}
+                className="text-xs font-semibold text-[#800000] hover:underline flex items-center gap-1 transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset Filters
+              </button>
+            )}
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            {/* DEPARTMENT / BRANCH */}
             <div>
+              <label className="mb-1.5 block text-sm font-semibold text-[#000000]">
+                Branch
+              </label>
               <ThemeDropdown
                 value={department}
                 options={[
@@ -346,49 +522,68 @@ export default function AdminDashboard() {
             </div>
 
             {/* CATEGORY */}
-
             <div>
-              {/* CATEGORY */}
-              <div>
-                <ThemeDropdown
-                  value={category}
-                  options={[
-                    "All",
-                    "Re-Test",
-                    ...[...new Set(tests.map((item) => item.category))]
-                      .filter(Boolean)
-                      .filter((item) => item !== "Re-Test"),
-                  ]}
-                  onChange={setCategory}
-                  placeholder="Select Category"
-                />
-              </div>
+              <label className="mb-1.5 block text-sm font-semibold text-[#000000]">
+                Category
+              </label>
+              <ThemeDropdown
+                value={category}
+                options={[
+                  "All",
+                  "Re-Test",
+                  ...[...new Set(visibleTests.map((item) => item.category))]
+                    .filter(Boolean)
+                    .filter((item) => item !== "Re-Test"),
+                ]}
+                onChange={setCategory}
+                placeholder="Select Category"
+              />
             </div>
 
             {/* DATE */}
-
             <div>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="
-                w-full
-                h-11
-                px-3
-                rounded-lg
-                border
-                border-gray-300
-                focus:outline-none
-                focus:ring-2
-                focus:ring-yellow-300
-                focus:border-[#FDCC03]
-                "
-              />
+              <label className="mb-1.5 block text-sm font-semibold text-[#000000]">
+                Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="
+                  w-full
+                  h-11
+                  px-3
+                  rounded-lg
+                  border
+                  border-gray-300
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-yellow-300
+                  focus:border-[#FDCC03]
+                  text-sm
+                  text-gray-700
+                  bg-white
+                  "
+                />
+                {selectedDate && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate("")}
+                    className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Clear Date"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* STATUS */}
             <div>
+              <label className="mb-1.5 block text-sm font-semibold text-[#000000]">
+                Status
+              </label>
               <ThemeDropdown
                 value={status}
                 options={["All", "Completed", "Ongoing", "Upcoming"]}
@@ -410,7 +605,7 @@ export default function AdminDashboard() {
             className="hidden lg:grid items-center gap-4 bg-gray-50 border-b border-gray-200 px-6"
             style={{
               gridTemplateColumns:
-                "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.8fr",
+                "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 1.1fr",
             }}
           >
             <TableHeading>Branch</TableHeading>
@@ -463,7 +658,7 @@ export default function AdminDashboard() {
         "
                 style={{
                   gridTemplateColumns:
-                    "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr",
+                    "2.4fr 0.7fr 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 1.1fr",
                 }}
               >
                 {/* DEPARTMENT */}
@@ -504,7 +699,7 @@ export default function AdminDashboard() {
                         minute: "2-digit",
                         hour12: true,
                       })
-                    : "N/A"}
+                    : "-"}
                 </div>
 
                 {/* END TIME */}
@@ -515,7 +710,7 @@ export default function AdminDashboard() {
                         minute: "2-digit",
                         hour12: true,
                       })
-                    : "N/A"}
+                    : "-"}
                 </div>
 
                 {/* Question CODE */}
@@ -559,46 +754,68 @@ export default function AdminDashboard() {
 
                 {/* ACTION */}
 
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    disabled={test.status !== "Upcoming"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCancel(test);
-                    }}
-                    className={`
-            px-3
-            py-2
-            rounded-lg
-            text-xs
-            font-semibold
-            border
-            transition-all
-            duration-200
+                <div className="flex items-center justify-center gap-1.5">
+                  {String(test.category).toLowerCase() === "normal" &&
+                    test.status !== "Completed" && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEndTest(test);
+                        }}
+                        className="
+                          px-2.5
+                          py-1.5
+                          rounded-lg
+                          text-xs
+                          font-semibold
+                          bg-[#7a1f2b]
+                          text-white
+                          hover:bg-[#5e1620]
+                          shadow-sm
+                          transition-all
+                          duration-200
+                          cursor-pointer
+                          whitespace-nowrap
+                        "
+                        title="End test immediately and send student results"
+                      >
+                        End Test
+                      </button>
+                    )}
 
-            ${
-              test.status === "Upcoming"
-                ? `
+                  {test.status === "Upcoming" && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancel(test);
+                      }}
+                      className="
+                        px-2.5
+                        py-1.5
+                        rounded-lg
+                        text-xs
+                        font-semibold
+                        border
                         border-red-200
                         bg-red-50
                         text-red-600
                         hover:bg-red-600
                         hover:text-white
+                        transition-all
+                        duration-200
                         cursor-pointer
-                    `
-                : `
-                        border-gray-200
-                        bg-gray-100
-                        text-gray-400
-                        cursor-not-allowed
-                        opacity-70
-                    `
-            }
-        `}
-                  >
-                    Cancel
-                  </button>
+                        whitespace-nowrap
+                      "
+                    >
+                      Cancel
+                    </button>
+                  )}
+
+                  {test.status === "Completed" && (
+                    <span className="text-xs text-gray-400 font-medium">-</span>
+                  )}
                 </div>
               </div>
             ))
@@ -813,27 +1030,19 @@ export default function AdminDashboard() {
                             </p>
 
                             <p className="mt-1 text-sm font-semibold text-gray-900">
-                              {selectedTest.startTime
-                                ? new Date(
-                                    selectedTest.startTime,
-                                  ).toLocaleTimeString("en-US", {
+                              {selectedTest.startTime && selectedTest.endTime
+                                ? `${new Date(selectedTest.startTime).toLocaleTimeString("en-US", {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                     hour12: true,
-                                  })
-                                : "N/A"}
-
-                              {" - "}
-
-                              {selectedTest.endTime
-                                ? new Date(
-                                    selectedTest.endTime,
-                                  ).toLocaleTimeString("en-US", {
+                                  })} - ${new Date(selectedTest.endTime).toLocaleTimeString("en-US", {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                     hour12: true,
-                                  })
-                                : "N/A"}
+                                  })}`
+                                : selectedTest.duration
+                                  ? `${selectedTest.duration} mins (Duration only)`
+                                  : "-"}
                             </p>
                           </div>
                         </div>
@@ -1059,6 +1268,7 @@ export default function AdminDashboard() {
                     flex
                     items-center
                     justify-end
+                    gap-3
                     border-t
                     border-gray-200
                     bg-gray-50
@@ -1066,6 +1276,31 @@ export default function AdminDashboard() {
                     py-4
                 "
                 >
+                  {String(selectedTest.category).toLowerCase() === "normal" &&
+                    selectedTest.status !== "Completed" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleEndTest(selectedTest);
+                          setSelectedTest(null);
+                        }}
+                        className="
+                          rounded-lg
+                          bg-red-600
+                          px-5
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          text-white
+                          transition
+                          hover:bg-red-700
+                          shadow-sm
+                          cursor-pointer
+                        "
+                      >
+                        End Test
+                      </button>
+                    )}
                   <button
                     type="button"
                     onClick={() => setSelectedTest(null)}
@@ -1079,6 +1314,7 @@ export default function AdminDashboard() {
                             text-white
                             transition
                             hover:bg-[#641923]
+                            cursor-pointer
                         "
                   >
                     Close
@@ -1088,7 +1324,216 @@ export default function AdminDashboard() {
             </div>,
             document.body,
           )}
-      </main>
+
+        {/* ==========================================================
+            RESUME STUDENT TEST MODAL
+        ========================================================== */}
+        {showResumeModal &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+              style={{ zIndex: 999999 }}
+            >
+              <div
+                className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* MODAL HEADER */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-[#7a1f2b] flex items-center justify-center shadow-xs">
+                      <RotateCcw size={20} className="text-[#7a1f2b]" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 leading-tight">
+                        Resume Student Test
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Unlock an unsubmitted exam attempt
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowResumeModal(false)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* MODAL BODY */}
+                <form onSubmit={handleResumeStudent} className="p-6">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enter the student's <strong>username</strong> (admission or register number) whose exam was interrupted and needs to be resumed.
+                  </p>
+
+                  <div className="mb-5">
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      Student Username
+                    </label>
+                    <input
+                      type="text"
+                      value={resumeUsername}
+                      onChange={(e) => setResumeUsername(e.target.value)}
+                      placeholder="e.g. 21EC001 or 112821104001"
+                      autoFocus
+                      disabled={resuming}
+                      className="w-full h-11 px-3.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FDCC03]/60 focus:border-[#7a1f2b] text-sm font-medium"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowResumeModal(false)}
+                      disabled={resuming}
+                      className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={resuming || !resumeUsername.trim()}
+                      className="px-5 py-2.5 rounded-lg bg-[#7a1f2b] hover:bg-[#5e1620] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition shadow-sm flex items-center gap-2 cursor-pointer"
+                    >
+                      {resuming ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          <span>Unlocking...</span>
+                        </>
+                      ) : (
+                        <span>Unlock & Resume</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>,
+            document.body,
+          )}
+
+        {/* ==========================================================
+            RESUME POPUP NOTIFICATION MODAL (SUCCESS & ERROR)
+        ========================================================== */}
+        {resumePopup &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+              style={{ zIndex: 999999 }}
+            >
+              <div
+                className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-center p-6 animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {resumePopup.type === "success" ? (
+                  <>
+                    {/* SUCCESS ICON */}
+                    <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-[#FDCC03] text-[#7a1f2b] flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <RotateCcw size={30} className="text-[#7a1f2b]" />
+                    </div>
+
+                    <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider mb-2">
+                      Unlocked Successfully
+                    </span>
+
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">
+                      {resumePopup.title || "Exam Unlocked for Resume"}
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-5">
+                      Single-use resume permission has been granted
+                    </p>
+
+                    {/* DETAILS CARD */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left space-y-2.5 mb-5 text-sm">
+                      {resumePopup.student?.name && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-gray-500 uppercase">
+                            Student Name
+                          </span>
+                          <span className="font-bold text-gray-900">
+                            {resumePopup.student.name}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-gray-500 uppercase">
+                          Admission / Reg No
+                        </span>
+                        <span className="font-semibold text-gray-800">
+                          {resumePopup.student?.admissionNo ||
+                            resumePopup.student?.username}
+                        </span>
+                      </div>
+                      {resumePopup.testCode && (
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                          <span className="text-xs font-semibold text-gray-500 uppercase">
+                            Test Code
+                          </span>
+                          <span className="px-2.5 py-1 bg-yellow-100 border border-[#FDCC03] rounded-md font-extrabold text-[#7a1f2b] tracking-wider text-xs">
+                            {resumePopup.testCode}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-lg text-xs text-amber-900 mb-6 text-left leading-relaxed">
+                      <strong>Important:</strong> The student can now enter the test code and click <strong>Start Test</strong>. This is a one-time permission and will be consumed immediately upon entry.
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setResumePopup(null)}
+                      className="w-full py-3 rounded-lg bg-[#7a1f2b] hover:bg-[#5e1620] text-white font-semibold transition shadow-sm cursor-pointer"
+                    >
+                      OK, Got It
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* ERROR ICON */}
+                    <div className="w-16 h-16 rounded-full bg-red-50 border-2 border-red-200 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <AlertCircle size={32} />
+                    </div>
+
+                    <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold uppercase tracking-wider mb-2">
+                      Resume Failed
+                    </span>
+
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {resumePopup.title || "Unable to Resume Exam"}
+                    </h3>
+
+                    <div className="bg-red-50/60 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-800 text-center leading-relaxed font-medium">
+                      {resumePopup.message}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setResumePopup(null)}
+                      className="w-full py-3 rounded-lg bg-[#7a1f2b] hover:bg-[#5e1620] text-white font-semibold transition shadow-sm cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )}
+      {/* CUSTOM CONFIRM MODAL */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        type={confirmModal.type}
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+    </main>
     </div>
   );
 }

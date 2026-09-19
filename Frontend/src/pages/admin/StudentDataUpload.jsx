@@ -25,6 +25,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import ThemeDropdown from "../../components/common/ThemeDropDown";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import {
   uploadStudentData,
   getExistingStudents,
@@ -178,6 +179,11 @@ const StudentDataUpload = () => {
 
   const [existingMessage, setExistingMessage] = useState("");
   const [existingMessageType, setExistingMessageType] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    student: null,
+    isLoading: false,
+  });
 
   const [studentSearch, setStudentSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -473,27 +479,26 @@ const StudentDataUpload = () => {
       setLoadingStudents(false);
     }
   };
-  const handleDeleteStudent = async (student) => {
-    console.log("Student selected for deletion:", student);
-    console.log("Admission No:", student?.admissionNo);
-
+  const handleDeleteStudent = (student) => {
     if (!student?.admissionNo) {
       showExistingError("Admission number is missing.");
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${student.name || "this student"} (${student.admissionNo})?`
-    );
+    setDeleteConfirm({
+      isOpen: true,
+      student,
+      isLoading: false,
+    });
+  };
 
-    if (!confirmed) {
-      return;
-    }
+  const confirmDeleteStudent = async () => {
+    const student = deleteConfirm.student;
+    if (!student?.admissionNo) return;
 
     try {
+      setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
       const data = await deleteStudent(student.admissionNo);
-
-      console.log("Delete response:", data);
 
       if (data?.success === false) {
         throw new Error(
@@ -511,13 +516,13 @@ const StudentDataUpload = () => {
         data?.message || "Student deleted successfully."
       );
       setExistingMessageType("success");
-
+      setDeleteConfirm({ isOpen: false, student: null, isLoading: false });
     } catch (error) {
       console.error("Delete student error:", error);
-
       showExistingError(
         getApiErrorMessage(error, "Unable to delete student.")
       );
+      setDeleteConfirm((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -1391,6 +1396,25 @@ const StudentDataUpload = () => {
           </div>
         </div>
       )}
+
+      {/* CUSTOM CONFIRM MODAL FOR STUDENT DELETION */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Student Record?"
+        message={
+          deleteConfirm.student
+            ? `Are you sure you want to delete ${deleteConfirm.student.name || "this student"} (${deleteConfirm.student.admissionNo})?\n\nThis will permanently remove this student from the department database.`
+            : ""
+        }
+        confirmText="Delete Student"
+        cancelText="Cancel"
+        type="danger"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={confirmDeleteStudent}
+        onCancel={() =>
+          setDeleteConfirm({ isOpen: false, student: null, isLoading: false })
+        }
+      />
     </div>
   );
 };

@@ -12,10 +12,13 @@ import {
   XCircle,
   FileSearch,
   ClipboardList,
-  BarChart3,
+  Download,
 } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { getFormData, getExamResults } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
+import { getAdminSession } from "../../utils/helpers";
 // -----------------------------------------------------
 // PROJECT COLORS
 // -----------------------------------------------------
@@ -32,7 +35,7 @@ const colors = {
 // -----------------------------------------------------
 const CIE_OPTIONS = ["I", "II", "III"];
 const SEM_OPTIONS = ["Odd", "Even"];
-const CATEGORY_OPTIONS = ["Normal", "Retest", "University"];
+const CATEGORY_OPTIONS = ["Normal", "University"];
 // -----------------------------------------------------
 // FAIL GRADES
 // -----------------------------------------------------
@@ -478,7 +481,21 @@ export default function StudentResult() {
   // CIE and Semester are fixed options
   const [cie, setCie] = useState("");
   const [sem, setSem] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("Normal");
+
+  const adminSession = getAdminSession();
+  const role = adminSession?.user?.role || adminSession?.role;
+  const isAdmin = role === "admin";
+
+  const categoryOptions = useMemo(() => {
+    return isAdmin ? ["Normal", "University"] : ["Normal"];
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && category !== "Normal") {
+      setCategory("Normal");
+    }
+  }, [isAdmin, category]);
 
   // ---------------------------------------------------
   // API DATA
@@ -488,13 +505,9 @@ export default function StudentResult() {
   // ---------------------------------------------------
   // RESULT DATA
   // ---------------------------------------------------
-  const [results, setResults] = useState([]);
   const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState("");
-
-  const [showResults, setShowResults] = useState(false);
-  const [submittedFilters, setSubmittedFilters] = useState(null);
 
   // ---------------------------------------------------
   // GET SCHEDULE DATA
@@ -595,11 +608,24 @@ export default function StudentResult() {
   // VALIDATE
   // ---------------------------------------------------
   const validate = () => {
-    if (!batch || !dept || !section || !cie || !sem || !category) {
-      setError(
-        "Please select Batch, Branch, Section, CIE and Semester and Category.",
-      );
+    if (!batch || !dept || !section || !sem) {
+      setError("Please select Batch, Branch, Section, and Semester.");
       return false;
+    }
+
+    const isUniv = category?.toLowerCase() === "university";
+    if (isUniv) {
+      if (!isAdmin) {
+        setError(
+          "University examination reports are restricted to administrators only.",
+        );
+        return false;
+      }
+    } else {
+      if (!cie) {
+        setError("Please select CIE for Normal examination.");
+        return false;
+      }
     }
 
     return true;
@@ -609,23 +635,16 @@ export default function StudentResult() {
   // FETCH / PREPARE RESULTS
   // ---------------------------------------------------
   const fetchStudentResults = async (filters) => {
-    const cieMapping = {
-      I: 1,
-      II: 2,
-      III: 3,
-    };
-
-    const cieNumber = filters.cie ? cieMapping[filters.cie] : null;
-
     const semesterValue = filters.sem ? filters.sem.toLowerCase() : "";
+    const isUniv = filters.category?.toLowerCase() === "university";
 
     const requestBody = {
       batch: filters.batch,
       department: filters.dept,
       section: filters.section,
-      cie: filters.cie,
+      cie: isUniv ? null : filters.cie || null,
       semester: semesterValue,
-      category: filters.category,
+      category: isUniv ? "university" : "normal",
     };
     const responseData = await getExamResults(requestBody);
 
@@ -635,98 +654,56 @@ export default function StudentResult() {
       );
     }
 
-    const pdfUrl = responseData.data.url;
-
-    window.open(pdfUrl, "_blank", "noopener,noreferrer");
-
     return responseData;
   };
+
   // ---------------------------------------------------
-  // VIEW RESULT
+  // VIEW / GENERATE RESULT
   // ---------------------------------------------------
   const handleViewResult = async () => {
     setError("");
 
-    // ---------------------------------------------------
-    // VALIDATE FILTERS
-    // ---------------------------------------------------
-
     if (!validate()) {
-      setShowResults(false);
       return;
     }
 
     setLoadingResults(true);
-    setShowResults(false);
-    setResults([]);
 
     try {
       const filters = {
         batch,
         dept,
         section,
-        cie,
+        cie: category?.toLowerCase() === "university" ? "" : cie,
         sem,
         category,
       };
-      await fetchStudentResults(filters);
 
-      setSubmittedFilters(filters);
-      setShowResults(false);
+      const responseData = await fetchStudentResults(filters);
+      const pdfUrl = responseData?.data?.url;
+
+      if (!pdfUrl) {
+        throw new Error(
+          responseData?.message || "PDF URL was not returned by the server.",
+        );
+      }
+
+      toast.success("Examination report ready! Opening in a new tab...");
+
+      // Open the PDF report in a single new tab
+      window.open(pdfUrl, "_blank");
     } catch (err) {
       console.error("PDF download error:", err);
-      setError(
-        getApiErrorMessage(
-          err,
-          "Something went wrong while generating or downloading the PDF.",
-        ),
+      const errMsg = getApiErrorMessage(
+        err,
+        "Something went wrong while generating or downloading the PDF.",
       );
-
-      setShowResults(false);
+      setError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoadingResults(false);
     }
   };
-
-  // ---------------------------------------------------
-  // SUMMARY
-  // ---------------------------------------------------
-  const summary = useMemo(() => {
-    if (!results.length) {
-      return {
-        total: 0,
-        passed: 0,
-        failed: 0,
-        average: "0.0",
-      };
-    }
-
-    const total = results.length;
-
-    const failed = results.filter((row) =>
-      FAIL_GRADES.includes(cleanValue(row.grade).toUpperCase()),
-    ).length;
-
-    const passed = total - failed;
-
-    const numericMarks = results
-      .map((row) => Number(row.mark))
-      .filter((mark) => Number.isFinite(mark));
-
-    const average = numericMarks.length
-      ? (
-          numericMarks.reduce((sum, mark) => sum + mark, 0) /
-          numericMarks.length
-        ).toFixed(1)
-      : "0.0";
-
-    return {
-      total,
-      passed,
-      failed,
-      average,
-    };
-  }, [results]);
 
   // ---------------------------------------------------
   // RENDER
@@ -747,11 +724,11 @@ export default function StudentResult() {
                 color: colors.accent,
               }}
             >
-              Student Result
+              Class Examination Report
             </h1>
 
             <p className="mt-1 text-sm text-[#808080]">
-              View your Continuous Internal Evaluation results
+              Generate and download department and class-wise examination PDF reports
             </p>
           </div>
         </div>
@@ -764,7 +741,7 @@ export default function StudentResult() {
               color: colors.accent,
             }}
           >
-            Select Your Details
+            Select Class Details
           </h2>
 
           {loadingSchedule ? (
@@ -785,7 +762,6 @@ export default function StudentResult() {
                   setSection("");
                   setCie("");
                   setSem("");
-                  setShowResults(false);
                   setError("");
                 }}
                 options={batchOptions}
@@ -802,7 +778,6 @@ export default function StudentResult() {
                   setSection("");
                   setCie("");
                   setSem("");
-                  setShowResults(false);
                   setError("");
                 }}
                 options={departmentOptions}
@@ -818,27 +793,11 @@ export default function StudentResult() {
                   setSection(value);
                   setCie("");
                   setSem("");
-                  setShowResults(false);
                   setError("");
                 }}
                 options={sectionOptions}
                 placeholder={dept ? "Select Section" : "Select Branch First"}
                 disabled={!dept || sectionOptions.length === 0}
-              />
-
-              {/* CIE */}
-              <SelectField
-                label="CIE"
-                IconComponent={BookOpenCheck}
-                value={cie}
-                onChange={(value) => {
-                  setCie(value);
-                  setShowResults(false);
-                  setError("");
-                }}
-                options={CIE_OPTIONS}
-                placeholder="Select CIE"
-                disabled={false}
               />
 
               {/* SEMESTER */}
@@ -848,7 +807,6 @@ export default function StudentResult() {
                 value={sem}
                 onChange={(value) => {
                   setSem(value);
-                  setShowResults(false);
                   setError("");
                 }}
                 options={SEM_OPTIONS}
@@ -856,20 +814,42 @@ export default function StudentResult() {
                 disabled={false}
               />
 
-              {/*CATEGORY*/}
+              {/* CATEGORY (University enabled for Admin only) */}
               <SelectField
                 label="Category"
                 IconComponent={CalendarRange}
                 value={category}
                 onChange={(value) => {
+                  if (value === "University" && !isAdmin) {
+                    setError("University reports are enabled for Admin only.");
+                    return;
+                  }
                   setCategory(value);
-                  setShowResults(false);
+                  if (value === "University") {
+                    setCie("");
+                  }
                   setError("");
                 }}
-                options={CATEGORY_OPTIONS}
+                options={categoryOptions}
                 placeholder="Select Category"
-                disabled={false}
+                disabled={!isAdmin}
               />
+
+              {/* CIE (Strictly for Normal exams - NO CIE for University) */}
+              {category?.toLowerCase() === "normal" && (
+                <SelectField
+                  label="CIE"
+                  IconComponent={BookOpenCheck}
+                  value={cie}
+                  onChange={(value) => {
+                    setCie(value);
+                    setError("");
+                  }}
+                  options={CIE_OPTIONS}
+                  placeholder="Select CIE"
+                  disabled={false}
+                />
+              )}
             </div>
           )}
 
@@ -882,7 +862,7 @@ export default function StudentResult() {
             </div>
           )}
 
-          {/* VIEW RESULT */}
+          {/* VIEW / DOWNLOAD RESULT */}
           <button
             type="button"
             onClick={handleViewResult}
@@ -892,181 +872,19 @@ export default function StudentResult() {
             {loadingResults ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Fetching results...
+                Generating Class Examination Report...
               </>
             ) : (
               <>
-                <FileSearch className="h-5 w-5" />
-                View Result
+                <Download className="h-5 w-5" />
+                Generate & Download Class Report
               </>
             )}
           </button>
         </div>
 
-        {/* RESULT SECTION */}
-        {showResults && submittedFilters && (
-          <div className="mt-8">
-            {/* SELECTED DETAILS */}
-            <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3">
-              {[
-                ["Batch", submittedFilters.batch],
-                ["Branch", submittedFilters.dept],
-                ["Section", submittedFilters.section],
-                ["CIE", submittedFilters.cie],
-                ["Semester", submittedFilters.sem],
-                ["Category", submittedFilters.category],
-              ].map(([label, value]) => (
-                <span
-                  key={label}
-                  className="rounded-full bg-[#F4F5F7] px-3 py-1 text-xs font-medium text-[#000000]"
-                >
-                  <span className="text-[#808080]">{label}:</span>{" "}
-                  <span className="font-semibold">{value}</span>
-                </span>
-              ))}
-            </div>
-
-            {/* EMPTY */}
-            {results.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F5F7]">
-                  <FileSearch className="h-7 w-7 text-[#808080]" />
-                </div>
-
-                <h3 className="text-lg font-bold text-[#000000]">
-                  No Result Data Found
-                </h3>
-
-                <p className="mt-2 max-w-md text-sm text-[#808080]">
-                  No result data is available for the selected details.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* SUMMARY */}
-                <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <SummaryCard
-                    icon={ClipboardList}
-                    label="Total Subjects"
-                    value={summary.total}
-                  />
-
-                  <SummaryCard
-                    icon={CheckCircle2}
-                    label="Passed"
-                    value={summary.passed}
-                    tone="success"
-                  />
-
-                  <SummaryCard
-                    icon={XCircle}
-                    label="Failed"
-                    value={summary.failed}
-                    tone="danger"
-                  />
-
-                  <SummaryCard
-                    icon={BarChart3}
-                    label="Average Mark"
-                    value={summary.average}
-                  />
-                </div>
-
-                {/* RESULT TABLE */}
-                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-[#F4F5F7] text-xs font-bold uppercase tracking-wide text-[#808080]">
-                          <th className="px-5 py-3">S.No</th>
-
-                          <th className="px-5 py-3">Course Code</th>
-
-                          <th className="px-5 py-3">Course Name</th>
-
-                          <th className="px-5 py-3">Internal Mark</th>
-
-                          <th className="px-5 py-3">Grade</th>
-
-                          <th className="px-5 py-3">Result</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {results.map((row, index) => {
-                          const isFail = FAIL_GRADES.includes(
-                            cleanValue(row.grade).toUpperCase(),
-                          );
-
-                          return (
-                            <tr
-                              key={row.code || `${row.name}-${index}`}
-                              className="border-b border-gray-100 last:border-0 hover:bg-[#FDCC03]/5"
-                            >
-                              <td className="px-5 py-3.5 text-[#808080]">
-                                {index + 1}
-                              </td>
-
-                              <td className="px-5 py-3.5 font-semibold text-[#000000]">
-                                {row.code || "-"}
-                              </td>
-
-                              <td className="px-5 py-3.5 text-[#000000]">
-                                {row.name || "-"}
-                              </td>
-
-                              <td className="px-5 py-3.5 text-[#000000]">
-                                {row.mark ?? "-"}
-                              </td>
-
-                              <td className="px-5 py-3.5">
-                                <GradeBadge grade={row.grade} />
-                              </td>
-
-                              <td className="px-5 py-3.5">
-                                <ResultBadge pass={!isFail} />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        <ToastContainer position="bottom-right" autoClose={3000} />
       </div>
-    </div>
-  );
-}
-
-// -----------------------------------------------------
-// SUMMARY CARD
-// -----------------------------------------------------
-function SummaryCard({ icon: Icon, label, value, tone }) {
-  const toneClasses =
-    tone === "success"
-      ? "text-green-700 bg-green-50"
-      : tone === "danger"
-        ? "text-red-700 bg-red-50"
-        : "text-[#800000] bg-[#FDCC03]/15";
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div
-        className={
-          "mb-2 flex h-9 w-9 items-center justify-center rounded-lg " +
-          toneClasses
-        }
-      >
-        <Icon className="h-4.5 w-4.5" />
-      </div>
-
-      <p className="text-xs font-medium text-[#808080]">{label}</p>
-
-      <p className="mt-1 text-xl font-bold text-[#000000]">{value}</p>
     </div>
   );
 }

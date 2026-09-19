@@ -3,6 +3,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getScheduleFormData, scheduleExam } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
+import { getAdminSession } from "../../utils/helpers";
 import {
   ClipboardClock,
   GraduationCap,
@@ -623,17 +624,25 @@ export default function Schedule() {
 
     const selectedOptions = scheduleData.batchDepartmentSections.filter(
       (item) =>
-        item.batch === batch &&
-        selectedCombos.includes(`${item.department}__${item.section}`),
+        String(item.batch || "").trim() === String(batch || "").trim() &&
+        selectedCombos.some((comboKey) => {
+          const [d, s] = comboKey.split("__");
+          return (
+            String(item.department || "").trim().toLowerCase() ===
+              String(d || "").trim().toLowerCase() &&
+            String(item.section || "").trim().toUpperCase() ===
+              String(s || "").trim().toUpperCase()
+          );
+        }),
     );
 
     const admissionNumbers = selectedOptions.flatMap((item) =>
       (item.students || []).map((s) =>
-        typeof s === "object" ? s.username : s,
+        typeof s === "object" ? (s.username || s.admissionNo) : s,
       ),
     );
 
-    return [...new Set(admissionNumbers)];
+    return [...new Set(admissionNumbers.filter(Boolean))];
   }, [scheduleData.batchDepartmentSections, batch, selectedCombos]);
 
   // Lookup map to quickly get name and gender based on a username
@@ -642,7 +651,10 @@ export default function Schedule() {
     scheduleData.batchDepartmentSections.forEach((item) => {
       (item.students || []).forEach((s) => {
         if (typeof s === "object" && s !== null) {
-          map.set(s.username, s);
+          const id = s.username || s.admissionNo;
+          if (id) {
+            map.set(id, s);
+          }
         }
       });
     });
@@ -674,7 +686,42 @@ export default function Schedule() {
     () => TEST_CODE_OPTIONS.map((t) => t.questionCode),
     [TEST_CODE_OPTIONS],
   );
+
+  const selectedTest = useMemo(
+    () => TEST_CODE_OPTIONS.find((t) => t.questionCode === questionCode),
+    [TEST_CODE_OPTIONS, questionCode],
+  );
+
+  const selectedTestAudioDuration = useMemo(() => {
+    if (!selectedTest) return null;
+    const dur = Number(selectedTest.audioDurationMinutes ?? selectedTest.duration ?? 0);
+    return dur > 0 ? dur : null;
+  }, [selectedTest]);
+
+  const handleQuestionCodeChange = (newCode) => {
+    setquestionCode(newCode);
+    if (!newCode) return;
+    const test = TEST_CODE_OPTIONS.find((t) => t.questionCode === newCode);
+    if (test) {
+      const qDuration = Number(test.audioDurationMinutes ?? test.duration ?? 0);
+      const autoDuration = Math.ceil(qDuration * 2) + 5;
+      setDuration(String(autoDuration));
+    }
+  };
+
   const draftsRef = useRef({ Normal: null, Retest: null, University: null });
+
+  const session = getAdminSession();
+  const isAdmin = session?.user?.role === "admin" || session?.role === "admin";
+  const categoryOptions = useMemo(() => {
+    return isAdmin ? ["Normal", "Retest", "University"] : ["Normal", "Retest"];
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && category === "University") {
+      setCategory("Normal");
+    }
+  }, [isAdmin, category]);
 
   const captureCurrentFields = () => ({
     semester,
@@ -722,7 +769,21 @@ export default function Schedule() {
     setEndHour(d.endHour || "");
     setEndMinute(d.endMinute || "");
     setEndPeriod(d.endPeriod || "AM");
-    setDuration(d.duration || "");
+    if (d.duration) {
+      setDuration(d.duration);
+    } else if (d.questionCode) {
+      const test = scheduleData.tests?.find(
+        (t) => t.questionCode === d.questionCode,
+      );
+      if (test) {
+        const qDuration = Number(test.audioDurationMinutes ?? test.duration ?? 0);
+        setDuration(String(Math.ceil(qDuration * 2) + 5));
+      } else {
+        setDuration("");
+      }
+    } else {
+      setDuration("");
+    }
     setAdmissionSearch("");
   };
 
@@ -733,6 +794,11 @@ export default function Schedule() {
 
   // ThemeDropdown hands back the picked value directly (not an event).
   const handleCategoryChange = (nextCategory) => {
+    if (!nextCategory || nextCategory === category) return;
+    if (nextCategory === "University" && !isAdmin) {
+      toast.error("University examination is restricted to administrators only.");
+      return;
+    }
     // Save whatever is currently on screen under the category we're leaving
     draftsRef.current[category] = captureCurrentFields();
     // Restore whatever was previously saved for the category we're entering
@@ -890,11 +956,9 @@ export default function Schedule() {
 
     if (!academicYear) problems.push("Academic Year is required");
     if (!semester) problems.push("Semester is required");
-    if (category === "Normal" && !cie)
-      problems.push("CIE (I, II, or III) is required for Normal category");
+    if ((category === "Normal" || category === "Retest") && !cie)
+      problems.push("CIE (I, II, or III) is required");
     if (!batch) problems.push("Batch is required");
-    if (selectedCombos.length === 0)
-      problems.push("Select at least one Branch & Section");
     if (!questionCode) problems.push("Test Code is required");
     if (!date) problems.push("Date is required");
     if (date) {
@@ -907,11 +971,6 @@ export default function Schedule() {
       }
     }
 
-    const hasStartTime = startHour && startMinute && startPeriod;
-    const hasEndTime = endHour && endMinute && endPeriod;
-    if (!hasStartTime) problems.push("Start Time is required");
-    if (!hasEndTime) problems.push("End Time is required");
-
     const durationNumber = Number(duration);
     if (!duration.trim()) {
       problems.push("Duration is required");
@@ -919,54 +978,66 @@ export default function Schedule() {
       problems.push("Duration must be a positive whole number of minutes");
     }
 
-    // Start time cannot be in the past when scheduling for today
-    if (date && hasStartTime) {
-      const now = new Date();
+    if (category !== "Normal") {
+      if (selectedCombos.length === 0)
+        problems.push("Select at least one Branch & Section");
 
-      const todayString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const hasStartTime = startHour && startMinute && startPeriod;
+      const hasEndTime = endHour && endMinute && endPeriod;
+      if (!hasStartTime) problems.push("Start Time is required");
+      if (!hasEndTime) problems.push("End Time is required");
 
-      if (date === todayString) {
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      // Start time cannot be in the past when scheduling for today
+      if (date && hasStartTime) {
+        const now = new Date();
 
+        const todayString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+        if (date === todayString) {
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+          const startMinutes = toMinutesSinceMidnight(
+            startHour,
+            startMinute,
+            startPeriod,
+          );
+
+          if (startMinutes <= currentMinutes) {
+            problems.push("Start Time must be later than the current time");
+          }
+        }
+      }
+
+      if (hasStartTime && hasEndTime) {
         const startMinutes = toMinutesSinceMidnight(
           startHour,
           startMinute,
           startPeriod,
         );
+        const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
 
-        if (startMinutes <= currentMinutes) {
-          problems.push("Start Time must be later than the current time");
+        if (endMinutes <= startMinutes) {
+          problems.push("End Time must be after Start Time");
+        } else if (duration.trim()) {
+          const windowMinutes = endMinutes - startMinutes;
+
+          if (
+            Number.isInteger(durationNumber) &&
+            durationNumber > windowMinutes
+          ) {
+            problems.push(
+              "Duration cannot be greater than the Start Time to End Time window",
+            );
+          }
         }
       }
-    }
 
-    if (hasStartTime && hasEndTime) {
-      const startMinutes = toMinutesSinceMidnight(
-        startHour,
-        startMinute,
-        startPeriod,
-      );
-      const endMinutes = toMinutesSinceMidnight(endHour, endMinute, endPeriod);
-
-      if (endMinutes <= startMinutes) {
-        problems.push("End Time must be after Start Time");
-      } else if (duration.trim()) {
-        const durationNumber = Number(duration);
-        const windowMinutes = endMinutes - startMinutes;
-
-        if (
-          Number.isInteger(durationNumber) &&
-          durationNumber > windowMinutes
-        ) {
-          problems.push(
-            "Duration cannot be greater than the Start Time to End Time window",
-          );
-        }
+      if (category === "Retest" && selectedAdmissionNos.length === 0) {
+        problems.push("Select at least one Admission Number for Retest");
       }
-    }
-
-    if (category === "Retest" && selectedAdmissionNos.length === 0) {
-      problems.push("Select at least one Admission Number for Retest");
+      if (category === "University" && selectedAdmissionNos.length === 0) {
+        problems.push("Select at least one Admission Number for University");
+      }
     }
 
     return problems;
@@ -983,6 +1054,12 @@ export default function Schedule() {
       return;
     }
 
+    if (category === "University" && !isAdmin) {
+      setStatusMessage("");
+      setErrorMessage("University examinations can only be scheduled by administrators.");
+      return;
+    }
+
     const selectedTest = TEST_CODE_OPTIONS.find(
       (t) => t.questionCode === questionCode,
     );
@@ -994,6 +1071,47 @@ export default function Schedule() {
       return;
     }
 
+    const durationMinutes = Number(duration);
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+    setStatusMessage("");
+
+    // Category Normal: automatically schedule test for all dept and sec in backend
+    if (category === "Normal") {
+      try {
+        const payload = {
+          category: "normal",
+          cie,
+          questionSetId,
+          batch,
+          academicYear,
+          semester: semester.toLowerCase(),
+          date,
+          duration: durationMinutes,
+        };
+
+        const body = await scheduleExam(payload);
+        if (body?.success === false) {
+          throw new Error(body?.message || body?.error || "Request failed");
+        }
+
+        toast.success(
+          body?.message || "Exam scheduled successfully for all sections.",
+        );
+        resetFormFields();
+      } catch (err) {
+        const backendMessage =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Unable to create the schedule. Please try again.";
+        setErrorMessage(backendMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const startTime = buildIsoDateTime(
       date,
       startHour,
@@ -1001,35 +1119,52 @@ export default function Schedule() {
       startPeriod,
     );
     const endTime = buildIsoDateTime(date, endHour, endMinute, endPeriod);
-    const durationMinutes = Number(duration);
 
     const combosToSubmit = selectedCombos
       .map((key) => DEPT_SECTION_OPTIONS.find((o) => o.key === key))
       .filter(Boolean);
 
-    setIsSubmitting(true);
-    setErrorMessage("");
-    setStatusMessage("");
-
     const results = await Promise.allSettled(
       combosToSubmit.map((combo) => {
+        // If multiple combos are selected, filter admission numbers to this section
+        const comboStudents = scheduleData.batchDepartmentSections
+          .filter(
+            (item) =>
+              String(item.batch || "").trim() === String(batch || "").trim() &&
+              String(item.department || "").trim().toLowerCase() ===
+                String(combo.dept || "").trim().toLowerCase() &&
+              String(item.section || "").trim().toUpperCase() ===
+                String(combo.section || "").trim().toUpperCase(),
+          )
+          .flatMap((item) =>
+            (item.students || []).map((s) =>
+              typeof s === "object" ? (s.username || s.admissionNo) : s,
+            ),
+          );
+        const comboAdmissionSet = new Set(comboStudents);
+        const admissionsForCombo =
+          selectedCombos.length > 1
+            ? selectedAdmissionNos.filter((no) => comboAdmissionSet.has(no))
+            : selectedAdmissionNos;
+
         const payload = {
           category: category.toLowerCase(),
+          cie: cie || undefined,
           questionSetId,
           department: combo.dept,
           batch,
           academicYear,
           semester: semester.toLowerCase(),
           section: combo.section,
-          admissionNo: selectedAdmissionNos,
+          admissionNo:
+            admissionsForCombo.length > 0
+              ? admissionsForCombo
+              : selectedAdmissionNos,
           duration: durationMinutes,
           startTime,
           endTime,
         };
 
-        if (category === "Normal") {
-          payload.cie = cie;
-        }
         return scheduleExam(payload).then((body) => {
           if (body?.success === false) {
             throw new Error(
@@ -1126,7 +1261,7 @@ export default function Schedule() {
             <ThemeDropdown
               icon={BadgeCheck}
               value={category}
-              options={CATEGORY_OPTIONS}
+              options={categoryOptions}
               onChange={handleCategoryChange}
               placeholder="Select Category"
             />
@@ -1191,10 +1326,12 @@ export default function Schedule() {
                 />
               </div>
 
-              {/* CIE (Normal only) */}
-              {category === "Normal" && (
+              {/* CIE (Normal and Retest) */}
+              {(category === "Normal" || category === "Retest") && (
                 <div>
-                  <label className={labelClasses}>CIE</label>
+                  <label className={labelClasses}>
+                    CIE {category === "Retest" && <span className="text-xs text-gray-500 font-normal">(CIE this retest belongs to)</span>}
+                  </label>
                   <ThemeDropdown
                     icon={BadgeCheck}
                     value={cie}
@@ -1205,325 +1342,336 @@ export default function Schedule() {
                 </div>
               )}
 
-              {/* Branch & Section */}
-              <div ref={pickerRef} className="relative">
-                <label className={labelClasses}>Branch &amp; Section</label>
-                <button
-                  type="button"
-                  disabled={isLoadingScheduleData}
-                  onClick={() => setIsPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(
-                    isPickerOpen,
-                    isLoadingScheduleData,
-                  )}
-                >
-                  <Building2
-                    size={18}
-                    strokeWidth={2}
-                    className={dropdownIconClasses(isPickerOpen)}
-                  />
-                  <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedCombos.length ? "text-black" : "text-black/45"
-                    }`}
-                  >
-                    {selectedCombos.length
-                      ? `${selectedCombos.length} Selected`
-                      : "Select branch & section"}
-                  </span>
-                  <span className={dropdownArrowClasses(isPickerOpen)}>
-                    {isPickerOpen ? (
-                      <ChevronUp size={18} strokeWidth={2} />
-                    ) : (
-                      <ChevronDown size={18} strokeWidth={2} />
+              {/* Info notice for Normal */}
+              {category === "Normal" && (
+                <div className="rounded-xl border border-[#FDCC03]/50 bg-[#FDCC03]/10 p-3.5 text-xs font-medium text-black/80">
+                  Normal exams will be automatically scheduled for all departments and sections in this batch with section-independent timing.
+                </div>
+              )}
+
+              {/* Branch & Section (hidden for Normal) */}
+              {category !== "Normal" && (
+                <div ref={pickerRef} className="relative">
+                  <label className={labelClasses}>Branch &amp; Section</label>
+                  <button
+                    type="button"
+                    disabled={isLoadingScheduleData}
+                    onClick={() => setIsPickerOpen((prev) => !prev)}
+                    className={dropdownTriggerClasses(
+                      isPickerOpen,
+                      isLoadingScheduleData,
                     )}
-                  </span>
-                </button>
-
-                {isPickerOpen && (
-                  <div className={dropdownPanelClasses}>
-                    <label className={dropdownAllRowClasses}>
-                      <input
-                        type="checkbox"
-                        checked={isAllCombosSelected}
-                        onChange={handleToggleAllCombos}
-                        className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                      />
-                      All
-                    </label>
-                    <div className="max-h-60 overflow-y-auto">
-                      {DEPT_SECTION_OPTIONS.map((option) => (
-                        <label
-                          key={option.key}
-                          className={dropdownOptionRowClasses(
-                            selectedCombos.includes(option.key),
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedCombos.includes(option.key)}
-                            onChange={() => handleComboToggle(option.key)}
-                            className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                          />
-                          {option.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedCombos.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#000000]">
-                        Selected ({selectedCombos.length})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleClearAllCombos}
-                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-                      >
-                        <Undo2 className="h-3 w-3" />
-                        Clear All
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {selectedCombos.map((key) => (
-                        <div
-                          key={key}
-                          className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Users className="h-3.5 w-3.5 text-[#800000]" />
-                            {getComboLabel(key)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCombo(key)}
-                            className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                            aria-label={`Remove ${getComboLabel(key)}`}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Admission Number */}
-              <div ref={admissionPickerRef} className="relative">
-                <label className={labelClasses}>Admission Number</label>
-                <button
-                  type="button"
-                  onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
-                  className={dropdownTriggerClasses(
-                    isAdmissionPickerOpen,
-                    false,
-                  )}
-                >
-                  <BadgeCheck
-                    size={18}
-                    strokeWidth={2}
-                    className={dropdownIconClasses(isAdmissionPickerOpen)}
-                  />
-                  <span
-                    className={`flex-1 truncate text-[15px] font-medium ${
-                      selectedAdmissionNos.length
-                        ? "text-black"
-                        : "text-black/45"
-                    }`}
                   >
-                    {selectedAdmissionNos.length
-                      ? `${selectedAdmissionNos.length} Selected`
-                      : "Select admission number(s)"}
-                  </span>
-                  <span className={dropdownArrowClasses(isAdmissionPickerOpen)}>
-                    {isAdmissionPickerOpen ? (
-                      <ChevronUp size={18} strokeWidth={2} />
-                    ) : (
-                      <ChevronDown size={18} strokeWidth={2} />
-                    )}
-                  </span>
-                </button>
-
-                {isAdmissionPickerOpen && (
-                  <div className={dropdownPanelClasses + " p-0"}>
-                    {/* Range picker: select from-number to-number */}
-                    <div className="border-b border-black/5 bg-[#FAFAFA] p-3">
-                      <p className="mb-2 text-xs font-semibold text-[#000000]">
-                        Select Range
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <SearchableSelect
-                            value={rangeFrom}
-                            options={ADMISSION_NO_OPTIONS}
-                            detailsMap={ADMISSION_DETAILS}
-                            onChange={setRangeFrom}
-                            placeholder="From"
-                          />
-                        </div>
-                        <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
-                          to
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <SearchableSelect
-                            value={rangeTo}
-                            options={ADMISSION_NO_OPTIONS}
-                            detailsMap={ADMISSION_DETAILS}
-                            onChange={setRangeTo}
-                            placeholder="To"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleApplyAdmissionRange}
-                        disabled={!rangeFrom || !rangeTo}
-                        className="mt-2 w-full rounded-md bg-[#800000] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#690000] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Add Range
-                      </button>
-                    </div>
-
-                    {/* Search Bar for Main Checkbox List */}
-                    <div className="p-2 border-b border-black/5 bg-white sticky top-0 z-10">
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Search by name or number..."
-                          value={admissionSearch}
-                          onChange={(e) => setAdmissionSearch(e.target.value)}
-                          className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#800000] focus:ring-1 focus:ring-[#800000]"
-                        />
-                        {admissionSearch && (
-                          <button
-                            type="button"
-                            onClick={() => setAdmissionSearch("")}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="max-h-56 overflow-y-auto p-1.5 relative">
-                      {!admissionSearch && (
-                        <label className={dropdownAllRowClasses}>
-                          <input
-                            type="checkbox"
-                            checked={isAllAdmissionSelected}
-                            onChange={handleToggleAllAdmission}
-                            className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                          />
-                          All
-                        </label>
-                      )}
-
-                      {filteredAdmissionOptions.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-gray-500">
-                          No students found matching "{admissionSearch}"
-                        </div>
+                    <Building2
+                      size={18}
+                      strokeWidth={2}
+                      className={dropdownIconClasses(isPickerOpen)}
+                    />
+                    <span
+                      className={`flex-1 truncate text-[15px] font-medium ${
+                        selectedCombos.length ? "text-black" : "text-black/45"
+                      }`}
+                    >
+                      {selectedCombos.length
+                        ? `${selectedCombos.length} Selected`
+                        : "Select branch & section"}
+                    </span>
+                    <span className={dropdownArrowClasses(isPickerOpen)}>
+                      {isPickerOpen ? (
+                        <ChevronUp size={18} strokeWidth={2} />
                       ) : (
-                        filteredAdmissionOptions.map((no) => {
-                          const details = ADMISSION_DETAILS.get(no);
-                          const label = details
-                            ? `${no} - ${details.name} (${details.gender})`
-                            : no;
-
-                          return (
-                            <label
-                              key={no}
-                              className={dropdownOptionRowClasses(
-                                selectedAdmissionNos.includes(no),
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedAdmissionNos.includes(no)}
-                                onChange={() => handleAdmissionToggle(no)}
-                                className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
-                              />
-                              {label}
-                            </label>
-                          );
-                        })
+                        <ChevronDown size={18} strokeWidth={2} />
                       )}
+                    </span>
+                  </button>
+
+                  {isPickerOpen && (
+                    <div className={dropdownPanelClasses}>
+                      <label className={dropdownAllRowClasses}>
+                        <input
+                          type="checkbox"
+                          checked={isAllCombosSelected}
+                          onChange={handleToggleAllCombos}
+                          className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                        />
+                        All
+                      </label>
+                      <div className="max-h-60 overflow-y-auto">
+                        {DEPT_SECTION_OPTIONS.map((option) => (
+                          <label
+                            key={option.key}
+                            className={dropdownOptionRowClasses(
+                              selectedCombos.includes(option.key),
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedCombos.includes(option.key)}
+                              onChange={() => handleComboToggle(option.key)}
+                              className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                            />
+                            {option.label}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedAdmissionNos.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
-                    {/* Header */}
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#000000]">
-                        Selected ({selectedAdmissionNos.length})
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={handleClearAllAdmission}
-                        className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
-                      >
-                        <Undo2 className="h-3 w-3" />
-                        Clear All
-                      </button>
-                    </div>
-
-                    {/* First 4 selected students */}
-                    <div className="flex flex-col gap-1.5">
-                      {(showAllAdmissions
-                        ? selectedAdmissionNos
-                        : selectedAdmissionNos.slice(0, 4)
-                      ).map((no) => {
-                        const details = ADMISSION_DETAILS.get(no);
-
-                        const label = details ? `${no} - ${details.name}` : no;
-
-                        return (
+                  {selectedCombos.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-[#000000]">
+                          Selected ({selectedCombos.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleClearAllCombos}
+                          className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+                        >
+                          <Undo2 className="h-3 w-3" />
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {selectedCombos.map((key) => (
                           <div
-                            key={no}
+                            key={key}
                             className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
                           >
-                            <span className="flex min-w-0 items-center gap-2">
-                              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
-
-                              <span className="truncate">{label}</span>
+                            <span className="flex items-center gap-2">
+                              <Users className="h-3.5 w-3.5 text-[#800000]" />
+                              {getComboLabel(key)}
                             </span>
-
                             <button
                               type="button"
-                              onClick={() => handleRemoveAdmission(no)}
+                              onClick={() => handleRemoveCombo(key)}
                               className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
-                              aria-label={`Remove ${no}`}
+                              aria-label={`Remove ${getComboLabel(key)}`}
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    {/* View More */}
-                    {selectedAdmissionNos.length > 4 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllAdmissions((prev) => !prev)}
-                        className="mt-2 w-full text-center text-xs font-semibold text-[#800000] hover:underline"
-                      >
-                        {showAllAdmissions
-                          ? "View Less"
-                          : `View More (${selectedAdmissionNos.length - 4} more)`}
-                      </button>
+              {/* Admission Number (for Retest and University) */}
+              {(category === "Retest" || category === "University") && (
+                <div ref={admissionPickerRef} className="relative">
+                  <label className={labelClasses}>Admission Number</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAdmissionPickerOpen((prev) => !prev)}
+                    className={dropdownTriggerClasses(
+                      isAdmissionPickerOpen,
+                      false,
                     )}
-                  </div>
-                )}
-              </div>
+                  >
+                    <BadgeCheck
+                      size={18}
+                      strokeWidth={2}
+                      className={dropdownIconClasses(isAdmissionPickerOpen)}
+                    />
+                    <span
+                      className={`flex-1 truncate text-[15px] font-medium ${
+                        selectedAdmissionNos.length
+                          ? "text-black"
+                          : "text-black/45"
+                      }`}
+                    >
+                      {selectedAdmissionNos.length
+                        ? `${selectedAdmissionNos.length} Selected`
+                        : "Select admission number(s)"}
+                    </span>
+                    <span className={dropdownArrowClasses(isAdmissionPickerOpen)}>
+                      {isAdmissionPickerOpen ? (
+                        <ChevronUp size={18} strokeWidth={2} />
+                      ) : (
+                        <ChevronDown size={18} strokeWidth={2} />
+                      )}
+                    </span>
+                  </button>
+
+                  {isAdmissionPickerOpen && (
+                    <div className={dropdownPanelClasses + " p-0"}>
+                      {/* Range picker: select from-number to-number */}
+                      <div className="border-b border-black/5 bg-[#FAFAFA] p-3">
+                        <p className="mb-2 text-xs font-semibold text-[#000000]">
+                          Select Range
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <SearchableSelect
+                              value={rangeFrom}
+                              options={ADMISSION_NO_OPTIONS}
+                              detailsMap={ADMISSION_DETAILS}
+                              onChange={setRangeFrom}
+                              placeholder="From"
+                            />
+                          </div>
+                          <span className="shrink-0 text-xs font-semibold text-[#9CA3AF]">
+                            to
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <SearchableSelect
+                              value={rangeTo}
+                              options={ADMISSION_NO_OPTIONS}
+                              detailsMap={ADMISSION_DETAILS}
+                              onChange={setRangeTo}
+                              placeholder="To"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleApplyAdmissionRange}
+                          disabled={!rangeFrom || !rangeTo}
+                          className="mt-2 w-full rounded-md bg-[#800000] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#690000] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Add Range
+                        </button>
+                      </div>
+
+                      {/* Search Bar for Main Checkbox List */}
+                      <div className="p-2 border-b border-black/5 bg-white sticky top-0 z-10">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search by name or number..."
+                            value={admissionSearch}
+                            onChange={(e) => setAdmissionSearch(e.target.value)}
+                            className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#800000] focus:ring-1 focus:ring-[#800000]"
+                          />
+                          {admissionSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setAdmissionSearch("")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="max-h-56 overflow-y-auto p-1.5 relative">
+                        {!admissionSearch && (
+                          <label className={dropdownAllRowClasses}>
+                            <input
+                              type="checkbox"
+                              checked={isAllAdmissionSelected}
+                              onChange={handleToggleAllAdmission}
+                              className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                            />
+                            All
+                          </label>
+                        )}
+
+                        {filteredAdmissionOptions.length === 0 ? (
+                          <div className="p-4 text-center text-sm text-gray-500">
+                            No students found matching "{admissionSearch}"
+                          </div>
+                        ) : (
+                          filteredAdmissionOptions.map((no) => {
+                            const details = ADMISSION_DETAILS.get(no);
+                            const label = details
+                              ? `${no} - ${details.name} (${details.gender})`
+                              : no;
+
+                            return (
+                              <label
+                                key={no}
+                                className={dropdownOptionRowClasses(
+                                  selectedAdmissionNos.includes(no),
+                                )}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAdmissionNos.includes(no)}
+                                  onChange={() => handleAdmissionToggle(no)}
+                                  className="h-4 w-4 rounded border-gray-300 accent-[#800000]"
+                                />
+                                {label}
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAdmissionNos.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                      {/* Header */}
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-[#000000]">
+                          Selected ({selectedAdmissionNos.length})
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={handleClearAllAdmission}
+                          className="flex items-center gap-1 text-xs font-semibold text-[#800000] hover:underline"
+                        >
+                          <Undo2 className="h-3 w-3" />
+                          Clear All
+                        </button>
+                      </div>
+
+                      {/* First 4 selected students */}
+                      <div className="flex flex-col gap-1.5">
+                        {(showAllAdmissions
+                          ? selectedAdmissionNos
+                          : selectedAdmissionNos.slice(0, 4)
+                        ).map((no) => {
+                          const details = ADMISSION_DETAILS.get(no);
+
+                          const label = details ? `${no} - ${details.name}` : no;
+
+                          return (
+                            <div
+                              key={no}
+                              className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs text-[#000000] shadow-sm"
+                            >
+                              <span className="flex min-w-0 items-center gap-2">
+                                <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#800000]" />
+
+                                <span className="truncate">{label}</span>
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAdmission(no)}
+                                className="rounded-full p-0.5 text-[#9CA3AF] transition hover:bg-[#800000]/10 hover:text-[#800000]"
+                                aria-label={`Remove ${no}`}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* View More */}
+                      {selectedAdmissionNos.length > 4 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllAdmissions((prev) => !prev)}
+                          className="mt-2 w-full text-center text-xs font-semibold text-[#800000] hover:underline"
+                        >
+                          {showAllAdmissions
+                            ? "View Less"
+                            : `View More (${selectedAdmissionNos.length - 4} more)`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Question Code / Date / Start Time / End Time / Duration */}
               <style>
@@ -1566,7 +1714,7 @@ export default function Schedule() {
                     icon={BookOpenCheck}
                     value={questionCode}
                     options={TEST_CODE_LABELS}
-                    onChange={setquestionCode}
+                    onChange={handleQuestionCodeChange}
                     placeholder="Select Test Code"
                     loading={isLoadingScheduleData}
                   />
@@ -1600,45 +1748,17 @@ export default function Schedule() {
                 </div>
               </div>
 
-              {/* Start Time / End Time / Duration — 3 equal boxes */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="min-w-0">
-                  <AnalogClockPicker
-                    label="Start Time"
-                    IconComponent={Clock3}
-                    hour={startHour}
-                    minute={startMinute}
-                    period={startPeriod}
-                    selectedDate={date}
-                    minDateTime={(() => {
-                      const now = new Date();
-                      return now.getHours() * 60 + now.getMinutes();
-                    })()}
-                    onChange={({ hour, minute, period }) => {
-                      setStartHour(hour);
-                      setStartMinute(minute);
-                      setStartPeriod(period);
-                    }}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <AnalogClockPicker
-                    label="End Time"
-                    IconComponent={Clock4}
-                    hour={endHour}
-                    minute={endMinute}
-                    period={endPeriod}
-                    onChange={({ hour, minute, period }) => {
-                      setEndHour(hour);
-                      setEndMinute(minute);
-                      setEndPeriod(period);
-                    }}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <label className={labelClasses}>Duration</label>
+              {/* Start Time / End Time / Duration */}
+              {category === "Normal" ? (
+                <div>
+                  <label className={labelClasses}>
+                    Duration
+                    {selectedTestAudioDuration !== null && (
+                      <span className="ml-2 text-xs font-normal text-black/55">
+                        (2 × {selectedTestAudioDuration}m + 5m = {Math.ceil(selectedTestAudioDuration * 2) + 5}m)
+                      </span>
+                    )}
+                  </label>
                   <div className={staticFieldClasses}>
                     <Clock3
                       size={18}
@@ -1651,7 +1771,7 @@ export default function Schedule() {
                       step="1"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
-                      placeholder=""
+                      placeholder="Duration in minutes"
                       className="no-spinner w-full flex-1 bg-transparent text-[14px] font-medium text-black outline-none placeholder:text-black/45"
                     />
                     <span className="shrink-0 text-xs font-semibold text-[#808080]">
@@ -1659,7 +1779,74 @@ export default function Schedule() {
                     </span>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="min-w-0">
+                    <AnalogClockPicker
+                      label="Start Time"
+                      IconComponent={Clock3}
+                      hour={startHour}
+                      minute={startMinute}
+                      period={startPeriod}
+                      selectedDate={date}
+                      minDateTime={(() => {
+                        const now = new Date();
+                        return now.getHours() * 60 + now.getMinutes();
+                      })()}
+                      onChange={({ hour, minute, period }) => {
+                        setStartHour(hour);
+                        setStartMinute(minute);
+                        setStartPeriod(period);
+                      }}
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <AnalogClockPicker
+                      label="End Time"
+                      IconComponent={Clock4}
+                      hour={endHour}
+                      minute={endMinute}
+                      period={endPeriod}
+                      onChange={({ hour, minute, period }) => {
+                        setEndHour(hour);
+                        setEndMinute(minute);
+                        setEndPeriod(period);
+                      }}
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <label className={labelClasses}>
+                      Duration
+                      {selectedTestAudioDuration !== null && (
+                        <span className="ml-2 text-xs font-normal text-black/55">
+                          (2 × {selectedTestAudioDuration}m + 5m = {Math.ceil(selectedTestAudioDuration * 2) + 5}m)
+                        </span>
+                      )}
+                    </label>
+                    <div className={staticFieldClasses}>
+                      <Clock3
+                        size={18}
+                        strokeWidth={2}
+                        className="shrink-0 text-black/60"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                        placeholder=""
+                        className="no-spinner w-full flex-1 bg-transparent text-[14px] font-medium text-black outline-none placeholder:text-black/45"
+                      />
+                      <span className="shrink-0 text-xs font-semibold text-[#808080]">
+                        mins
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit */}
@@ -1679,7 +1866,11 @@ export default function Schedule() {
                   ? "Loading options..."
                   : category === "Retest"
                     ? "Assign Retest"
-                    : "Confirm Schedule"}
+                    : category === "University"
+                      ? "Schedule University Exam"
+                      : category === "Normal"
+                        ? "Schedule for All Sections"
+                        : "Confirm Schedule"}
             </button>
 
             {scheduleDataError && (

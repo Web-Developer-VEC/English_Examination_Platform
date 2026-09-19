@@ -73,6 +73,19 @@ router.delete(
 router.post(
   "/exam-results",
   roleByAccess(["admin", "staff"]),
+  (req, res, next) => {
+    const category = req.body?.category || req.query?.category;
+    if (
+      String(category || "").trim().toLowerCase() === "university" &&
+      req.user?.role !== "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "University examination reports can only be downloaded by administrators.",
+      });
+    }
+    next();
+  },
   generateExamReport,
 );
 router.post(

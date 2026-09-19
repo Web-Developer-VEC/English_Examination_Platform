@@ -24,8 +24,11 @@ const StudentLogin = () => {
     }
   };
 
-  clearStudentSession();
-  clearAdminSession();
+  useEffect(() => {
+    clearStudentSession();
+    clearAdminSession();
+  }, []);
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     identifier: "",

@@ -74,11 +74,20 @@ const studentsUpload = async (req, res) => {
   } catch (error) {
     console.error("Student Upload Error:", error);
 
-    return res.status(error.status || 500).json({
-      success: false,
-      message: "Failed to upload students.",
-      error: error.message || "Unexpected server error.",
-    });
+    const status = error.status || 500;
+
+    return res.status(status).json(
+      status < 500
+        ? {
+            success: false,
+            message: error.message,
+          }
+        : {
+            success: false,
+            message: "Failed to upload students.",
+            error: error.message || "Unexpected server error.",
+          },
+    );
   }
 };
 
@@ -121,11 +130,20 @@ const updateStudent = async (req, res) => {
   } catch (error) {
     console.error("Student Update Error:", error);
 
-    return res.status(error.status || 500).json({
-      success: false,
-      message: "Failed to update students.",
-      error: error.message || "Unexpected server error.",
-    });
+    const status = error.status || 500;
+
+    return res.status(status).json(
+      status < 500
+        ? {
+            success: false,
+            message: error.message,
+          }
+        : {
+            success: false,
+            message: "Failed to update students.",
+            error: error.message || "Unexpected server error.",
+          },
+    );
   }
 };
 
@@ -168,10 +186,12 @@ const getStudentByUsername = async (req, res) => {
     const exams = await db
       .collection("exam")
       .aggregate([
-        // Find exams for this student
+        // Find exams for this student (exclude university exams)
         {
           $match: {
             admissionNo: student.admissionNo,
+            category: { $not: { $regex: /^university$/i } },
+            cie: { $not: { $regex: /^university$/i } },
           },
         },
 
@@ -296,5 +316,5 @@ module.exports = {
   studentsUpload,
   updateStudent,
   getStudentByUsername,
-  deleteStudent
+  deleteStudent,
 };

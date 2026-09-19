@@ -146,7 +146,7 @@
             <h1>Velammal Engineering College</h1>
             <h4><i>(An Autonomous Institution, Affiliated to Anna University, Chennai)</i></h4>
             <h2>Velammal Newgen Park, Ambattur-Red Hills Road, Chennai-600 066</h2>
-            <h2>English Department - Examination Report</h2>
+            <h2>{{REPORT_TITLE}}</h2>
         </div>
 
     </div>
@@ -159,7 +159,6 @@
             {{BATCH}}
         </div>
 
-
         <div>
             <span class="filter-item">Branch:</span>
             {{DEPARTMENT}}
@@ -171,9 +170,15 @@
         </div>
 
         <div>
-            <span class="filter-item">CIE:</span>
-            {{CIE}}
+            <span class="filter-item">Semester:</span>
+            {{SEMESTER}}
         </div>
+
+        <div>
+            <span class="filter-item">{{EXAM_TYPE_LABEL}}:</span>
+            {{EXAM_TYPE_VALUE}}
+        </div>
+
         <div>
             <span class="filter-item">Faculty Incharge:</span>
             {{STAFF}}

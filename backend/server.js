@@ -44,7 +44,7 @@ app.use(secureNoSQLMiddleware);
 // Request Logger
 app.use((req, res, next) => {
   res.on("finish", () => {
-    console.log("Hits :", req.method, req.originalUrl);
+    // console.log("Hits :", req.method, req.originalUrl);
   });
 
   next();

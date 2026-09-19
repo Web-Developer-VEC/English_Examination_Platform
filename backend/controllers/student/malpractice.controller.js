@@ -115,7 +115,7 @@ const reportMalpractice = async (req, res) => {
         {
           $set: {
             status: false,
-
+            allowResume: false,
             result: "Malpractice",
 
             submittedAt: detectedAt,
@@ -123,6 +123,15 @@ const reportMalpractice = async (req, res) => {
             updatedAt: detectedAt,
           },
         },
+      );
+
+      await db.collection("students").updateOne(
+        { admissionNo: String(admissionNo).trim() },
+        {
+          $set: {
+            allowResume: false,
+          },
+        }
       );
 
       return res.status(403).json({

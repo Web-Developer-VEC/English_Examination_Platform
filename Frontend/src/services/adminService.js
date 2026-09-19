@@ -23,6 +23,30 @@ export const deleteScheduledExam = async (testId) => {
     return response.data;
 };
 
+// END SCHEDULED EXAM
+export const endScheduledExam = async (testId) => {
+    const response = await api.post(
+        `${API_URL}/schedule/end-test`,
+        {
+            testId: testId,
+        }
+    );
+
+    return response.data;
+};
+
+// RESUME STUDENT EXAM
+export const resumeStudentExam = async (username) => {
+    const response = await api.post(
+        `${API_URL}/schedule/resume-student-exam`,
+        {
+            username: username,
+        }
+    );
+
+    return response.data;
+};
+
 // UPLOAD QUESTIONS
 export const uploadQuestions = async ({
     questionCode,

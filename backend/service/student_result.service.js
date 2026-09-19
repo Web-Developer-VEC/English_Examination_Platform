@@ -134,6 +134,11 @@ const generateStudentExamPDF = async (testId, admissionNo ) => {
       throw new Error("Scheduled examination not found.");
     }
 
+    // CHECK UNIVERSITY CATEGORY
+    if (String(exam.category || "").trim().toLowerCase() === "university") {
+      throw new Error("Student reports are not generated for university examinations.");
+    }
+
     // ====================================================
     // FIND STUDENT ATTEMPT
     // ====================================================
