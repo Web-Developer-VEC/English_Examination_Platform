@@ -7,6 +7,7 @@ const { ObjectId } = require("mongodb");
 
 const { getDB } = require("../config/db");
 const { uploadToS3 } = require("./s3.service");
+const { getSubjectDetails } = require("../utils/subjectHelper");
 
 const escapeRegex = (str) =>
   str ? String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
@@ -529,6 +530,8 @@ const generateAndSaveClassReport = async ({
       ? "External Examiner's Signature"
       : "HOD's Signature";
 
+    const { subjectCode, subjectName } = getSubjectDetails(cleanSem);
+
     const compiledHtml = htmlTemplate
       .replace("{{LOGO}}", logoData)
       .replace("{{REPORT_TITLE}}", reportTitle)
@@ -537,6 +540,8 @@ const generateAndSaveClassReport = async ({
       .replace("{{DEPARTMENT}}", departmentValue)
       .replace("{{SECTION}}", sectionValue)
       .replace("{{SEMESTER}}", semesterValue)
+      .replace("{{SUBJECT_CODE}}", subjectCode)
+      .replace("{{SUBJECT_NAME}}", subjectName)
       .replace("{{EXAM_TYPE_LABEL}}", examTypeLabel)
       .replace("{{EXAM_TYPE_VALUE}}", examTypeValue)
       .replace("{{CIE}}", cieDisplay)
@@ -626,6 +631,8 @@ const generateAndSaveClassReport = async ({
       department: cleanDept,
       section: cleanSec,
       semester: cleanSem,
+      subjectCode,
+      subjectName,
       category: cleanCategory,
       cie: isCieReport ? cieValue : null,
       academicYear: academicYearValue,

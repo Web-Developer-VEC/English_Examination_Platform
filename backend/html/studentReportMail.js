@@ -300,7 +300,7 @@ const getEmailTemplate = (studentName, examTitle, questionCode, isMalpractice = 
         </div>
 
         <h2 class="report-title">
-          ${examTitle || "English Laboratory Test Report"} - ${questionCode || "N/A"}
+          ${examTitle || "English Laboratory Test Report"} (${questionCode || "N/A"})
         </h2>
 
       </div>
@@ -333,7 +333,7 @@ const getEmailTemplate = (studentName, examTitle, questionCode, isMalpractice = 
 
         <p>
           Your test report for <strong>${examTitle || "English Laboratory Test"}</strong> 
-          (Code: <strong>${questionCode || "N/A"}</strong>) has been successfully generated.
+          (Question Code: <strong>${questionCode || "N/A"}</strong>) has been successfully generated.
         </p>
 
 
@@ -355,7 +355,7 @@ const getEmailTemplate = (studentName, examTitle, questionCode, isMalpractice = 
 
             Your detailed
             <strong>
-              ${examTitle || "English Laboratory Test Report"} ${questionCode || "N/A"}
+              ${examTitle || "English Laboratory Test Report"} (${questionCode || "N/A"})
             </strong>
             is attached as a PDF document.
 

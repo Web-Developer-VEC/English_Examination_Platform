@@ -233,3 +233,36 @@ export function markResultSent(admissionNo, testId) {
         );
     }
 }
+
+// =====================================================
+// Subject Information Helpers
+// =====================================================
+export function getSubjectDetails(semester) {
+    const semStr = String(semester || "").trim().toLowerCase();
+
+    // Semester 1 / Odd
+    if (
+        semStr === "odd" ||
+        semStr === "1" ||
+        semStr === "sem1" ||
+        semStr === "sem 1" ||
+        semStr === "semester 1" ||
+        semStr === "semester1" ||
+        semStr === "i"
+    ) {
+        return {
+            code: "23EN102L",
+            name: "COMMUNICATIVE ENGLISH LABORATORY",
+            semester: "Sem 1",
+            semesterTitle: "Semester 1",
+        };
+    }
+
+    // Semester 2 / Even (default)
+    return {
+        code: "23EN104L",
+        name: "TECHNICAL ENGLISH LABORATORY",
+        semester: "Sem 2",
+        semesterTitle: "Semester 2",
+    };
+}

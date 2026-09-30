@@ -63,8 +63,8 @@ const sendExamPDFEmail = async ({
 
         `To: ${studentEmail}`,
 
-        // <-- UPDATED SUBJECT LINE TO INCLUDE QUESTION CODE
-        `Subject: Examination Report - ${examTitle} ${questionCode}`,
+        // Subject line with exam title and question code
+        `Subject: Examination Report - ${examTitle} (${questionCode})`,
 
         `MIME-Version: 1.0`,
 

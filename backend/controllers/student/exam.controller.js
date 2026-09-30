@@ -390,6 +390,7 @@ const startExam = async (req, res) => {
           cie: cie,
           type: exam.type || questionSet.type || "audio",
           duration: exam.duration,
+          semester: exam.eligibility?.semester || student.semester || null,
           timeRemaining: remainingSeconds,
           startedAt: alreadyAttempted.startedAt,
           endTime: endTime,
@@ -445,6 +446,8 @@ const startExam = async (req, res) => {
       year: student.year,
 
       section: student.section,
+
+      semester: exam.eligibility?.semester || student.semester || null,
 
       answers: [],
 
@@ -514,6 +517,8 @@ const startExam = async (req, res) => {
       cie: cie,
 
       duration: exam.duration,
+
+      semester: exam.eligibility?.semester || student.semester || null,
 
       timeRemaining: Math.max(
         0,

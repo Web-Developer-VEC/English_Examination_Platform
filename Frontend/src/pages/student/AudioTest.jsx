@@ -13,6 +13,7 @@ import {
   getTestState,
   clearTestState,
   getStudentSession,
+  getSubjectDetails,
 } from "../../utils/helpers";
 import {
   syncExam,
@@ -54,6 +55,7 @@ export default function AudioTest() {
   const studentSession = getStudentSession();
   const admissionNo = studentSession?.user?.admissionNo;
   const testId = examData?.testId;
+  const subjectDetails = getSubjectDetails(examData?.semester);
   const MAX_PLAYS = 2;
   const audioProgress =
     duration > 0 ? ((duration - currentTime) / duration) * 100 : 0;
@@ -893,14 +895,14 @@ export default function AudioTest() {
         <div className="w-full flex flex-col gap-6">
           {/* SUBJECT INFORMATION */}
 
-          <div className="text-center flex justify-center items-center gap-210">
+          <div className="text-center flex justify-center items-center gap-10 sm:gap-20">
             <div>
               <p className="text-sm md:text-base font-semibold text-slate-500">
                 Subject Code
               </p>
 
               <span className="text-lg md:text-xl font-semibold text-slate-700">
-                23EN103L
+                {subjectDetails.code}
               </span>
             </div>
 
@@ -910,7 +912,7 @@ export default function AudioTest() {
               </p>
 
               <span className="text-lg md:text-xl font-semibold text-slate-700">
-                TECHNICAL ENGLISH LABORATORY
+                {subjectDetails.name}
               </span>
             </div>
           </div>

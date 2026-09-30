@@ -18,7 +18,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getFormData, getExamResults } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
-import { getAdminSession } from "../../utils/helpers";
+import { getAdminSession, getSubjectDetails } from "../../utils/helpers";
 // -----------------------------------------------------
 // PROJECT COLORS
 // -----------------------------------------------------
@@ -849,6 +849,19 @@ export default function StudentResult() {
                   placeholder="Select CIE"
                   disabled={false}
                 />
+              )}
+
+              {/* SUBJECT INDICATOR */}
+              {sem && (
+                <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#800000] uppercase tracking-wider">Subject:</span>
+                    <span className="font-semibold text-slate-800">{getSubjectDetails(sem).name}</span>
+                  </div>
+                  <span className="px-2.5 py-1 bg-white font-mono font-bold text-[#800000] border border-amber-300 rounded-md">
+                    {getSubjectDetails(sem).code}
+                  </span>
+                </div>
               )}
             </div>
           )}

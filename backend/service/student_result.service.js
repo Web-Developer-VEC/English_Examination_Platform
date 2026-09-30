@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { ObjectId } = require("mongodb");
 const { getDB } = require("../config/db");
+const { getSubjectDetails } = require("../utils/subjectHelper");
 
 // IMPORT YOUR EMAIL SERVICE HERE
 const { sendExamPDFEmail } = require("./report_mail.service");
@@ -178,6 +179,9 @@ const generateStudentExamPDF = async (testId, admissionNo ) => {
       throw new Error("Question set not found.");
     }
     const questionCode = questionSet.questionCode || "N/A";
+
+    const semester = exam.eligibility?.semester || examAttempt?.semester || student.semester || "";
+    const { subjectCode, subjectName, semesterTitle } = getSubjectDetails(semester);
 
     // ====================================================
     // QUESTIONS
@@ -992,7 +996,13 @@ body {
 
     <div class="report-title">
 
-        EXAM REPORT - ${questionCode}
+        ${subjectCode} - ${subjectName}
+
+    </div>
+
+    <div style="font-size: 11px; font-weight: bold; margin-top: 3px; color: #555;">
+
+        EXAM REPORT (${questionCode})
 
     </div>
 
@@ -1076,6 +1086,33 @@ body {
             <strong>Category:</strong>
 
             ${escapeHtml(exam.category || examAttempt.category || "-")}
+
+        </div>
+
+
+        <div class="student-field">
+
+            <strong>Semester:</strong>
+
+            ${escapeHtml(semester ? (semester.charAt(0).toUpperCase() + semester.slice(1)) : semesterTitle)}
+
+        </div>
+
+
+        <div class="student-field">
+
+            <strong>Subject Code:</strong>
+
+            ${escapeHtml(subjectCode)}
+
+        </div>
+
+
+        <div class="student-field">
+
+            <strong>Subject Name:</strong>
+
+            ${escapeHtml(subjectName)}
 
         </div>
 
@@ -1283,8 +1320,7 @@ ${questionHTML}
 
     const filename = `Velammal Engineering College - ${safeAdmissionNo}.pdf`;
 
-    const examTitle = exam.title || exam.testName || exam.name || "Assessment";
-
+    const examTitle = `${subjectCode} - ${subjectName}`;
 
     const studentName = student.name || examAttempt.studentName || "Student";
     const { addEmailToQueue } = require("../utils/sesEmailQueue");
@@ -1295,6 +1331,8 @@ ${questionHTML}
         studentName,
         examTitle,
         questionCode,
+        subjectCode,
+        subjectName,
         questions,
         pdfBuffer,
         filename,

@@ -11,6 +11,7 @@ import {
   getTestState,
   clearTestState,
   getStudentSession,
+  getSubjectDetails,
 } from "../../utils/helpers";
 import {
   syncExam,
@@ -62,6 +63,7 @@ export default function ComprehensionTest() {
   const studentSession = getStudentSession();
   const admissionNo = studentSession?.user?.admissionNo;
   const testId = examData?.testId;
+  const subjectDetails = getSubjectDetails(examData?.semester);
   const passageText = examData?.passage || "";
 
   const totalExamTime = (examData?.duration || 0) * 60;
@@ -726,14 +728,14 @@ export default function ComprehensionTest() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
-                  Reading Comprehension Assessment
+                  {subjectDetails.name}
                 </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-semibold rounded-full bg-amber-100 text-[#800000] border border-amber-200">
-                  Passage-based
+                <span className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-100 text-[#800000] border border-amber-200">
+                  {subjectDetails.code}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 hidden md:block">
-                Read the passage carefully and answer all questions
+                Reading Comprehension Assessment • Read the passage carefully and answer all questions
               </p>
             </div>
           </div>
