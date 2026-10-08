@@ -64,14 +64,36 @@
         }
 
         .filters {
-            display: flex;
-            gap: 30px;
+            display: grid;
+            grid-template-columns: 18% 38% 16% 28%;
+            row-gap: 9px;
+            column-gap: 16px;
             margin-bottom: 20px;
-            font-size: 13px;
+            padding: 10px 14px;
+            border: 1px solid #444;
+            background: #fafafa;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .filter-item-box {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            min-width: 0;
         }
 
         .filter-item {
             font-weight: bold;
+            color: #000;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-value {
+            color: #222;
+            word-break: normal;
         }
 
         table {
@@ -174,44 +196,44 @@
 
     <div class="filters">
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Batch:</span>
-            {{BATCH}}
+            <span class="filter-value">{{BATCH}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Branch:</span>
-            {{DEPARTMENT}}
+            <span class="filter-value">{{DEPARTMENT}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Section:</span>
-            {{SECTION}}
+            <span class="filter-value">{{SECTION}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Semester:</span>
-            {{SEMESTER}}
+            <span class="filter-value">{{SEMESTER}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Subject Code:</span>
-            {{SUBJECT_CODE}}
+            <span class="filter-value">{{SUBJECT_CODE}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Subject Name:</span>
-            {{SUBJECT_NAME}}
+            <span class="filter-value">{{SUBJECT_NAME}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">{{EXAM_TYPE_LABEL}}:</span>
-            {{EXAM_TYPE_VALUE}}
+            <span class="filter-value">{{EXAM_TYPE_VALUE}}</span>
         </div>
 
-        <div>
+        <div class="filter-item-box">
             <span class="filter-item">Faculty Incharge:</span>
-            {{STAFF}}
+            <span class="filter-value">{{STAFF}}</span>
         </div>
 
     </div>
