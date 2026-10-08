@@ -7,6 +7,7 @@ const {
   EXAM_START_MINUTES_IST,
   EXAM_END_MINUTES_IST,
 } = require("../../helper/ist_converter");
+const { getSubjectDetails } = require("../../utils/subjectHelper");
 
 // ============================================================
 // GENERATE UNIQUE TEST CODE HELPER
@@ -44,6 +45,8 @@ const scheduleExam = async (req, res) => {
       duration,
       startTime,
       endTime,
+      subjectName,
+      subjectCode,
     } = req.body;
 
     // =====================================================
@@ -428,11 +431,39 @@ const scheduleExam = async (req, res) => {
       testcodeGeneratedAt = now;
     }
 
+    // =====================================================
+    // SUBJECT RESOLUTION & FALLBACK
+    // =====================================================
+    let finalSubjectName = subjectName ? String(subjectName).trim() : null;
+    let finalSubjectCode = subjectCode ? String(subjectCode).trim() : null;
+
+    if (!finalSubjectName || !finalSubjectCode) {
+      if (finalSubjectName && !finalSubjectCode) {
+        const subjectSettings = await db.collection("admin_settings").findOne({
+          type: "subjects",
+        });
+        const match = (subjectSettings?.subjects || []).find(
+          (s) =>
+            s.subjectName?.trim().toUpperCase() ===
+            finalSubjectName.toUpperCase(),
+        );
+        if (match?.subjectCode) {
+          finalSubjectCode = match.subjectCode;
+        }
+      }
+
+      const defaultSubject = getSubjectDetails(normalizedSemester);
+      if (!finalSubjectName) finalSubjectName = defaultSubject.subjectName;
+      if (!finalSubjectCode) finalSubjectCode = defaultSubject.subjectCode;
+    }
+
     const exam = {
       category: normalizedCategory,
       type: examType,
       cie: normalizedCIE,
       questionSetId: questionObjectId,
+      subjectName: finalSubjectName,
+      subjectCode: finalSubjectCode,
       inchargeStaff: assignedFaculty.name,
       eligibility: {
         department: String(department).trim(),

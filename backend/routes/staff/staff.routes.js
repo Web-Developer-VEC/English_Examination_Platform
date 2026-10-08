@@ -33,6 +33,8 @@ const {
   updateStudentEditPermission,
   getAdminSettings,
   getStudentEditPermission,
+  getSubjects,
+  updateSubjects,
 } = require("../../controllers/admin/admin.controller");
 const { roleByAccess } = require("../../middleware/roleby.access.middleware");
 
@@ -52,6 +54,10 @@ router.get(
   roleByAccess(["admin"]),
   getStudentEditPermission,
 );
+
+// Subject Management
+router.get("/subjects", roleByAccess(["admin", "staff"]), getSubjects);
+router.put("/subjects", roleByAccess(["admin"]), updateSubjects);
 
 // Upload Student Excel
 router.post("/studentsupload",roleByAccess(["admin"]),student_upload_Middleware, studentsUpload);

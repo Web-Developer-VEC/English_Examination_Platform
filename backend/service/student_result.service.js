@@ -181,7 +181,10 @@ const generateStudentExamPDF = async (testId, admissionNo ) => {
     const questionCode = questionSet.questionCode || "N/A";
 
     const semester = exam.eligibility?.semester || examAttempt?.semester || student.semester || "";
-    const { subjectCode, subjectName, semesterTitle } = getSubjectDetails(semester);
+    const defaultSubject = getSubjectDetails(semester);
+    const subjectCode = exam.subjectCode || examAttempt?.subjectCode || defaultSubject.subjectCode;
+    const subjectName = exam.subjectName || examAttempt?.subjectName || defaultSubject.subjectName;
+    const semesterTitle = defaultSubject.semesterTitle;
 
     // ====================================================
     // QUESTIONS

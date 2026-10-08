@@ -149,23 +149,43 @@ const login = async (req, res) => {
     let resetPass = false;
 
     // -----------------------------------------------------
-    // STUDENT FIRST LOGIN
-    // Password = DOB
+    // STUDENT LOGIN (EVALUATE ONLY WITH DOB)
     // -----------------------------------------------------
 
     if (role === "student") {
-      if (password === user.password && user.password === user.dob) {
-        resetPass = true;
-      } else {
-        // Student has already changed password
-        const isMatch = await bcrypt.compare(password, user.password);
+      const inputPass = String(password ?? "").trim();
+      const studentDob = String(user.dob ?? "").trim();
 
-        if (!isMatch) {
-          return res.status(401).json({
-            success: false,
-            message: "Incorrect Password",
-          });
+      const isDobMatch = (input, stored) => {
+        if (!input || !stored) return false;
+        if (input.toLowerCase() === stored.toLowerCase()) return true;
+
+        const cleanInput = input.replace(/[/.]/g, "-");
+        const cleanStored = stored.replace(/[/.]/g, "-");
+        if (cleanInput.toLowerCase() === cleanStored.toLowerCase()) return true;
+
+        const pIn = cleanInput.split("-");
+        const pSt = cleanStored.split("-");
+        if (pIn.length === 3 && pSt.length === 3) {
+          if (
+            (pIn[0] === pSt[2] && pIn[1] === pSt[1] && pIn[2] === pSt[0]) ||
+            (pIn[0] === pSt[0] && pIn[1] === pSt[1] && pIn[2] === pSt[2])
+          ) {
+            return true;
+          }
         }
+        return false;
+      };
+
+      if (!isDobMatch(inputPass, studentDob)) {
+        return res.status(401).json({
+          success: false,
+          message: "Incorrect Password",
+        });
+      }
+
+      if (user.firstlogin) {
+        resetPass = true;
       }
     }
 

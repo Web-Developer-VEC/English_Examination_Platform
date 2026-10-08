@@ -5,6 +5,8 @@ import {
   updateStudentProfileAccess,
   getAcademicYear,
   updateAcademicYear,
+  getSubjects,
+  updateSubjects,
 } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
 import {
@@ -25,6 +27,10 @@ import {
   UserCheck,
   AlertCircle,
   X,
+  BookOpen,
+  Plus,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 
 import ThemeDropdown from "../../components/common/ThemeDropDown";
@@ -92,39 +98,55 @@ const getErrorMessage = (data, fallback) =>
   data?.errors?.[0]?.message ||
   fallback;
 
-const normalizeStudent = (student = {}) => ({
-  id: getValue(student, ["_id", "id"]),
-
-  name: getValue(student, ["name"]),
-
-  registerNo: getValue(student, ["registerNo", "register_no", "regNo"]),
-
-  admissionNo: getValue(student, ["admissionNo", "admission_no"]),
-
-  email: getValue(student, ["email"]),
-
-  phone: getValue(student, ["phone"]),
-
-  department: getValue(student, ["branch"]),
-
-  year: getValue(student, ["year"]),
-
-  section: getValue(student, ["section"]),
-
-  batch: getValue(student, ["batch"]),
-
-  dob: getValue(student, ["dob"]),
-
-  // This should come from backend
-  editProfileEnabled: Boolean(
+const normalizeStudent = (student = {}) => {
+  const rawEnabled = Boolean(
     getValue(student, [
       "editProfileEnabled",
+      "studentEditEnabled",
       "profileEditEnabled",
       "isProfileEditEnabled",
       "allowProfileEdit",
     ]),
-  ),
-});
+  );
+
+  const rawType = getValue(student, ["editType"]) || "";
+  const editType =
+    rawType && rawType !== "none"
+      ? rawType
+      : rawEnabled
+      ? "regno"
+      : "none";
+
+  const editProfileEnabled = rawEnabled && editType !== "none";
+
+  return {
+    id: getValue(student, ["_id", "id"]),
+
+    name: getValue(student, ["name"]),
+
+    registerNo: getValue(student, ["registerNo", "register_no", "regNo"]),
+
+    admissionNo: getValue(student, ["admissionNo", "admission_no"]),
+
+    email: getValue(student, ["email"]),
+
+    phone: getValue(student, ["phone"]),
+
+    department: getValue(student, ["branch"]),
+
+    year: getValue(student, ["year"]),
+
+    section: getValue(student, ["section"]),
+
+    batch: getValue(student, ["batch"]),
+
+    dob: getValue(student, ["dob"]),
+
+    editType,
+
+    editProfileEnabled,
+  };
+};
 
 const getNextAcademicYear = (academicYears) => {
   if (!academicYears.length) {
@@ -195,6 +217,22 @@ const StudentProfileAccess = () => {
   const [editingAcademicYear, setEditingAcademicYear] = useState(false);
 
   const [deletingAcademicYear, setDeletingAcademicYear] = useState(null);
+
+  // Subject Management state
+  const [subjectsList, setSubjectsList] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [savingSubjects, setSavingSubjects] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState("");
+  const [newSubjectCode, setNewSubjectCode] = useState("");
+  const [editingSubjectIndex, setEditingSubjectIndex] = useState(null);
+  const [editSubjectName, setEditSubjectName] = useState("");
+  const [editSubjectCode, setEditSubjectCode] = useState("");
+
+  const [editTypeModal, setEditTypeModal] = useState({
+    isOpen: false,
+    targetStudent: null,
+    isBulk: false,
+  });
 
   const [message, setMessage] = useState("");
 
@@ -318,7 +356,7 @@ const StudentProfileAccess = () => {
     }
   };
 
-  const handleProfileAccessToggle = async (student) => {
+  const handleProfileAccessToggle = async (student, targetType = "regno") => {
     if (!student?.admissionNo) {
       showMessage(
         "Admission number is missing. Cannot update profile access.",
@@ -327,16 +365,19 @@ const StudentProfileAccess = () => {
       return;
     }
 
-    const nextValue = !student.editProfileEnabled;
+    const nextType = targetType;
+    const nextEnabled = nextType !== "none";
+
     setUpdatingStudentId(student.id || student.admissionNo);
 
     try {
       // Backend contract:
-      // { students: [{ admissionNo, studentEditEnabled }] }
+      // { students: [{ admissionNo, studentEditEnabled, editType }] }
       const data = await updateStudentProfileAccess([
         {
           admissionNo: String(student.admissionNo).trim(),
-          studentEditEnabled: nextValue,
+          studentEditEnabled: nextEnabled,
+          editType: nextType,
         },
       ]);
 
@@ -349,9 +390,20 @@ const StudentProfileAccess = () => {
       setStudents((previous) =>
         previous.map((item) =>
           item.admissionNo === student.admissionNo
-            ? { ...item, editProfileEnabled: nextValue }
+            ? { ...item, editProfileEnabled: nextEnabled, editType: nextType }
             : item,
         ),
+      );
+
+      const typeLabel =
+        nextType === "regno"
+          ? "Register Number only"
+          : nextType === "dob_email"
+          ? "DOB & Email only"
+          : "Disabled";
+      showMessage(
+        `Profile edit for ${student.name || student.admissionNo} set to ${typeLabel}.`,
+        "success",
       );
     } catch (error) {
       console.error("Profile access update error:", error);
@@ -364,14 +416,18 @@ const StudentProfileAccess = () => {
     }
   };
 
-  const handleAllStudentsAccess = async (enabled) => {
+  const handleAllStudentsAccess = async (targetType) => {
     if (!students.length) return;
+
+    const enabled = targetType !== "none" && targetType !== false;
+    const resolvedType = enabled ? targetType : "none";
 
     const permissionList = students
       .filter((student) => student?.admissionNo)
       .map((student) => ({
         admissionNo: String(student.admissionNo).trim(),
         studentEditEnabled: enabled,
+        editType: resolvedType,
       }));
 
     if (!permissionList.length) {
@@ -397,9 +453,20 @@ const StudentProfileAccess = () => {
       setStudents((previous) =>
         previous.map((student) =>
           updatedAdmissions.has(student.admissionNo)
-            ? { ...student, editProfileEnabled: enabled }
+            ? { ...student, editProfileEnabled: enabled, editType: resolvedType }
             : student,
         ),
+      );
+
+      const typeLabel =
+        resolvedType === "regno"
+          ? "Register Number only"
+          : resolvedType === "dob_email"
+          ? "DOB & Email only"
+          : "Disabled";
+      showMessage(
+        `All students profile access set to ${typeLabel}.`,
+        "success",
       );
     } catch (error) {
       console.error("Bulk profile access update error:", error);
@@ -409,6 +476,17 @@ const StudentProfileAccess = () => {
       );
     } finally {
       setUpdatingStudentId(null);
+    }
+  };
+
+  const handleSelectEditType = async (selectedType) => {
+    if (editTypeModal.isBulk) {
+      setEditTypeModal({ isOpen: false, targetStudent: null, isBulk: false });
+      await handleAllStudentsAccess(selectedType);
+    } else if (editTypeModal.targetStudent) {
+      const student = editTypeModal.targetStudent;
+      setEditTypeModal({ isOpen: false, targetStudent: null, isBulk: false });
+      await handleProfileAccessToggle(student, selectedType);
     }
   };
 
@@ -517,10 +595,169 @@ const StudentProfileAccess = () => {
     }
   };
 
+  const fetchSubjects = async () => {
+    setLoadingSubjects(true);
+    try {
+      const data = await getSubjects();
+      const list = Array.isArray(data?.data) ? data.data : (data?.data?.subjects || []);
+      if (list && list.length > 0) {
+        setSubjectsList(list);
+      } else {
+        setSubjectsList([
+          { subjectName: "COMMUNICATIVE ENGLISH LABORATORY", subjectCode: "23EN102L" },
+          { subjectName: "TECHNICAL ENGLISH LABORATORY", subjectCode: "23EN104L" },
+        ]);
+      }
+    } catch (error) {
+      console.error("Subject fetch error:", error);
+      setSubjectsList([
+        { subjectName: "COMMUNICATIVE ENGLISH LABORATORY", subjectCode: "23EN102L" },
+        { subjectName: "TECHNICAL ENGLISH LABORATORY", subjectCode: "23EN104L" },
+      ]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  const handleAddSubject = async () => {
+    const name = newSubjectName.trim().toUpperCase();
+    const code = newSubjectCode.trim().toUpperCase();
+
+    if (!name) {
+      showMessage("Please enter a subject name.", "error");
+      return;
+    }
+    if (!code) {
+      showMessage("Please enter a subject code.", "error");
+      return;
+    }
+
+    const alreadyExists = subjectsList.some(
+      (s) => s.subjectCode.toUpperCase() === code || s.subjectName.toUpperCase() === name,
+    );
+    if (alreadyExists) {
+      showMessage("A subject with this name or code already exists.", "error");
+      return;
+    }
+
+    const updatedList = [...subjectsList, { subjectName: name, subjectCode: code }];
+    setSavingSubjects(true);
+    try {
+      const data = await updateSubjects(updatedList);
+      if (data?.success === false) {
+        throw new Error(getErrorMessage(data, "Unable to add subject."));
+      }
+      setSubjectsList(data?.data || updatedList);
+      setNewSubjectName("");
+      setNewSubjectCode("");
+      showMessage(`Subject "${name}" added successfully.`, "success");
+    } catch (error) {
+      console.error("Add subject error:", error);
+      showMessage(getApiErrorMessage(error, "Failed to add subject."), "error");
+    } finally {
+      setSavingSubjects(false);
+    }
+  };
+
+  const handleSaveEditSubject = async (index) => {
+    const name = editSubjectName.trim().toUpperCase();
+    const code = editSubjectCode.trim().toUpperCase();
+
+    if (!name) {
+      showMessage("Please enter a subject name.", "error");
+      return;
+    }
+    if (!code) {
+      showMessage("Please enter a subject code.", "error");
+      return;
+    }
+
+    const duplicate = subjectsList.some(
+      (s, i) =>
+        i !== index &&
+        (s.subjectCode.toUpperCase() === code || s.subjectName.toUpperCase() === name),
+    );
+    if (duplicate) {
+      showMessage("Another subject with this name or code already exists.", "error");
+      return;
+    }
+
+    const updatedList = subjectsList.map((item, i) =>
+      i === index ? { subjectName: name, subjectCode: code } : item,
+    );
+
+    setSavingSubjects(true);
+    try {
+      const data = await updateSubjects(updatedList);
+      if (data?.success === false) {
+        throw new Error(getErrorMessage(data, "Unable to update subject."));
+      }
+      setSubjectsList(data?.data || updatedList);
+      setEditingSubjectIndex(null);
+      showMessage(`Subject updated successfully.`, "success");
+    } catch (error) {
+      console.error("Save subject error:", error);
+      showMessage(getApiErrorMessage(error, "Failed to update subject."), "error");
+    } finally {
+      setSavingSubjects(false);
+    }
+  };
+
+  const handleDeleteSubject = async (index) => {
+    if (subjectsList.length <= 1) {
+      showMessage("At least one subject is required in the platform.", "error");
+      return;
+    }
+
+    const target = subjectsList[index];
+    const updatedList = subjectsList.filter((_, i) => i !== index);
+
+    setSavingSubjects(true);
+    try {
+      const data = await updateSubjects(updatedList);
+      if (data?.success === false) {
+        throw new Error(getErrorMessage(data, "Unable to delete subject."));
+      }
+      setSubjectsList(data?.data || updatedList);
+      if (editingSubjectIndex === index) {
+        setEditingSubjectIndex(null);
+      }
+      showMessage(`Subject "${target.subjectName}" removed.`, "success");
+    } catch (error) {
+      console.error("Delete subject error:", error);
+      showMessage(getApiErrorMessage(error, "Failed to delete subject."), "error");
+    } finally {
+      setSavingSubjects(false);
+    }
+  };
+
+  const handleResetDefaultSubjects = async () => {
+    const defaults = [
+      { subjectName: "COMMUNICATIVE ENGLISH LABORATORY", subjectCode: "23EN102L" },
+      { subjectName: "TECHNICAL ENGLISH LABORATORY", subjectCode: "23EN104L" },
+    ];
+
+    setSavingSubjects(true);
+    try {
+      const data = await updateSubjects(defaults);
+      if (data?.success === false) {
+        throw new Error(getErrorMessage(data, "Unable to reset subjects."));
+      }
+      setSubjectsList(data?.data || defaults);
+      setEditingSubjectIndex(null);
+      showMessage("Subjects reset to default curriculum subjects.", "success");
+    } catch (error) {
+      console.error("Reset subjects error:", error);
+      showMessage(getApiErrorMessage(error, "Failed to reset subjects."), "error");
+    } finally {
+      setSavingSubjects(false);
+    }
+  };
+
   useEffect(() => {
     fetchScheduleData();
-
     fetchAcademicYears();
+    fetchSubjects();
   }, []);
 
   const handleBatchChange = (batch) => {
@@ -791,7 +1028,13 @@ const StudentProfileAccess = () => {
                     updatingStudentId !== null ||
                     students.length === 0
                   }
-                  onClick={() => handleAllStudentsAccess(true)}
+                  onClick={() =>
+                    setEditTypeModal({
+                      isOpen: true,
+                      targetStudent: null,
+                      isBulk: true,
+                    })
+                  }
                 >
                   <CheckCircle2 size={15} />
                   ENABLE ALL
@@ -805,7 +1048,7 @@ const StudentProfileAccess = () => {
                     updatingStudentId !== null ||
                     students.length === 0
                   }
-                  onClick={() => handleAllStudentsAccess(false)}
+                  onClick={() => handleAllStudentsAccess("none")}
                 >
                   <XCircle size={15} />
                   DISABLE ALL
@@ -932,20 +1175,41 @@ const StudentProfileAccess = () => {
                                 <div
                                   className={`access-status ${
                                     student.editProfileEnabled
-                                      ? "enabled"
+                                      ? student.editType === "dob_email"
+                                        ? "enabled dob-type"
+                                        : "enabled regno-type"
                                       : "disabled"
                                   }`}
+                                  onClick={() => {
+                                    setEditTypeModal({
+                                      isOpen: true,
+                                      targetStudent: student,
+                                      isBulk: false,
+                                    });
+                                  }}
+                                  title={
+                                    student.editProfileEnabled
+                                      ? `Click to change permissions (${
+                                          student.editType === "dob_email"
+                                            ? "DOB & Email"
+                                            : "Reg No"
+                                        })`
+                                      : "Click to choose edit mode and enable"
+                                  }
+                                  style={{ cursor: "pointer" }}
                                 >
                                   {student.editProfileEnabled ? (
                                     <>
-                                      <CheckCircle2 size={15} />
-
-                                      <span>Enabled</span>
+                                      <CheckCircle2 size={14} />
+                                      <span>
+                                        {student.editType === "dob_email"
+                                          ? "DOB & Email"
+                                          : "Reg No"}
+                                      </span>
                                     </>
                                   ) : (
                                     <>
-                                      <XCircle size={15} />
-
+                                      <XCircle size={14} />
                                       <span>Disabled</span>
                                     </>
                                   )}
@@ -957,13 +1221,26 @@ const StudentProfileAccess = () => {
                                     student.editProfileEnabled ? "active" : ""
                                   } ${updating ? "updating" : ""}`}
                                   disabled={updating}
-                                  onClick={() =>
-                                    handleProfileAccessToggle(student)
-                                  }
+                                  onClick={() => {
+                                    if (student.editProfileEnabled) {
+                                      handleProfileAccessToggle(student, "none");
+                                    } else {
+                                      setEditTypeModal({
+                                        isOpen: true,
+                                        targetStudent: student,
+                                        isBulk: false,
+                                      });
+                                    }
+                                  }}
                                   aria-label={
                                     student.editProfileEnabled
                                       ? "Disable Edit Profile"
                                       : "Enable Edit Profile"
+                                  }
+                                  title={
+                                    student.editProfileEnabled
+                                      ? "Click to disable Edit Profile"
+                                      : "Click to enable Edit Profile"
                                   }
                                 >
                                   <span className="toggle-track">
@@ -1201,6 +1478,181 @@ const StudentProfileAccess = () => {
           </div>
         </section>
 
+        {/* SUBJECT MANAGEMENT SECTION */}
+        <section className="access-card academic-card subject-card-section" style={{ marginTop: "24px" }}>
+          <div className="academic-header">
+            <div className="section-heading">
+              <div className="section-heading-icon subject-icon">
+                <BookOpen size={19} />
+              </div>
+
+              <div>
+                <h2>Subject Management</h2>
+                <p>Manage examination subjects. Add, edit, or delete subjects available for scheduling.</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="subject-reset-button"
+              onClick={handleResetDefaultSubjects}
+              disabled={savingSubjects || loadingSubjects}
+              title="Reset to default subjects"
+            >
+              <RotateCcw size={14} />
+              <span>Reset Defaults</span>
+            </button>
+          </div>
+
+          <div className="subject-management-body">
+            {loadingSubjects ? (
+              <div className="academic-direct-loading">
+                <span className="button-spinner" />
+                Loading subjects...
+              </div>
+            ) : (
+              <>
+                {/* SUBJECTS LIST */}
+                <div className="subject-list">
+                  {subjectsList.map((sub, index) => {
+                    const isEditing = editingSubjectIndex === index;
+                    return (
+                      <div key={index} className={`subject-item-card ${isEditing ? "editing" : ""}`}>
+                        {isEditing ? (
+                          <div className="subject-edit-inline">
+                            <div className="subject-edit-inputs">
+                              <div className="subject-input-group">
+                                <label>Subject Name</label>
+                                <input
+                                  type="text"
+                                  value={editSubjectName}
+                                  placeholder="e.g. COMMUNICATIVE ENGLISH LABORATORY"
+                                  onChange={(e) => setEditSubjectName(e.target.value)}
+                                  autoFocus
+                                />
+                              </div>
+                              <div className="subject-input-group subject-code-group">
+                                <label>Subject Code</label>
+                                <input
+                                  type="text"
+                                  value={editSubjectCode}
+                                  placeholder="e.g. 23EN102L"
+                                  onChange={(e) => setEditSubjectCode(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            <div className="subject-edit-actions">
+                              <button
+                                type="button"
+                                className="subject-cancel-btn"
+                                onClick={() => setEditingSubjectIndex(null)}
+                                disabled={savingSubjects}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                className="subject-save-btn"
+                                onClick={() => handleSaveEditSubject(index)}
+                                disabled={savingSubjects || !editSubjectName.trim() || !editSubjectCode.trim()}
+                              >
+                                {savingSubjects ? "Saving..." : "Save"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="subject-display-row">
+                            <div className="subject-info-col">
+                              <span className="subject-name-text">{sub.subjectName}</span>
+                              <span className="subject-code-badge">{sub.subjectCode}</span>
+                            </div>
+                            <div className="subject-action-btns">
+                              <button
+                                type="button"
+                                className="subject-edit-icon-btn"
+                                title="Edit subject"
+                                onClick={() => {
+                                  setEditingSubjectIndex(index);
+                                  setEditSubjectName(sub.subjectName);
+                                  setEditSubjectCode(sub.subjectCode);
+                                }}
+                                disabled={savingSubjects}
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="subject-delete-icon-btn"
+                                title="Delete subject"
+                                onClick={() => handleDeleteSubject(index)}
+                                disabled={savingSubjects}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ADD NEW SUBJECT FORM */}
+                <div className="subject-add-container">
+                  <h4 className="subject-add-title">
+                    <Plus size={16} />
+                    <span>Add New Subject</span>
+                  </h4>
+                  <div className="subject-add-form">
+                    <div className="subject-add-field flex-2">
+                      <label>Subject Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ADVANCED ENGLISH LABORATORY"
+                        value={newSubjectName}
+                        onChange={(e) => setNewSubjectName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddSubject();
+                        }}
+                      />
+                    </div>
+                    <div className="subject-add-field flex-1">
+                      <label>Subject Code</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 23EN106L"
+                        value={newSubjectCode}
+                        onChange={(e) => setNewSubjectCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddSubject();
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="subject-add-submit-btn"
+                      onClick={handleAddSubject}
+                      disabled={savingSubjects || !newSubjectName.trim() || !newSubjectCode.trim()}
+                    >
+                      {savingSubjects ? (
+                        <>
+                          <span className="button-spinner" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={15} />
+                          Add Subject
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
         <div className="security-footer">
           <ShieldCheck size={16} />
 
@@ -1209,6 +1661,190 @@ const StudentProfileAccess = () => {
           </span>
         </div>
       </div>
+
+      {/* EDIT TYPE SELECTION MODAL */}
+      {editTypeModal.isOpen && (
+        <div
+          className="edit-type-modal-overlay"
+          onClick={() =>
+            setEditTypeModal({
+              isOpen: false,
+              targetStudent: null,
+              isBulk: false,
+            })
+          }
+        >
+          <div
+            className="edit-type-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="edit-type-modal-header">
+              <div className="modal-title-box">
+                <div className="modal-title-icon-badge">
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <h3>
+                    {editTypeModal.isBulk
+                      ? `Enable Edit Profile (${students.length} Students)`
+                      : `Enable Edit: ${editTypeModal.targetStudent?.name || "Student"}`}
+                  </h3>
+                  <p>
+                    {editTypeModal.isBulk
+                      ? "Select which fields will be editable on student dashboards."
+                      : `Reg No: ${editTypeModal.targetStudent?.registerNo || "-"} | Admission No: ${editTypeModal.targetStudent?.admissionNo || "-"}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() =>
+                  setEditTypeModal({
+                    isOpen: false,
+                    targetStudent: null,
+                    isBulk: false,
+                  })
+                }
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="edit-type-modal-body">
+              <p className="modal-instructions">
+                Select which profile information the student is allowed to edit:
+              </p>
+
+              <div className="edit-options-grid">
+                {/* OPTION 1: REG NO */}
+                <div
+                  className={`edit-option-card ${
+                    !editTypeModal.isBulk &&
+                    editTypeModal.targetStudent?.editProfileEnabled &&
+                    editTypeModal.targetStudent?.editType === "regno"
+                      ? "current-active"
+                      : ""
+                  }`}
+                  onClick={() => handleSelectEditType("regno")}
+                >
+                  <div className="option-icon-wrap regno-icon">
+                    <UserCheck size={26} />
+                  </div>
+                  <div className="option-content">
+                    <div className="option-header-row">
+                      <h4>1. Register Number Only</h4>
+                      {!editTypeModal.isBulk &&
+                        editTypeModal.targetStudent?.editProfileEnabled &&
+                        editTypeModal.targetStudent?.editType === "regno" && (
+                          <span className="current-badge">Currently Active</span>
+                        )}
+                    </div>
+                    <p>
+                      Permits student to edit <strong>Register Number</strong> only.
+                      DOB, Email, and other profile fields remain disabled.
+                    </p>
+                    <button
+                      type="button"
+                      className="option-action-btn select-regno"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectEditType("regno");
+                      }}
+                    >
+                      <CheckCircle2 size={14} />
+                      Enable Register No
+                    </button>
+                  </div>
+                </div>
+
+                {/* OPTION 2: DOB & EMAIL */}
+                <div
+                  className={`edit-option-card ${
+                    !editTypeModal.isBulk &&
+                    editTypeModal.targetStudent?.editProfileEnabled &&
+                    editTypeModal.targetStudent?.editType === "dob_email"
+                      ? "current-active"
+                      : ""
+                  }`}
+                  onClick={() => handleSelectEditType("dob_email")}
+                >
+                  <div className="option-icon-wrap dob-icon">
+                    <CalendarDays size={26} />
+                  </div>
+                  <div className="option-content">
+                    <div className="option-header-row">
+                      <h4>2. Date of Birth & Email Only</h4>
+                      {!editTypeModal.isBulk &&
+                        editTypeModal.targetStudent?.editProfileEnabled &&
+                        editTypeModal.targetStudent?.editType === "dob_email" && (
+                          <span className="current-badge">Currently Active</span>
+                        )}
+                    </div>
+                    <p>
+                      Permits student to edit <strong>DOB</strong> and <strong>Email</strong> only.
+                      Register number and other profile fields remain disabled.
+                    </p>
+                    <button
+                      type="button"
+                      className="option-action-btn select-dob"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectEditType("dob_email");
+                      }}
+                    >
+                      <CheckCircle2 size={14} />
+                      Enable DOB & Email
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-note-box">
+                <AlertCircle size={15} />
+                <span>
+                  First-time login flow is completely unaffected. Once the student saves permitted changes from their dashboard, edit access automatically locks.
+                </span>
+              </div>
+            </div>
+
+            <div className="edit-type-modal-footer">
+              {!editTypeModal.isBulk &&
+                editTypeModal.targetStudent?.editProfileEnabled && (
+                  <button
+                    type="button"
+                    className="modal-disable-btn"
+                    onClick={() => {
+                      const student = editTypeModal.targetStudent;
+                      setEditTypeModal({
+                        isOpen: false,
+                        targetStudent: null,
+                        isBulk: false,
+                      });
+                      handleProfileAccessToggle(student, "none");
+                    }}
+                  >
+                    <XCircle size={15} />
+                    Disable Profile Access
+                  </button>
+                )}
+              <button
+                type="button"
+                className="modal-cancel-btn"
+                onClick={() =>
+                  setEditTypeModal({
+                    isOpen: false,
+                    targetStudent: null,
+                    isBulk: false,
+                  })
+                }
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div className="access-message-overlay" onClick={closeMessage}>

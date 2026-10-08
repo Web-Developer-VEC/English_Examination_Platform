@@ -9,6 +9,7 @@ const {
   EXAM_START_MINUTES_IST,
   EXAM_END_MINUTES_IST,
 } = require("../../helper/ist_converter");
+const { getSubjectDetails } = require("../../utils/subjectHelper");
 
 // =====================================================
 // SHUFFLE HELPERS (FISHER-YATES)
@@ -391,6 +392,12 @@ const startExam = async (req, res) => {
           type: exam.type || questionSet.type || "audio",
           duration: exam.duration,
           semester: exam.eligibility?.semester || student.semester || null,
+          subjectName:
+            exam.subjectName ||
+            getSubjectDetails(exam.eligibility?.semester || student.semester).subjectName,
+          subjectCode:
+            exam.subjectCode ||
+            getSubjectDetails(exam.eligibility?.semester || student.semester).subjectCode,
           timeRemaining: remainingSeconds,
           startedAt: alreadyAttempted.startedAt,
           endTime: endTime,
@@ -448,6 +455,14 @@ const startExam = async (req, res) => {
       section: student.section,
 
       semester: exam.eligibility?.semester || student.semester || null,
+
+      subjectName:
+        exam.subjectName ||
+        getSubjectDetails(exam.eligibility?.semester || student.semester).subjectName,
+
+      subjectCode:
+        exam.subjectCode ||
+        getSubjectDetails(exam.eligibility?.semester || student.semester).subjectCode,
 
       answers: [],
 
@@ -519,6 +534,14 @@ const startExam = async (req, res) => {
       duration: exam.duration,
 
       semester: exam.eligibility?.semester || student.semester || null,
+
+      subjectName:
+        exam.subjectName ||
+        getSubjectDetails(exam.eligibility?.semester || student.semester).subjectName,
+
+      subjectCode:
+        exam.subjectCode ||
+        getSubjectDetails(exam.eligibility?.semester || student.semester).subjectCode,
 
       timeRemaining: Math.max(
         0,

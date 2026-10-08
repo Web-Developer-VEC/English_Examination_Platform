@@ -303,6 +303,33 @@ export const updateAcademicYear = async (
 
     return response.data;
 };
+
+// =====================================================
+// GET SUBJECTS
+// =====================================================
+
+export const getSubjects = async () => {
+    const response = await api.get(
+        `${API_URL}/subjects`
+    );
+
+    return response.data;
+};
+
+// =====================================================
+// UPDATE SUBJECTS
+// =====================================================
+
+export const updateSubjects = async (subjects) => {
+    const response = await api.put(
+        `${API_URL}/subjects`,
+        {
+            subjects,
+        }
+    );
+
+    return response.data;
+};
 export const deleteStaff = async (data) => {
   const response = await api.post(
     "/staff/deletestaff",

@@ -1,5 +1,16 @@
 const { getDB } = require("../../config/db");
 
+const DEFAULT_SUBJECTS = [
+  {
+    subjectCode: "23EN102L",
+    subjectName: "COMMUNICATIVE ENGLISH LABORATORY",
+  },
+  {
+    subjectCode: "23EN104L",
+    subjectName: "TECHNICAL ENGLISH LABORATORY",
+  },
+];
+
 // =====================================================
 // UPDATE ACADEMIC YEAR
 // =====================================================
@@ -93,6 +104,19 @@ const getAdminSettings = async (req, res) => {
     });
 
     // =================================================
+    // GET SUBJECTS SETTING
+    // =================================================
+
+    const subjectSettings = await db.collection("admin_settings").findOne({
+      type: "subjects",
+    });
+
+    const subjects =
+      Array.isArray(subjectSettings?.subjects) && subjectSettings.subjects.length > 0
+        ? subjectSettings.subjects
+        : DEFAULT_SUBJECTS;
+
+    // =================================================
     // RESPONSE
     // =================================================
 
@@ -103,6 +127,8 @@ const getAdminSettings = async (req, res) => {
         academicYear: academic?.academicYear || null,
 
         studentEditEnabled: studentEdit?.enabled || false,
+
+        subjects,
       },
     });
   } catch (error) {
@@ -112,6 +138,99 @@ const getAdminSettings = async (req, res) => {
       success: false,
 
       message: "Failed to load admin settings.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
+};
+
+// =====================================================
+// GET SUBJECTS
+// =====================================================
+
+const getSubjects = async (req, res) => {
+  try {
+    const db = getDB();
+
+    const subjectSettings = await db.collection("admin_settings").findOne({
+      type: "subjects",
+    });
+
+    const subjects =
+      Array.isArray(subjectSettings?.subjects) && subjectSettings.subjects.length > 0
+        ? subjectSettings.subjects
+        : DEFAULT_SUBJECTS;
+
+    return res.status(200).json({
+      success: true,
+      data: subjects,
+    });
+  } catch (error) {
+    console.error("GET SUBJECTS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load subjects.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
+};
+
+// =====================================================
+// UPDATE SUBJECTS
+// =====================================================
+
+const updateSubjects = async (req, res) => {
+  try {
+    const db = getDB();
+    const { subjects } = req.body;
+
+    if (!Array.isArray(subjects)) {
+      return res.status(400).json({
+        success: false,
+        message: "Subjects must be an array.",
+      });
+    }
+
+    const cleaned = subjects
+      .map((s) => ({
+        subjectName: String(s.subjectName || "").trim().toUpperCase(),
+        subjectCode: String(s.subjectCode || "").trim().toUpperCase(),
+      }))
+      .filter((s) => s.subjectName && s.subjectCode);
+
+    if (cleaned.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one valid subject with name and code is required.",
+      });
+    }
+
+    await db.collection("admin_settings").updateOne(
+      {
+        type: "subjects",
+      },
+      {
+        $set: {
+          subjects: cleaned,
+          updatedAt: new Date(),
+        },
+      },
+      {
+        upsert: true,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Subjects updated successfully.",
+      data: cleaned,
+    });
+  } catch (error) {
+    console.error("UPDATE SUBJECTS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update subjects.",
       error: error.message || "Unexpected server error.",
     });
   }
@@ -150,7 +269,20 @@ const updateStudentEditPermission = async (req, res) => {
         });
       }
 
-      if (typeof student.studentEditEnabled !== "boolean") {
+      if (
+        student.editType !== undefined &&
+        !["regno", "dob_email", "none"].includes(student.editType)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `editType must be 'regno', 'dob_email', or 'none' for admissionNo ${student.admissionNo}.`,
+        });
+      }
+
+      if (
+        student.editType === undefined &&
+        typeof student.studentEditEnabled !== "boolean"
+      ) {
         return res.status(400).json({
           success: false,
           message: `studentEditEnabled must be true or false for admissionNo ${student.admissionNo}.`,
@@ -168,7 +300,16 @@ const updateStudentEditPermission = async (req, res) => {
     for (const student of students) {
       const admissionNo = String(student.admissionNo).trim();
 
-      const studentEditEnabled = student.studentEditEnabled;
+      let finalEditType = "none";
+      let finalEnabled = false;
+
+      if (student.editType !== undefined) {
+        finalEditType = student.editType;
+        finalEnabled = finalEditType === "regno" || finalEditType === "dob_email";
+      } else {
+        finalEnabled = Boolean(student.studentEditEnabled);
+        finalEditType = finalEnabled ? "regno" : "none";
+      }
 
       // ---------------------------------------------
       // UPDATE STUDENT DOCUMENT
@@ -181,7 +322,8 @@ const updateStudentEditPermission = async (req, res) => {
 
         {
           $set: {
-            studentEditEnabled,
+            studentEditEnabled: finalEnabled,
+            editType: finalEditType,
             updatedAt: new Date(),
           },
         },
@@ -203,7 +345,8 @@ const updateStudentEditPermission = async (req, res) => {
 
       updatedStudents.push({
         admissionNo,
-        studentEditEnabled,
+        studentEditEnabled: finalEnabled,
+        editType: finalEditType,
       });
     }
 
@@ -296,4 +439,6 @@ module.exports = {
   updateStudentEditPermission,
   getStudentEditPermission,
   getAdminSettings,
+  getSubjects,
+  updateSubjects,
 };

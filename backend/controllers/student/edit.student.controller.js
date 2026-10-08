@@ -41,7 +41,11 @@ const updateStudent = async (req, res) => {
       });
     }
 
-    if (!student.studentEditEnabled && !student.firstlogin) {
+    const isFirstLogin = Boolean(student.firstlogin);
+    const editType =
+      student.editType || (student.studentEditEnabled ? "regno" : "none");
+
+    if (!student.studentEditEnabled && !isFirstLogin) {
       return res.status(403).json({
         success: false,
         message: "Student editing is currently disabled by admin.",
@@ -54,97 +58,107 @@ const updateStudent = async (req, res) => {
 
     const updateData = {};
 
-    if (name !== undefined) {
-      updateData.name = String(name).trim();
-    }
-
-    if (email !== undefined) {
-      updateData.email = String(email).trim();
-    }
-
-    if (phone !== undefined) {
-      updateData.phone = String(phone).trim();
-    }
-
-    if (gender !== undefined) {
-      updateData.gender = String(gender).trim();
-    }
-
-    if (dob !== undefined) {
-      updateData.dob = String(dob).trim();
-    }
-
-    // =====================================================
-    // SECTION
-    // =====================================================
-
-    if (section !== undefined) {
-      updateData.section = String(section).trim();
-    }
-
-    // =====================================================
-    // REGISTER NUMBER
-    // =====================================================
-
-    const registerNoProvided = registerNo !== undefined;
-
-    const registerNoTrimmed =
-      registerNo !== null && registerNo !== undefined
-        ? String(registerNo).trim()
-        : "";
-
-    if (
-      registerNoProvided &&
-      registerNoTrimmed !== "" &&
-      registerNoTrimmed.toLowerCase() !== "null"
-    ) {
-      const newRegisterNo = registerNoTrimmed;
-
+    if (isFirstLogin) {
       // ---------------------------------------------
-      // CHECK DUPLICATE REGISTER NUMBER
+      // FIRST LOGIN: Update full profile fields
       // ---------------------------------------------
+      if (name !== undefined) updateData.name = String(name).trim();
+      if (email !== undefined) updateData.email = String(email).trim();
+      if (phone !== undefined) updateData.phone = String(phone).trim();
+      if (gender !== undefined) updateData.gender = String(gender).trim();
+      if (dob !== undefined) updateData.dob = String(dob).trim();
+      if (section !== undefined) updateData.section = String(section).trim();
 
-      const existingStudent = await db.collection("students").findOne({
-        registerNo: newRegisterNo,
-        admissionNo: {
-          $ne: admissionNo.trim(),
-        },
-      });
+      const registerNoProvided = registerNo !== undefined;
+      const registerNoTrimmed =
+        registerNo !== null && registerNo !== undefined
+          ? String(registerNo).trim()
+          : "";
 
-      if (existingStudent) {
-        return res.status(409).json({
-          success: false,
-          message: "Register Number already belongs to another student.",
+      if (
+        registerNoProvided &&
+        registerNoTrimmed !== "" &&
+        registerNoTrimmed.toLowerCase() !== "null"
+      ) {
+        const newRegisterNo = registerNoTrimmed;
+        const existingStudent = await db.collection("students").findOne({
+          registerNo: newRegisterNo,
+          admissionNo: { $ne: admissionNo.trim() },
         });
+
+        if (existingStudent) {
+          return res.status(409).json({
+            success: false,
+            message: "Register Number already belongs to another student.",
+          });
+        }
+
+        updateData.registerNo = newRegisterNo;
+        updateData.username = newRegisterNo;
+      } else if (registerNoProvided) {
+        updateData.registerNo = null;
+        updateData.username = admissionNo.trim();
       }
 
+      updateData.firstlogin = false;
+    } else if (editType === "dob_email") {
       // ---------------------------------------------
-      // UPDATE REGISTER NUMBER
+      // TYPE 2: DATE (DOB) AND EMAIL ONLY EDIT
       // ---------------------------------------------
+      if (email !== undefined && email !== null) {
+        updateData.email = String(email).trim();
+      }
+      if (dob !== undefined && dob !== null) {
+        updateData.dob = String(dob).trim();
+      }
+    } else if (editType === "regno") {
+      // ---------------------------------------------
+      // TYPE 1: REGISTER NUMBER ONLY EDIT
+      // ---------------------------------------------
+      const registerNoProvided = registerNo !== undefined;
+      const registerNoTrimmed =
+        registerNo !== null && registerNo !== undefined
+          ? String(registerNo).trim()
+          : "";
 
-      updateData.registerNo = newRegisterNo;
+      if (
+        registerNoProvided &&
+        registerNoTrimmed !== "" &&
+        registerNoTrimmed.toLowerCase() !== "null"
+      ) {
+        const newRegisterNo = registerNoTrimmed;
+        const existingStudent = await db.collection("students").findOne({
+          registerNo: newRegisterNo,
+          admissionNo: { $ne: admissionNo.trim() },
+        });
 
-      // Username follows register number
-      updateData.username = newRegisterNo;
-    } else if (registerNoProvided) {
-      // registerNo was explicitly sent but empty/null/"null"
-      // clear it back to a real null, username falls back
-      // to admissionNo.
+        if (existingStudent) {
+          return res.status(409).json({
+            success: false,
+            message: "Register Number already belongs to another student.",
+          });
+        }
 
-      updateData.registerNo = null;
-      updateData.username = admissionNo.trim();
+        updateData.registerNo = newRegisterNo;
+        updateData.username = newRegisterNo;
+      } else if (registerNoProvided) {
+        updateData.registerNo = null;
+        updateData.username = admissionNo.trim();
+      }
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: "No active edit permission found.",
+      });
     }
 
     // =====================================================
-    // UPDATED TIME
+    // UPDATED TIME & RESET EDIT PERMISSION
     // =====================================================
 
     updateData.updatedAt = new Date();
-
-    // After successful first login profile completion,
-    // disable first login editing.
     updateData.studentEditEnabled = false;
-    updateData.firstlogin = false;
+    updateData.editType = "none";
 
     // =====================================================
     // UPDATE

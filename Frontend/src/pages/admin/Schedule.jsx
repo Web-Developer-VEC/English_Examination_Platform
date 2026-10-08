@@ -3,13 +3,14 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getScheduleFormData, scheduleExam } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
-import { getAdminSession } from "../../utils/helpers";
+import { getAdminSession, getSubjectDetails } from "../../utils/helpers";
 import {
   ClipboardClock,
   GraduationCap,
   ShieldCheck,
   Building2,
   Users,
+  BookOpen,
   BookOpenCheck,
   CalendarDays,
   Clock3,
@@ -487,6 +488,7 @@ export default function Schedule() {
   const [category, setCategory] = useState("Normal");
   const [academicYear, setAcademicYear] = useState("");
   const [semester, setSemester] = useState("");
+  const [subjectName, setSubjectName] = useState("");
   const [cie, setCie] = useState("");
   const [batch, setBatch] = useState("");
   // Holds the selected test's display label (questionCode); the matching
@@ -522,10 +524,11 @@ export default function Schedule() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ---------------- REFERENCE DATA (batches, dept/section, tests)
+  // ---------------- REFERENCE DATA (batches, dept/section, tests, subjects)
   const [scheduleData, setScheduleData] = useState({
     batchDepartmentSections: [],
     tests: [],
+    subjects: [],
   });
   const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(true);
   const [scheduleDataError, setScheduleDataError] = useState("");
@@ -556,6 +559,8 @@ export default function Schedule() {
             batchDepartmentSections: body?.data?.batchDepartmentSections || [],
 
             tests: body?.data?.tests || [],
+
+            subjects: body?.data?.subjects || [],
 
             academicYear: currentAcademicYear || "",
           });
@@ -727,7 +732,21 @@ export default function Schedule() {
     }
   }, [isAdmin, category]);
 
+  const SUBJECT_OPTIONS = useMemo(() => {
+    if (
+      Array.isArray(scheduleData.subjects) &&
+      scheduleData.subjects.length > 0
+    ) {
+      return scheduleData.subjects.map((s) => s.subjectName);
+    }
+    return [
+      "COMMUNICATIVE ENGLISH LABORATORY",
+      "TECHNICAL ENGLISH LABORATORY",
+    ];
+  }, [scheduleData.subjects]);
+
   const captureCurrentFields = () => ({
+    subjectName,
     semester,
     cie,
     batch,
@@ -756,6 +775,7 @@ export default function Schedule() {
     // here on every category switch was emptying it for any category that
     // didn't have a saved draft yet, which in turn emptied BATCH_OPTIONS
     // and disabled the Batch dropdown for Retest/University.
+    setSubjectName(d.subjectName || "");
     setSemester(d.semester || "");
     setCie(d.cie || "");
     setBatch(d.batch || "");
@@ -1147,10 +1167,21 @@ export default function Schedule() {
             ? selectedAdmissionNos.filter((no) => comboAdmissionSet.has(no))
             : selectedAdmissionNos;
 
+        const chosenSubject = (scheduleData.subjects || []).find(
+          (s) => s.subjectName === subjectName,
+        );
+        const fallbackSubject = getSubjectDetails(semester);
+        const finalSubjectName =
+          chosenSubject?.subjectName || subjectName || fallbackSubject.name;
+        const finalSubjectCode =
+          chosenSubject?.subjectCode || fallbackSubject.code;
+
         const payload = {
           category: category.toLowerCase(),
           cie: cie || undefined,
           questionSetId,
+          subjectName: finalSubjectName,
+          subjectCode: finalSubjectCode,
           department: combo.dept,
           batch,
           academicYear,
@@ -1311,6 +1342,18 @@ export default function Schedule() {
                     placeholder="Select Semester"
                   />
                 </div>
+              </div>
+
+              {/* Subject Name */}
+              <div>
+                <label className={labelClasses}>Subject Name</label>
+                <ThemeDropdown
+                  icon={BookOpen}
+                  value={subjectName}
+                  options={SUBJECT_OPTIONS}
+                  onChange={setSubjectName}
+                  placeholder="Select Subject Name"
+                />
               </div>
 
               {/* Batch */}

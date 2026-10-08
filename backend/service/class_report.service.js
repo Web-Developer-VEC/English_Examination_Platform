@@ -530,7 +530,9 @@ const generateAndSaveClassReport = async ({
       ? "External Examiner's Signature"
       : "HOD's Signature";
 
-    const { subjectCode, subjectName } = getSubjectDetails(cleanSem);
+    const defaultSub = getSubjectDetails(cleanSem);
+    const subjectCode = (scheduleTests.length > 0 && scheduleTests[0].subjectCode) || defaultSub.subjectCode;
+    const subjectName = (scheduleTests.length > 0 && scheduleTests[0].subjectName) || defaultSub.subjectName;
 
     const compiledHtml = htmlTemplate
       .replace("{{LOGO}}", logoData)

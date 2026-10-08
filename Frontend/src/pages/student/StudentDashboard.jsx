@@ -44,6 +44,7 @@ const StudentDashboard = () => {
   const [fetchError, setFetchError] = useState(null);
   const [firstLogin, setFirstLogin] = useState(false);
   const [regEdit, setregEdit] = useState(false);
+  const [editType, setEditType] = useState("none");
 
   // ============================================================
   // TEST RESULTS
@@ -129,6 +130,11 @@ const StudentDashboard = () => {
             data.data.student?.firstlogin === true ||
             data.data.student?.firstLogin === true,
         );
+        const savedEditType =
+          data.data.editType ||
+          (data.data.studentEditEnabled ? "regno" : "none");
+        setEditType(savedEditType);
+        setregEdit(data.data.studentEditEnabled === true);
 
         // The session's username was captured at login. If registerNo
         // (which drives the username) changed, the session goes stale —
@@ -165,8 +171,9 @@ const StudentDashboard = () => {
       setIsSaving(false);
     }
   };
-  // This is for making the fields uneditable . if you want to make it editable again change the true to false
-  const registerNoOnlyEdit = true;
+  const isRegNoEditable =
+    firstLogin || editType === "regno" || (student?.studentEditEnabled && editType !== "dob_email");
+  const isDobEmailEditable = firstLogin || editType === "dob_email";
   const canEditAdditionalFields = firstLogin;
   // ============================================================
   // SEND RESULT
@@ -284,7 +291,11 @@ const StudentDashboard = () => {
             result.student?.firstlogin === true ||
             result.student?.firstLogin === true,
         );
-        setregEdit( result.student?.studentEditEnabled === true)
+        const currentEditType =
+          result.student?.editType ||
+          (result.student?.studentEditEnabled ? "regno" : "none");
+        setEditType(currentEditType);
+        setregEdit(result.student?.studentEditEnabled === true);
 
 
         // Exams: `id` must come from the backend's unique `examId`,
@@ -521,7 +532,7 @@ const StudentDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {(firstLogin || student?.studentEditEnabled) && (
+          {(firstLogin || student?.studentEditEnabled || editType === "regno" || editType === "dob_email") && (
             <button
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all cursor-pointer"
@@ -834,7 +845,7 @@ const StudentDashboard = () => {
                   name="name"
                   value={editForm?.name || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                 />
               </div>
@@ -848,7 +859,7 @@ const StudentDashboard = () => {
                   name="registerNo"
                   value={editForm?.registerNo || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving ||!regEdit}
+                  disabled={isSaving || !isRegNoEditable}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                 />
               </div>
@@ -862,7 +873,7 @@ const StudentDashboard = () => {
                   name="email"
                   value={editForm?.email || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || !canEditAdditionalFields}
+                  disabled={isSaving || !isDobEmailEditable}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                 />
               </div>
@@ -943,7 +954,7 @@ const StudentDashboard = () => {
                   name="batch"
                   value={editForm?.batch || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !canEditAdditionalFields}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                 />
               </div>
@@ -957,7 +968,7 @@ const StudentDashboard = () => {
                   name="dob"
                   value={editForm?.dob || ""}
                   onChange={handleInputChange}
-                  disabled={isSaving || registerNoOnlyEdit}
+                  disabled={isSaving || !isDobEmailEditable}
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
                   placeholder="YYYY-MM-DD"
                 />

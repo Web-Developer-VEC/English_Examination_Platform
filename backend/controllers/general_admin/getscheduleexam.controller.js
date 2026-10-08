@@ -152,6 +152,28 @@ const getformdata = async (req, res) => {
     });
 
     // ==========================================
+    // Get Subjects (with fallback)
+    // ==========================================
+
+    const subjectSettings = await db.collection("admin_settings").findOne({
+      type: "subjects",
+    });
+
+    const subjects =
+      Array.isArray(subjectSettings?.subjects) && subjectSettings.subjects.length > 0
+        ? subjectSettings.subjects
+        : [
+            {
+              subjectCode: "23EN102L",
+              subjectName: "COMMUNICATIVE ENGLISH LABORATORY",
+            },
+            {
+              subjectCode: "23EN104L",
+              subjectName: "TECHNICAL ENGLISH LABORATORY",
+            },
+          ];
+
+    // ==========================================
     // Prepare response
     // ==========================================
 
@@ -159,6 +181,7 @@ const getformdata = async (req, res) => {
       current_academic_year,
       batchDepartmentSections,
       tests,
+      subjects,
     };
 
     // ==========================================
