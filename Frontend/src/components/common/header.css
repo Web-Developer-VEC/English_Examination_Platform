@@ -13,7 +13,7 @@
 
     /* SWITCHED TO GRID FOR PERFECT CENTERING WITHOUT OVERLAPS */
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(190px, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 20px;
 
@@ -57,6 +57,7 @@
     text-align: center;
     flex-shrink: 0;
     z-index: 2;
+    min-width: 0;
 }
 
 .vec-header__logo {
@@ -125,7 +126,7 @@
     gap: 10px;
 
     min-width: 0; /* Allows text truncation if screen gets too small */
-    width: 100%;
+    max-width: 100%;
 
     pointer-events: none;
 }
@@ -150,6 +151,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 
 
@@ -166,6 +168,7 @@
     gap: 10px;
 
     min-width: 0;
+    max-width: 100%;
     z-index: 20;
 }
 
@@ -176,6 +179,7 @@
 
 .vec-header__user {
     width: fit-content;
+    max-width: 100%;
     min-width: 0;
 
     padding: 12px 18px;
@@ -193,6 +197,7 @@
 
     text-align: center;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 
@@ -204,6 +209,8 @@
     margin: 0;
 
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
 
     font-size: 18px;
     font-weight: 700;
@@ -216,6 +223,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 
 
@@ -227,6 +235,8 @@
     margin-top: 5px;
 
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
 
     font-size: 14px;
     font-weight: 600;
@@ -237,6 +247,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 
 /* =========================================================

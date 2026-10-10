@@ -112,7 +112,7 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                     strokeWidth={2}
                 />
 
-                <h2 className="vec-header__portal-title">
+                <h2 className="vec-header__portal-title" title={portalTitle}>
                     {portalTitle}
                 </h2>
 
@@ -129,13 +129,22 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                         {user.role === "student" && (
                             <>
                                 {user.name && (
-                                    <div className="vec-header__user-name">
+                                    <div
+                                        className="vec-header__user-name"
+                                        title={user.name.toUpperCase()}
+                                    >
                                         {user.name.toUpperCase()}
                                     </div>
                                 )}
 
                                 {(user.department || user.section) && (
-                                    <div className="vec-header__user-details">
+                                    <div
+                                        className="vec-header__user-details"
+                                        title={[user.department, user.section]
+                                            .filter(Boolean)
+                                            .join(" - ")
+                                            .toUpperCase()}
+                                    >
                                         {user.department &&
                                             user.department.toUpperCase()}
 
@@ -154,10 +163,16 @@ const Header = ({ portalTitle = "English Examination Portal" }) => {
                         {(user.role === "staff" ||
                             user.role === "admin") &&
                             (user.name || user.username) && (
-                               <> <div className="vec-header__user-name">
+                               <> <div
+                                    className="vec-header__user-name"
+                                    title={(user.name || user.username).toUpperCase()}
+                                  >
                                     {(user.name || user.username).toUpperCase()}
                                 </div>
-                                 <div className="vec-header__user-details">
+                                 <div
+                                    className="vec-header__user-details"
+                                    title={user.role.toUpperCase()}
+                                 >
                                        {user.role.toUpperCase()}
                                     </div>
                                 </>
