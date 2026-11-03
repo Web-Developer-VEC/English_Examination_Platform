@@ -96,17 +96,19 @@ const studentsUpload = async (req, res) => {try {
   console.error("Student Upload Error:", error);
 
   const status = error.status || 500;
+  const detail = error.message || "Unexpected server error.";
 
   return res.status(status).json(
     status < 500
       ? {
           success: false,
-          message: error.message,
+          message: detail,
+          error: detail,
         }
       : {
           success: false,
           message: "Failed to upload students.",
-          error: error.message || "Unexpected server error.",
+          error: detail,
         },
   );
 }};
@@ -151,17 +153,19 @@ const updateStudent = async (req, res) => {
     console.error("Student Update Error:", error);
 
     const status = error.status || 500;
+    const detail = error.message || "Unexpected server error.";
 
     return res.status(status).json(
       status < 500
         ? {
             success: false,
-            message: error.message,
+            message: detail,
+            error: detail,
           }
         : {
             success: false,
             message: "Failed to update students.",
-            error: error.message || "Unexpected server error.",
+            error: detail,
           },
     );
   }

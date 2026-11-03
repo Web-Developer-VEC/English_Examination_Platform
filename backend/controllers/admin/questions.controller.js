@@ -11,6 +11,7 @@ const questionsupload = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "questionCode is required.",
+        error: "questionCode is required.",
       });
     }
 
@@ -61,11 +62,13 @@ const questionsupload = async (req, res) => {
   } catch (error) {
     console.error("Questions Upload Error:", error);
 
-    return res.status(error.status || 500).json({
-      success: false,
+    const status = error.status || 500;
+    const detail = error.message || "Unexpected server error.";
 
-      message: "Failed to upload questions.",
-      error: error.message || "Unexpected server error.",
+    return res.status(status).json({
+      success: false,
+      message: status < 500 ? detail : "Failed to upload questions.",
+      error: detail,
     });
   }
 };

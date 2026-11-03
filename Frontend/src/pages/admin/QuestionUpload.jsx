@@ -34,6 +34,7 @@ import ThemeDropdown from "../../components/common/ThemeDropDown";
 function QuestionUploadCard() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showMp3Popup, setShowMp3Popup] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const [examType, setExamType] = useState("audio"); // "audio" | "comprehension"
   const [questionCode, setQuestionCode] = useState("");
   const [passage, setPassage] = useState("");
@@ -141,6 +142,7 @@ function QuestionUploadCard() {
     if (isSubmitting) return;
 
     setIsSubmitting(true);
+    setUploadError(null);
 
     try {
       const data = await uploadQuestions({
@@ -152,7 +154,9 @@ function QuestionUploadCard() {
       });
 
       if (!data.success) {
-        throw new Error(data.message || "Failed to upload question.");
+        throw new Error(
+          getApiErrorMessage(data, "Failed to upload questions.")
+        );
       }
 
       toast.success(
@@ -163,6 +167,7 @@ function QuestionUploadCard() {
       setPassage("");
       setAudioFile(null);
       setQuestionFile(null);
+      setUploadError(null);
 
       const audioInput = document.getElementById("audio-upload");
       if (audioInput) audioInput.value = "";
@@ -170,12 +175,12 @@ function QuestionUploadCard() {
       if (excelInput) excelInput.value = "";
     } catch (error) {
       console.error("Upload Question Error:", error);
-      toast.error(
-        getApiErrorMessage(
-          error,
-          "Something went wrong while creating the question.",
-        ),
+      const errMsg = getApiErrorMessage(
+        error,
+        "Something went wrong while uploading questions.",
       );
+      setUploadError(errMsg);
+      toast.error(errMsg, { autoClose: 6000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -393,6 +398,44 @@ function QuestionUploadCard() {
           )}
         </button>
       </div>
+
+      {/* Upload Error Popup */}
+      {uploadError &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2147483000] p-4"
+            style={{ isolation: "isolate" }}
+            onClick={() => setUploadError(null)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-[480px] text-center transform transition-all border border-red-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={32} className="text-red-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Question Upload Failed
+              </h2>
+              <p className="text-xs uppercase tracking-wider font-semibold text-red-600 mb-3">
+                Reason for failure
+              </p>
+              <div className="bg-red-50/70 border border-red-200/80 rounded-xl p-4 mb-6 text-left">
+                <p className="text-sm text-gray-800 leading-relaxed font-medium break-words">
+                  {uploadError}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadError(null)}
+                className="w-full bg-[#800000] hover:bg-[#5e0000] text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
+              >
+                Understood
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {/* MP3 Popup */}
       {showMp3Popup &&

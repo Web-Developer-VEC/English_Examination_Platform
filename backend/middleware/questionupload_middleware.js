@@ -9,6 +9,7 @@ const questions_upload_Middleware = (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Content-Type must be multipart/form-data",
+      error: "Content-Type must be multipart/form-data",
     });
   }
 
@@ -51,6 +52,7 @@ const questions_upload_Middleware = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: "questionCode is required",
+          error: "questionCode is required",
         });
       }
 
@@ -58,6 +60,7 @@ const questions_upload_Middleware = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: "Questions Excel file is required",
+          error: "Questions Excel file is required",
         });
       }
 
@@ -73,6 +76,7 @@ const questions_upload_Middleware = (req, res, next) => {
           return res.status(400).json({
             success: false,
             message: "Reading passage / paragraph text is required for comprehension exam.",
+            error: "Reading passage / paragraph text is required for comprehension exam.",
           });
         }
 
@@ -92,6 +96,7 @@ const questions_upload_Middleware = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: "Audio file is required for audio examination.",
+          error: "Audio file is required for audio examination.",
         });
       }
 

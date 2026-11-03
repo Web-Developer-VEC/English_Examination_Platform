@@ -56,6 +56,12 @@ api.interceptors.response.use(
     const request = error?.config;
     const requestData = getDataForLog(request?.data);
     const responseData = getDataForLog(error?.response?.data);
+    const detailedMessage =
+      (responseData && typeof responseData === "object"
+        ? responseData.error || responseData.message
+        : responseData) ||
+      error?.message ||
+      "Request failed.";
 
     console.error("API request failed:", {
       method: request?.method?.toUpperCase(),
@@ -64,11 +70,7 @@ api.interceptors.response.use(
         : undefined,
       requestData,
       responseData,
-      message:
-        responseData?.message ||
-        responseData?.error ||
-        error?.message ||
-        "Request failed.",
+      message: detailedMessage,
     });
     return Promise.reject(error);
   },

@@ -7,6 +7,7 @@ const student_upload_Middleware = (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Content-Type must be multipart/form-data",
+      error: "Content-Type must be multipart/form-data",
     });
   }
 
@@ -41,6 +42,7 @@ const student_upload_Middleware = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: "Student Excel file is required.",
+          error: "Student Excel file is required.",
         });
       }
 

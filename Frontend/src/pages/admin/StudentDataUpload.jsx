@@ -146,11 +146,7 @@ const readApiResponse = async (response) => {
 };
 
 const getErrorMessage = (data, fallback) =>
-  data?.message ||
-  data?.error ||
-  data?.detail ||
-  data?.errors?.[0]?.message ||
-  fallback;
+  getApiErrorMessage(data, fallback);
 
 const StudentDataUpload = () => {
   const fileInputRef = useRef(null);
@@ -397,11 +393,11 @@ const StudentDataUpload = () => {
       const data = await uploadStudentData(selectedFile);
 
       if (data?.success === false) {
-        throw new Error(getErrorMessage(data, "Student data upload failed."));
+        throw new Error(getApiErrorMessage(data, "Student data upload failed."));
       }
 
       showMessage(
-        getErrorMessage(data, "Student data uploaded successfully."),
+        getApiErrorMessage(data, "Student data uploaded successfully."),
         "success",
       );
 
@@ -421,7 +417,7 @@ const StudentDataUpload = () => {
       console.error("Student upload error:", error);
 
       showMessage(
-        getApiErrorMessage(error, "Something went wrong while uploading."),
+        getApiErrorMessage(error, "Something went wrong while uploading student data."),
         "error",
       );
     } finally {
@@ -1168,7 +1164,7 @@ const StudentDataUpload = () => {
               <span className="student-message-label">
                 {(message ? messageType : existingMessageType) === "success"
                   ? "Success"
-                  : "Something went wrong"}
+                  : "Upload Failed"}
               </span>
               <p>{message || existingMessage}</p>
             </div>
@@ -1208,9 +1204,9 @@ const StudentDataUpload = () => {
         .student-message-popup {
           position: relative;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 18px;
-          width: min(500px, 100%);
+          width: min(520px, 100%);
           padding: 22px 48px 22px 22px;
           border: 1px solid rgba(255, 255, 255, 0.22);
           border-radius: 20px;

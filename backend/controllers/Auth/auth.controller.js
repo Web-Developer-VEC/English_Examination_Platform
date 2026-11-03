@@ -110,6 +110,13 @@ const login = async (req, res) => {
       const user = await collections.findOne({
         username: username.trim(),
       });
+        if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User Not found",
+      });
+    }
+
       role = user.role;
     }
 
