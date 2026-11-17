@@ -11,10 +11,13 @@ import {
   RotateCcw,
   AlertCircle,
   ChevronDown,
+  Trash2,
+  Zap,
 } from "lucide-react";
 import {
   deleteScheduledExam,
   endScheduledExam,
+  activateScheduledExam,
   resumeStudentExam,
   getScheduleExams,
   getExistingStudents,
@@ -37,6 +40,7 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTest, setSelectedTest] = useState(null);
   const [studentLoading, setStudentLoading] = useState(false);
+  const [activatingTest, setActivatingTest] = useState(false);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [resumeUsername, setResumeUsername] = useState("");
   const [resumeQuestionCode, setResumeQuestionCode] = useState("");
@@ -283,12 +287,12 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   }, [department, category, status, selectedDate]);
 
-  const handleCancel = (test) => {
+  const handleDeleteTest = (test) => {
     setConfirmModal({
       isOpen: true,
-      title: "Cancel Scheduled Test?",
-      message: `Are you sure you want to cancel the scheduled test for ${test.department || "All Departments"} ${test.section ? `(Sec ${test.section})` : ""}? This action cannot be undone.`,
-      confirmText: "Cancel Test",
+      title: "Delete Test and Related Data?",
+      message: `Permanently delete ${test.questionCode || test.testCode || "this test"} for ${test.department || "All Departments"}${test.section ? ` (Section ${test.section})` : ""}?\n\nThis removes the schedule, linked student exam attempts, malpractice records, and directly linked attendance, session, log, and result documents. Student accounts, question sets, unrelated login sessions, and general logs are not deleted.`,
+      confirmText: "Delete Test Data",
       cancelText: "Keep Test",
       type: "danger",
       onConfirm: async () => {
@@ -297,16 +301,21 @@ export default function AdminDashboard() {
           const result = await deleteScheduledExam(test.id);
 
           if (!result.success) {
-            throw new Error(result.message || "Failed to cancel the test.");
+            throw new Error(result.message || "Failed to delete the test.");
           }
 
-          // Remove from dashboard
           setTests((prevTests) => prevTests.filter((item) => item.id !== test.id));
+          setSelectedTest((current) => current?.id === test.id ? null : current);
 
-          toast.success("Test cancelled successfully.");
+          const deletedCounts = result.deletedCounts || {};
+          const deletedTotal = Object.values(deletedCounts).reduce(
+            (sum, count) => sum + Number(count || 0),
+            0,
+          );
+          toast.success(`Test and ${deletedTotal} linked record(s) deleted.`);
         } catch (error) {
-          console.error("Error cancelling the test:", error);
-          toast.error(getApiErrorMessage(error, "Unable to cancel the test."));
+          console.error("Error deleting test data:", error);
+          toast.error(getApiErrorMessage(error, "Unable to delete the test."));
         } finally {
           setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }));
         }
@@ -354,6 +363,34 @@ export default function AdminDashboard() {
         }
       },
     });
+  };
+
+  const handleActivateTest = async (test) => {
+    try {
+      setActivatingTest(true);
+      const result = await activateScheduledExam(test.id);
+      if (!result.success) {
+        throw new Error(result.message || "Unable to activate the test.");
+      }
+
+      const updatedTest = {
+        ...test,
+        testCode: result.testcode || test.testCode,
+        status: getDynamicStatus(test.startTime, test.endTime),
+      };
+      setTests((prev) => prev.map((item) => item.id === test.id ? updatedTest : item));
+      setSelectedTest(updatedTest);
+      toast.success(result.message || "Test activated successfully.");
+    } catch (error) {
+      setResumePopup({
+        type: "error",
+        title: "Unable to Generate Test Code",
+        label: "Test Activation Restricted",
+        message: getApiErrorMessage(error, "Unable to activate the test."),
+      });
+    } finally {
+      setActivatingTest(false);
+    }
   };
 
   const handleResumeStudent = async (e) => {
@@ -838,36 +875,7 @@ export default function AdminDashboard() {
                       </button>
                     )}
 
-                  {test.status === "Upcoming" && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCancel(test);
-                      }}
-                      className="
-                        px-2.5
-                        py-1.5
-                        rounded-lg
-                        text-xs
-                        font-semibold
-                        border
-                        border-red-200
-                        bg-red-50
-                        text-red-600
-                        hover:bg-red-600
-                        hover:text-white
-                        transition-all
-                        duration-200
-                        cursor-pointer
-                        whitespace-nowrap
-                      "
-                    >
-                      Cancel
-                    </button>
-                  )}
-
-                  {test.status === "Completed" && (
+                  {!isAdmin && test.status === "Completed" && (
                     <span className="text-xs text-gray-400 font-medium">-</span>
                   )}
                 </div>
@@ -1330,8 +1338,37 @@ export default function AdminDashboard() {
                     py-4
                 "
                 >
-                  {String(selectedTest.category).toLowerCase() === "normal" &&
+                  {isAdmin &&
+                    (!selectedTest.testCode || selectedTest.testCode === "N/A") &&
+                    selectedTest.status !== "Ongoing" &&
                     selectedTest.status !== "Completed" && (
+                      <button
+                        type="button"
+                        disabled={activatingTest}
+                        onClick={() => handleActivateTest(selectedTest)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#fdcc03] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#e8bb00] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Zap size={16} />
+                        {activatingTest
+                          ? "Activating..."
+                          : "Generate Test Code"}
+                      </button>
+                    )}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDeleteTest(selectedTest);
+                        setSelectedTest(null);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-600 hover:text-white"
+                    >
+                      <Trash2 size={16} />
+                      Delete Test Data
+                    </button>
+                  )}
+                  {String(selectedTest.category).toLowerCase() === "normal" &&
+                    selectedTest.status !== "Completed" && isAdmin && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1579,7 +1616,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold uppercase tracking-wider mb-2">
-                      Resume Failed
+                      {resumePopup.label || "Resume Failed"}
                     </span>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-2">

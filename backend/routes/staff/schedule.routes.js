@@ -14,6 +14,9 @@ const {
   endScheduledExam,
 } = require("../../controllers/admin/end.schedule.controller");
 const {
+  activateScheduledExam,
+} = require("../../controllers/admin/activate.schedule.controller");
+const {
   resumeStudentExam,
 } = require("../../controllers/admin/resume.student.controller");
 const { roleByAccess } = require("../../middleware/roleby.access.middleware");
@@ -34,6 +37,11 @@ router.post(
   "/end-test",
   roleByAccess(["admin", "staff"]),
   endScheduledExam,
+);
+router.post(
+  "/activate-test",
+  roleByAccess(["admin"]),
+  activateScheduledExam,
 );
 router.post(
   "/resume-student-exam",

@@ -11,7 +11,7 @@ export const getScheduleExams = async () => {
     return response.data;
 };
 
-// CANCEL / DELETE SCHEDULED EXAM
+// DELETE A TEST AND ITS DIRECTLY LINKED DATABASE RECORDS
 export const deleteScheduledExam = async (testId) => {
     const response = await api.post(
         `${API_URL}/schedule/delete-scheduled-exam`,
@@ -30,6 +30,16 @@ export const endScheduledExam = async (testId) => {
         {
             testId: testId,
         }
+    );
+
+    return response.data;
+};
+
+// Generate a missing test code and activate a test within its allowed window.
+export const activateScheduledExam = async (testId) => {
+    const response = await api.post(
+        `${API_URL}/schedule/activate-test`,
+        { testId }
     );
 
     return response.data;
