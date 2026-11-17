@@ -17,6 +17,18 @@ const ThemeDropdown = ({
     (option) => option === value
   );
 
+  const getOptionLabel = (option) => {
+    if (option === "Computer Science and Engineering") {
+      return "CSE — Computer Science and Engineering";
+    }
+
+    if (option === "Computer Science and Engineering (Cyber Security)") {
+      return "CSE-CS — Computer Science and Engineering (Cyber Security)";
+    }
+
+    return option;
+  };
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -108,9 +120,12 @@ const ThemeDropdown = ({
 
         {/* Selected Text */}
         <span
+          title={selectedOption || placeholder}
           className={`
             flex-1
-            truncate
+            min-w-0
+            whitespace-normal
+            break-words
             text-[15px]
             font-medium
             ${
@@ -161,7 +176,9 @@ const ThemeDropdown = ({
           className="
             absolute
             left-0
-            right-0
+            min-w-full
+            w-max
+            max-w-[calc(100vw-2rem)]
             z-50
             mt-2
             overflow-hidden
@@ -200,7 +217,6 @@ const ThemeDropdown = ({
                     }
                     className={`
                       mb-0.5
-                      flex
                       w-full
                       items-center
                       rounded-lg
@@ -208,6 +224,8 @@ const ThemeDropdown = ({
                       py-3
                       text-left
                       text-[15px]
+                      whitespace-normal
+                      break-words
                       transition-all
                       duration-150
                       last:mb-0
@@ -228,7 +246,7 @@ const ThemeDropdown = ({
                       }
                     `}
                   >
-                    {option}
+                    {getOptionLabel(option)}
                   </button>
                 );
               })}

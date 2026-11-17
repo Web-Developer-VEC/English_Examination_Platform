@@ -216,6 +216,16 @@ function SelectField({
   placeholder,
   disabled = false,
 }) {
+  const displayOption = (option) => {
+    if (option === "Computer Science and Engineering") {
+      return "CSE — Computer Science and Engineering";
+    }
+    if (option === "Computer Science and Engineering (Cyber Security)") {
+      return "CSE-CS — Computer Science and Engineering (Cyber Security)";
+    }
+    return option;
+  };
+
   const [isOpen, setIsOpen] = useState(false);
 
   // ---------------------------------------------------
@@ -327,11 +337,11 @@ function SelectField({
           {/* SELECTED VALUE / PLACEHOLDER */}
           <span
             className={
-              "truncate " +
+              "min-w-0 whitespace-normal break-words " +
               (value ? "font-semibold text-[#000000]" : "text-[#808080]")
             }
           >
-            {value || placeholder}
+            {value ? displayOption(value) : placeholder}
           </span>
 
           {/* CHEVRON */}
@@ -351,7 +361,9 @@ function SelectField({
             className="
               absolute
               left-0
-              right-0
+              min-w-full
+              w-max
+              max-w-[min(32rem,calc(100vw-2rem))]
               top-[calc(100%+6px)]
               z-50
               overflow-hidden
@@ -377,7 +389,7 @@ function SelectField({
                       setIsOpen(false);
                     }}
                     className={
-                      "flex w-full items-center rounded-md px-3 py-2.5 text-left text-sm transition-all duration-150 " +
+                      "w-full whitespace-normal break-words rounded-md px-3 py-2.5 text-left text-sm transition-all duration-150 " +
                       // OPTION TEXT = BLACK
                       "text-[#000000] " +
                       // SELECTED OPTION = LIGHT GOLD BACKGROUND
@@ -386,7 +398,7 @@ function SelectField({
                       "hover:bg-[#CAA302]/10 hover:text-[#000000]"
                     }
                   >
-                    <span className="truncate">{option}</span>
+                    {displayOption(option)}
                   </button>
                 );
               })}
