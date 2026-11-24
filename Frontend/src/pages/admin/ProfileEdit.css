@@ -544,7 +544,12 @@
 .student-table-wrapper {
   width: 100%;
 
-  overflow-x: auto;
+  max-height: min(60vh, 620px);
+  min-height: 160px;
+
+  overflow: auto;
+
+  overscroll-behavior: contain;
 
   border: 1px solid
     var(--border);

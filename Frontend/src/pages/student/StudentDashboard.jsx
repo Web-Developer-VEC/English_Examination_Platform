@@ -126,9 +126,9 @@ const StudentDashboard = () => {
         setEditForm(data.data);
         setFirstLogin(
           data.data.firstlogin === true ||
-            data.data.firstLogin === true ||
-            data.data.student?.firstlogin === true ||
-            data.data.student?.firstLogin === true,
+          data.data.firstLogin === true ||
+          data.data.student?.firstlogin === true ||
+          data.data.student?.firstLogin === true,
         );
         const savedEditType =
           data.data.editType ||
@@ -287,9 +287,9 @@ const StudentDashboard = () => {
         setEditForm(result.student);
         setFirstLogin(
           result.firstlogin === true ||
-            result.firstLogin === true ||
-            result.student?.firstlogin === true ||
-            result.student?.firstLogin === true,
+          result.firstLogin === true ||
+          result.student?.firstlogin === true ||
+          result.student?.firstLogin === true,
         );
         const currentEditType =
           result.student?.editType ||
@@ -380,14 +380,79 @@ const StudentDashboard = () => {
     fetchStudent();
   }, []);
 
+  // Admins can grant profile-edit access while a student is already signed
+  // in. Refresh the permission when the student returns to this browser tab.
+  useEffect(() => {
+    let isMounted = true;
+    let isRefreshing = false;
+
+    const refreshEditPermission = async () => {
+      if (isRefreshing) return;
+      const session = getStudentSession();
+      const username = session?.user?.username;
+      if (!username) return;
+
+      isRefreshing = true;
+      try {
+        const result = await getStudent(username);
+        if (!isMounted || !result?.success || !result.student) return;
+
+        const refreshedStudent = result.student;
+        const enabled = refreshedStudent.studentEditEnabled === true;
+        const refreshedEditType =
+          refreshedStudent.editType === "dob_email" ||
+            refreshedStudent.editType === "regno"
+            ? refreshedStudent.editType
+            : enabled
+              ? "regno"
+              : "none";
+        const refreshedFirstLogin =
+          result.firstlogin === true ||
+          result.firstLogin === true ||
+          refreshedStudent.firstlogin === true ||
+          refreshedStudent.firstLogin === true;
+
+        setStudent((current) =>
+          current
+            ? {
+              ...current,
+              studentEditEnabled: enabled,
+              editType: refreshedEditType,
+              firstlogin: refreshedFirstLogin,
+            }
+            : refreshedStudent,
+        );
+        setEditType(refreshedEditType);
+        setFirstLogin(refreshedFirstLogin);
+        setregEdit(enabled);
+      } catch (error) {
+        console.error("Error refreshing student edit permission:", error);
+      } finally {
+        isRefreshing = false;
+      }
+    };
+
+    const handleFocus = () => refreshEditPermission();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshEditPermission();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   // ============================================================
   // MODAL BODY SCROLL CONTROL
   // ============================================================
 
   useEffect(() => {
     if (isEditing && student) {
-      setEditForm(student);
-
       const previousOverflow = document.body.style.overflow;
       const previousPaddingRight = document.body.style.paddingRight;
 
@@ -405,7 +470,7 @@ const StudentDashboard = () => {
         document.body.style.paddingRight = previousPaddingRight;
       };
     }
-  }, [isEditing, student]);
+  }, [isEditing]);
 
   // ============================================================
   // PAGE SCROLLBAR CONTROL
@@ -475,12 +540,25 @@ const StudentDashboard = () => {
       ? editForm.registerNo
       : editForm?.admissionNo || "";
   const hasChanges =
-    editForm?.registerNo?.trim() !== student?.registerNo?.trim() ||
+    (isRegNoEditable &&
+      String(editForm?.registerNo ?? "").trim() !==
+      String(student?.registerNo ?? "").trim()) ||
+    (isDobEmailEditable &&
+      (String(editForm?.email ?? "").trim() !==
+        String(student?.email ?? "").trim() ||
+        String(editForm?.dob ?? "").trim() !==
+        String(student?.dob ?? "").trim())) ||
     (canEditAdditionalFields &&
-      (editForm?.email !== student?.email ||
-        editForm?.phone !== student?.phone ||
-        editForm?.gender !== student?.gender ||
-        editForm?.section !== student?.section));
+      (String(editForm?.name ?? "").trim() !==
+        String(student?.name ?? "").trim() ||
+        String(editForm?.phone ?? "").trim() !==
+        String(student?.phone ?? "").trim() ||
+        String(editForm?.gender ?? "").trim() !==
+        String(student?.gender ?? "").trim() ||
+        String(editForm?.section ?? "").trim() !==
+        String(student?.section ?? "").trim() ||
+        String(editForm?.batch ?? "").trim() !==
+        String(student?.batch ?? "").trim()));
 
   // ============================================================
   // MAIN DASHBOARD
@@ -534,7 +612,10 @@ const StudentDashboard = () => {
         <div className="flex items-center gap-4">
           {(firstLogin || student?.studentEditEnabled || editType === "regno" || editType === "dob_email") && (
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setEditForm(student);
+                setIsEditing(true);
+              }}
               className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all cursor-pointer"
             >
               <Edit2 size={16} />
@@ -1027,7 +1108,7 @@ const StudentDashboard = () => {
         pauseOnHover
       />
     </div>
-    </>
+  </>
   );
 };
 

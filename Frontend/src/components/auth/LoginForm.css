@@ -30,6 +30,16 @@
     box-sizing:border-box;
 }
 
+.login-screen {
+    flex: 1 0 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    box-sizing: border-box;
+}
+
 
 .login-card:hover {
     box-shadow: 0 26px 55px rgba(31, 41, 55, .16);

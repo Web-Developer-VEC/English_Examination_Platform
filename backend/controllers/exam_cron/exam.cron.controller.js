@@ -270,57 +270,56 @@ const checkExams = async () => {
     const now = new Date();
 
     // ====================================================
-    // 1. GENERATE TEST CODE (10 MINUTES BEFORE EXAM - ONLY DURING ALLOWED HOURS)
+    // 1. GENERATE TEST CODE (FROM 10 MINUTES BEFORE START UNTIL EXAM END)
     // ====================================================
 
     if (isWithinExamHoursIST(now)) {
       const schedules = await db
         .collection("schedule")
-        .find({ status: "Scheduled" })
+        .find({ status: { $in: ["Scheduled", "Started"] } })
         .toArray();
 
-    const upcomingTests = [];
+      for (const test of schedules) {
+        if (test.testcode !== undefined && test.testcode !== null && test.testcode !== "") {
+          continue;
+        }
 
-    const tenMinutesFromNow = new Date(now);
-    tenMinutesFromNow.setMinutes(tenMinutesFromNow.getMinutes() + 10);
+        const startTime = new Date(test.startTime);
+        const endTime = new Date(test.endTime);
+        if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+          continue;
+        }
 
-    for (const test of schedules) {
-      const startTime = new Date(test.startTime);
+        const generationOpensAt = new Date(startTime.getTime() - 10 * 60 * 1000);
+        if (now < generationOpensAt || now >= endTime) {
+          continue;
+        }
 
-      if (startTime > now && startTime <= tenMinutesFromNow) {
-        if (
-          test.testcode === undefined ||
-          test.testcode === null ||
-          test.testcode === ""
-        ) {
-          upcomingTests.push(test);
+        const testcode = await generateUniqueTestCode(db);
+        const result = await db.collection("schedule").updateOne(
+          {
+            _id: test._id,
+            status: { $in: ["Scheduled", "Started"] },
+            $or: [
+              { testcode: { $exists: false } },
+              { testcode: null },
+              { testcode: "" },
+            ],
+          },
+          {
+            $set: {
+              testcode,
+              testcodeGeneratedAt: now,
+              updatedAt: now,
+            },
+          },
+        );
+
+        if (result.modifiedCount === 1) {
+          console.log(`[EXAM CRON] Test code generated for schedule ${test._id}`);
         }
       }
     }
-
-    for (const test of upcomingTests) {
-      const testcode = await generateUniqueTestCode(db);
-
-      await db.collection("schedule").updateOne(
-        {
-          _id: test._id,
-          status: "Scheduled",
-          $or: [
-            { testcode: { $exists: false } },
-            { testcode: null },
-            { testcode: "" },
-          ],
-        },
-        {
-          $set: {
-            testcode,
-            testcodeGeneratedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        }
-      );
-    }
-  }
 
     // ====================================================
     // 2. START EXAMS (ONLY DURING ALLOWED HOURS 8:30 AM - 5:00 PM IST)

@@ -11,6 +11,8 @@ import {
   RotateCcw,
   AlertCircle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -495,7 +497,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-100">
+    <div className="w-full flex-1 bg-gray-100">
       <main className="flex-1 px-6 py-8">
         {loading && (
           <div className="mt-8 bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -888,7 +890,7 @@ export default function AdminDashboard() {
             PAGINATION
         ========================================================== */}
 
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex flex-col gap-4 py-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">
             {filteredTests.length === 0
               ? "Showing 0 Records"
@@ -898,54 +900,34 @@ export default function AdminDashboard() {
                 )} of ${filteredTests.length} Records`}
           </p>
 
-          <div>
-            {currentPage > 1 && (
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                className="
-                    px-4
-                    py-2
-                    rounded-lg
-                    border
-                    border-gray-300
-                    hover:bg-gray-100
-                    transition
-                "
-              >
-                Previous
-              </button>
-            )}
+          <div className="flex items-center justify-between gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              aria-label="Go to previous page"
+              className="inline-flex h-10 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-slate-500 transition hover:text-[#7a1f2b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f2b]/30 disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
 
-            {totalPages > 0 && (
-              <span
-                className="
-                    px-4
-                    py-2
-                    rounded-lg
-                    bg-[#FDCC03]
-                    font-semibold
-                "
-              >
-                {currentPage}
-              </span>
-            )}
+            <span className="min-w-[76px] text-center text-sm font-medium text-gray-500" aria-live="polite">
+              <span className="font-bold text-gray-900">{totalPages ? currentPage : 0}</span>
+              <span className="mx-1.5 text-gray-300">/</span>
+              {totalPages}
+            </span>
 
-            {currentPage < totalPages && (
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                className="
-                    px-4
-                    py-2
-                    rounded-lg
-                    border
-                    border-gray-300
-                    hover:bg-gray-100
-                    transition
-                "
-              >
-                Next
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              aria-label="Go to next page"
+              className="inline-flex h-10 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-slate-500 transition hover:text-[#7a1f2b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f2b]/30 disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
         {/* TEST DETAILS MODAL */}

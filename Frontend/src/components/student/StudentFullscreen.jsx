@@ -44,7 +44,7 @@ const StudentFullscreen = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="flex w-full flex-1 flex-col">
       {/* All Student Pages */}
       <Outlet />
 

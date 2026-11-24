@@ -971,7 +971,12 @@
 .student-table-container {
   width: 100%;
 
-  overflow-x: auto;
+  max-height: min(60vh, 620px);
+  min-height: 160px;
+
+  overflow: auto;
+
+  overscroll-behavior: contain;
 
   border: 1px solid #eeeeee;
 
@@ -996,9 +1001,15 @@
 }
 
 .student-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+
   padding: 13px 12px;
 
   text-align: left;
+
+  background: #800000;
 
   font-size: 13px;
 

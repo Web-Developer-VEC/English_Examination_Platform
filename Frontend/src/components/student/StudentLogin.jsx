@@ -79,7 +79,7 @@ const StudentLogin = () => {
   return (
     <>
       <ToastContainer position="bottom-right" autoClose="2000" />
-      <div className="flex pt-10 justify-center">
+      <div className="login-screen">
         <div className="login-card">
           {/* Heading */}
           <div className="login-heading">

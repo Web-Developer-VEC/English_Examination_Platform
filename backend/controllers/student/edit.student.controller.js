@@ -13,6 +13,7 @@ const updateStudent = async (req, res) => {
       gender,
       dob,
       section,
+      batch,
     } = req.body;
 
     // =====================================================
@@ -68,6 +69,7 @@ const updateStudent = async (req, res) => {
       if (gender !== undefined) updateData.gender = String(gender).trim();
       if (dob !== undefined) updateData.dob = String(dob).trim();
       if (section !== undefined) updateData.section = String(section).trim();
+      if (batch !== undefined) updateData.batch = String(batch).trim();
 
       const registerNoProvided = registerNo !== undefined;
       const registerNoTrimmed =

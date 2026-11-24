@@ -114,6 +114,7 @@ const generateAndSaveClassReport = async ({
       .project({
         _id: 0,
         admissionNo: 1,
+        registerNo: 1,
         name: 1,
       })
       .sort({
@@ -124,6 +125,10 @@ const generateAndSaveClassReport = async ({
     if (studentRoster.length === 0) {
       throw new Error("No students found for the given class filters.");
     }
+
+    const useRegisterNo = studentRoster.every(
+      (student) => String(student.registerNo ?? "").trim().length > 0,
+    );
 
     // 2. Fetch scheduled tests from "schedule" collection
     const scheduleFilter = {
@@ -469,7 +474,7 @@ const generateAndSaveClassReport = async ({
         return `
           <tr>
             <td>${index + 1}</td>
-            <td>${student.admissionNo || "-"}</td>
+            <td>${useRegisterNo ? student.registerNo : student.admissionNo || "-"}</td>
             <td class="name">${student.name || "-"}</td>
             ${marksCells}
             <td>${totalDisplay}</td>
@@ -542,6 +547,7 @@ const generateAndSaveClassReport = async ({
       .replace("{{DEPARTMENT}}", departmentValue)
       .replace("{{SECTION}}", sectionValue)
       .replace("{{SEMESTER}}", semesterValue)
+      .replace("{{STUDENT_ID_HEADER}}", useRegisterNo ? "Register No" : "Admission No")
       .replace("{{SUBJECT_CODE}}", subjectCode)
       .replace("{{SUBJECT_NAME}}", subjectName)
       .replace("{{EXAM_TYPE_LABEL}}", examTypeLabel)

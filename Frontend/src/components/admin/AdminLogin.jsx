@@ -57,8 +57,8 @@ const AdminLogin = () => {
   return (
     <>
       <ToastContainer position="bottom-right" autoClose="2000" />
-      <div className="flex justify-center">
-        <div className="flex justify-center pt-10">
+      <div className="login-screen">
+        <div className="flex justify-center">
           <div className="login-card">
             <ToastContainer position="bottom-right" autoClose={3000} />
 

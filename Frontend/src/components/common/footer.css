@@ -1,0 +1,57 @@
+.vec-footer {
+  margin-top: auto;
+  padding: 1rem 1rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.vec-footer__credit {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.vec-footer__name {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+}
+
+.vec-footer__name.is-bling {
+  background-image: linear-gradient(
+    105deg,
+    #6b7280 0%,
+    #6b7280 38%,
+    #f5b301 46%,
+    #fff7c2 50%,
+    #f5b301 54%,
+    #6b7280 62%,
+    #6b7280 100%
+  );
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: vec-credit-shimmer 1.6s ease-in-out both;
+}
+
+.vec-footer__credit:hover .vec-footer__name {
+  color: #eab308;
+}
+
+@keyframes vec-credit-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vec-footer__name.is-bling {
+    animation: none;
+    background-image: none;
+    color: inherit;
+    -webkit-text-fill-color: currentColor;
+  }
+}
