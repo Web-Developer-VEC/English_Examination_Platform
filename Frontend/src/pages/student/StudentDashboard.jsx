@@ -560,6 +560,8 @@ const StudentDashboard = () => {
         String(editForm?.batch ?? "").trim() !==
         String(student?.batch ?? "").trim()));
 
+  const canSave = firstLogin || student?.studentEditEnabled || editType === "regno" || editType === "dob_email";
+
   // ============================================================
   // MAIN DASHBOARD
   // ============================================================
@@ -1084,7 +1086,8 @@ const StudentDashboard = () => {
 
                 <button
                   type="submit"
-                  disabled={isSaving || !hasChanges}
+                  disabled={isSaving || !canSave}
+                  title={!canSave ? "Editing is not permitted" : "Save changes"}
                   className="px-8 py-2.5 bg-yellow-400 text-black font-bold rounded-lg hover:bg-[#800000] hover:text-white shadow-sm transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-yellow-400 disabled:hover:text-black"
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
