@@ -339,9 +339,142 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+const updateStudentDetailsByAdmin = async (req, res) => {
+  try {
+    const db = await getDB();
+    const {
+      originalAdmissionNo,
+      admissionNo,
+      name,
+      registerNo,
+      email,
+      phone,
+      gender,
+      dob,
+    } = req.body;
+
+    const targetAdmissionNo = String(originalAdmissionNo || admissionNo || "").trim();
+
+    if (!targetAdmissionNo) {
+      return res.status(400).json({
+        success: false,
+        message: "Original admission number is required to locate the student.",
+      });
+    }
+
+    const student = await db.collection("students").findOne({
+      admissionNo: targetAdmissionNo,
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    const newAdmissionNo = admissionNo ? String(admissionNo).trim() : targetAdmissionNo;
+    if (!newAdmissionNo) {
+      return res.status(400).json({
+        success: false,
+        message: "Admission number cannot be empty.",
+      });
+    }
+
+    // Check if new admission number is already taken by another student
+    if (newAdmissionNo !== targetAdmissionNo) {
+      const existingAdmission = await db.collection("students").findOne({
+        admissionNo: newAdmissionNo,
+        _id: { $ne: student._id },
+      });
+      if (existingAdmission) {
+        return res.status(409).json({
+          success: false,
+          message: `Admission Number '${newAdmissionNo}' is already assigned to another student.`,
+        });
+      }
+    }
+
+    // Register number validation and duplicate check
+    const registerNoTrimmed =
+      registerNo !== undefined && registerNo !== null
+        ? String(registerNo).trim()
+        : "";
+
+    if (
+      registerNoTrimmed !== "" &&
+      registerNoTrimmed.toLowerCase() !== "null"
+    ) {
+      const existingRegister = await db.collection("students").findOne({
+        registerNo: registerNoTrimmed,
+        _id: { $ne: student._id },
+      });
+
+      if (existingRegister) {
+        return res.status(409).json({
+          success: false,
+          message: `Register Number '${registerNoTrimmed}' already belongs to another student.`,
+        });
+      }
+    }
+
+    // Username follows register number when present, otherwise admission number
+    const finalRegisterNo =
+      registerNoTrimmed !== "" && registerNoTrimmed.toLowerCase() !== "null"
+        ? registerNoTrimmed
+        : null;
+
+    const finalUsername = finalRegisterNo ? finalRegisterNo : newAdmissionNo;
+
+    const updateData = {
+      admissionNo: newAdmissionNo,
+      name: name !== undefined ? String(name).trim() : student.name,
+      registerNo: finalRegisterNo,
+      username: finalUsername,
+      email: email !== undefined ? String(email).trim() : student.email,
+      phone: phone !== undefined ? String(phone).trim() : student.phone,
+      gender: gender !== undefined ? String(gender).trim() : student.gender,
+      dob: dob !== undefined ? String(dob).trim() : student.dob,
+      updatedAt: new Date(),
+    };
+
+    await db.collection("students").updateOne(
+      { _id: student._id },
+      { $set: updateData },
+    );
+
+    // If admission number was changed, cascade to exams collection to preserve history
+    if (newAdmissionNo !== targetAdmissionNo) {
+      await db.collection("exam").updateMany(
+        { admissionNo: targetAdmissionNo },
+        { $set: { admissionNo: newAdmissionNo } },
+      );
+    }
+
+    const updatedStudent = await db.collection("students").findOne(
+      { _id: student._id },
+      { projection: { password: 0 } },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Student details updated successfully.",
+      data: updatedStudent,
+    });
+  } catch (error) {
+    console.error("ADMIN UPDATE STUDENT DETAILS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update student details.",
+      error: error.message || "Unexpected server error.",
+    });
+  }
+};
+
 module.exports = {
   studentsUpload,
   updateStudent,
+  updateStudentDetailsByAdmin,
   getStudentByUsername,
   deleteStudent,
 };

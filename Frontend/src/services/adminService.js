@@ -349,4 +349,17 @@ export const deleteStaff = async (data) => {
   );
 
   return response.data;
+};
+
+// =====================================================
+// UPDATE STUDENT DETAILS (ADMIN)
+// =====================================================
+
+export const updateStudentDetailsByAdmin = async (studentData) => {
+  const response = await api.put(
+    `${API_URL}/student/edit-details`,
+    studentData
+  );
+
+  return response.data;
 };  

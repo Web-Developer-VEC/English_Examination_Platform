@@ -7,6 +7,7 @@ import {
   updateAcademicYear,
   getSubjects,
   updateSubjects,
+  updateStudentDetailsByAdmin,
 } from "../../services/adminService";
 import { getApiErrorMessage } from "../../utils/apiError";
 import {
@@ -142,6 +143,8 @@ const normalizeStudent = (student = {}) => {
 
     dob: getValue(student, ["dob"]),
 
+    gender: getValue(student, ["gender"]),
+
     editType,
 
     editProfileEnabled,
@@ -233,6 +236,23 @@ const StudentProfileAccess = () => {
     targetStudent: null,
     isBulk: false,
   });
+
+  // Admin direct student details edit modal state
+  const [studentDetailsModal, setStudentDetailsModal] = useState({
+    isOpen: false,
+    student: null,
+  });
+  const [studentDetailsForm, setStudentDetailsForm] = useState({
+    originalAdmissionNo: "",
+    admissionNo: "",
+    name: "",
+    registerNo: "",
+    email: "",
+    phone: "",
+    gender: "",
+    dob: "",
+  });
+  const [savingStudentDetails, setSavingStudentDetails] = useState(false);
 
   const [message, setMessage] = useState("");
 
@@ -487,6 +507,102 @@ const StudentProfileAccess = () => {
       const student = editTypeModal.targetStudent;
       setEditTypeModal({ isOpen: false, targetStudent: null, isBulk: false });
       await handleProfileAccessToggle(student, selectedType);
+    }
+  };
+
+  const handleOpenStudentDetailsModal = (student) => {
+    setStudentDetailsForm({
+      originalAdmissionNo: student.admissionNo || "",
+      admissionNo: student.admissionNo || "",
+      name: student.name || "",
+      registerNo: student.registerNo || "",
+      email: student.email || "",
+      phone: student.phone || "",
+      gender: student.gender || "",
+      dob: student.dob ? String(student.dob).trim() : "",
+    });
+    setStudentDetailsModal({
+      isOpen: true,
+      student,
+    });
+  };
+
+  const handleCloseStudentDetailsModal = () => {
+    if (savingStudentDetails) return;
+    setStudentDetailsModal({
+      isOpen: false,
+      student: null,
+    });
+  };
+
+  const handleStudentDetailsInputChange = (e) => {
+    const { name, value } = e.target;
+    setStudentDetailsForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveStudentDetails = async (e) => {
+    e.preventDefault();
+    if (!studentDetailsForm.admissionNo.trim()) {
+      showMessage("Admission number cannot be empty.", "error");
+      return;
+    }
+    if (!studentDetailsForm.name.trim()) {
+      showMessage("Student name cannot be empty.", "error");
+      return;
+    }
+
+    setSavingStudentDetails(true);
+    try {
+      const payload = {
+        originalAdmissionNo: studentDetailsForm.originalAdmissionNo,
+        admissionNo: studentDetailsForm.admissionNo.trim(),
+        name: studentDetailsForm.name.trim(),
+        registerNo: studentDetailsForm.registerNo.trim() || null,
+        email: studentDetailsForm.email.trim(),
+        phone: studentDetailsForm.phone.trim(),
+        gender: studentDetailsForm.gender.trim(),
+        dob: studentDetailsForm.dob.trim(),
+      };
+
+      const result = await updateStudentDetailsByAdmin(payload);
+      if (result.success === false) {
+        throw new Error(result.message || "Failed to update student details.");
+      }
+
+      // Update student in local state
+      const updatedData = result.data || {};
+      const newAdmissionNo = payload.admissionNo;
+      const newRegisterNo = payload.registerNo;
+
+      setStudents((prev) =>
+        prev.map((item) => {
+          if (item.admissionNo === studentDetailsForm.originalAdmissionNo) {
+            return {
+              ...item,
+              ...updatedData,
+              admissionNo: newAdmissionNo,
+              registerNo: newRegisterNo,
+              name: payload.name,
+              email: payload.email,
+              phone: payload.phone,
+              gender: payload.gender,
+              dob: payload.dob,
+            };
+          }
+          return item;
+        }),
+      );
+
+      showMessage(result.message || "Student details updated successfully!", "success");
+      handleCloseStudentDetailsModal();
+    } catch (error) {
+      console.error("Error saving student details:", error);
+      showMessage(getApiErrorMessage(error, "Failed to update student details."), "error");
+    } finally {
+      setSavingStudentDetails(false);
     }
   };
 
@@ -1088,6 +1204,8 @@ const StudentProfileAccess = () => {
                       <th>BATCH</th>
 
                       <th>PROFILE ACCESS</th>
+
+                      <th style={{ textAlign: "center" }}>ACTION</th>
                     </tr>
                   </thead>
 
@@ -1257,12 +1375,26 @@ const StudentProfileAccess = () => {
                                 </button>
                               </div>
                             </td>
+
+                            {/* ACTION: EDIT DETAILS */}
+                            <td style={{ textAlign: "center" }}>
+                              <button
+                                type="button"
+                                className="student-edit-action-btn"
+                                onClick={() => handleOpenStudentDetailsModal(student)}
+                                title={`Edit details for ${student.name || "Student"}`}
+                                aria-label="Edit student details"
+                              >
+                                <Pencil size={15} />
+                                <span>Edit</span>
+                              </button>
+                            </td>
                           </tr>
                         );
                       })
                     ) : (
                       <tr>
-                        <td colSpan="8" className="no-results">
+                        <td colSpan="9" className="no-results">
                           <Search size={32} />
 
                           <strong>No students found</strong>
@@ -1842,6 +1974,198 @@ const StudentProfileAccess = () => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN EDIT STUDENT DETAILS MODAL */}
+      {studentDetailsModal.isOpen && (
+        <div
+          className="edit-type-modal-overlay"
+          onClick={handleCloseStudentDetailsModal}
+        >
+          <div
+            className="student-details-edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="student-details-modal-header">
+              <div className="modal-title-box">
+                <div className="modal-title-icon-badge admin-edit-badge">
+                  <Pencil size={22} />
+                </div>
+                <div>
+                  <h3>Edit Student Details</h3>
+                  <p>
+                    {studentDetailsModal.student?.name} &bull; Admission No: {studentDetailsModal.student?.admissionNo}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={handleCloseStudentDetailsModal}
+                disabled={savingStudentDetails}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStudentDetails} className="student-details-modal-form">
+              <div className="student-details-form-grid">
+                {/* ADMISSION NO */}
+                <div className="form-group">
+                  <label htmlFor="edit_admissionNo">
+                    Admission No <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="edit_admissionNo"
+                    type="text"
+                    name="admissionNo"
+                    value={studentDetailsForm.admissionNo}
+                    onChange={handleStudentDetailsInputChange}
+                    placeholder="e.g. 21CS001"
+                    disabled={savingStudentDetails}
+                    required
+                  />
+                  <span className="field-hint">
+                    Used as username fallback if Register No is empty.
+                  </span>
+                </div>
+
+                {/* NAME */}
+                <div className="form-group">
+                  <label htmlFor="edit_name">
+                    Full Name <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="edit_name"
+                    type="text"
+                    name="name"
+                    value={studentDetailsForm.name}
+                    onChange={handleStudentDetailsInputChange}
+                    placeholder="Student full name"
+                    disabled={savingStudentDetails}
+                    required
+                  />
+                </div>
+
+                {/* REGISTER NO */}
+                <div className="form-group">
+                  <label htmlFor="edit_registerNo">Register No</label>
+                  <input
+                    id="edit_registerNo"
+                    type="text"
+                    name="registerNo"
+                    value={studentDetailsForm.registerNo}
+                    onChange={handleStudentDetailsInputChange}
+                    placeholder="e.g. 312321104001"
+                    disabled={savingStudentDetails}
+                  />
+                  <span className="field-hint">
+                    When provided, Register No becomes the student's username.
+                  </span>
+                </div>
+
+                {/* EMAIL */}
+                <div className="form-group">
+                  <label htmlFor="edit_email">Email</label>
+                  <input
+                    id="edit_email"
+                    type="email"
+                    name="email"
+                    value={studentDetailsForm.email}
+                    onChange={handleStudentDetailsInputChange}
+                    placeholder="student@example.com"
+                    disabled={savingStudentDetails}
+                  />
+                </div>
+
+                {/* PHONE */}
+                <div className="form-group">
+                  <label htmlFor="edit_phone">Phone</label>
+                  <input
+                    id="edit_phone"
+                    type="tel"
+                    name="phone"
+                    value={studentDetailsForm.phone}
+                    onChange={handleStudentDetailsInputChange}
+                    placeholder="10-digit mobile number"
+                    disabled={savingStudentDetails}
+                  />
+                </div>
+
+                {/* GENDER */}
+                <div className="form-group">
+                  <label htmlFor="edit_gender">Gender</label>
+                  <select
+                    id="edit_gender"
+                    name="gender"
+                    value={studentDetailsForm.gender}
+                    onChange={handleStudentDetailsInputChange}
+                    disabled={savingStudentDetails}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* DOB (CALENDAR PICKER) */}
+                <div className="form-group">
+                  <label htmlFor="edit_dob">Date of Birth (Calendar)</label>
+                  <input
+                    id="edit_dob"
+                    type="date"
+                    name="dob"
+                    value={studentDetailsForm.dob}
+                    onChange={handleStudentDetailsInputChange}
+                    disabled={savingStudentDetails}
+                  />
+                  <span className="field-hint">
+                    Format: YYYY-MM-DD. Also serves as student's default password.
+                  </span>
+                </div>
+
+                {/* USERNAME PREVIEW */}
+                <div className="form-group">
+                  <label>Effective Username</label>
+                  <input
+                    type="text"
+                    value={
+                      studentDetailsForm.registerNo && studentDetailsForm.registerNo.trim()
+                        ? studentDetailsForm.registerNo.trim()
+                        : studentDetailsForm.admissionNo.trim() || "-"
+                    }
+                    disabled
+                    className="disabled-preview-input"
+                  />
+                  <span className="field-hint">
+                    Automatically assigned: uses Register No if present, else Admission No.
+                  </span>
+                </div>
+              </div>
+
+              {/* MODAL ACTIONS */}
+              <div className="student-details-modal-footer">
+                <button
+                  type="button"
+                  className="modal-cancel-btn"
+                  onClick={handleCloseStudentDetailsModal}
+                  disabled={savingStudentDetails}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="modal-save-btn"
+                  disabled={savingStudentDetails}
+                >
+                  {savingStudentDetails ? "Saving..." : "Save Details"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
